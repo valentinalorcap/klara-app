@@ -5,8 +5,8 @@ export default function HistoryPage() {
   return (
     <EmptyTab
       icon={BarChart3}
-      title="Historial"
-      message="Tus días anteriores y tus tendencias. Calendario y gráficos próximamente."
+      title="History"
+      message="Your past days and trends. Calendar and charts coming soon."
     />
   );
 }

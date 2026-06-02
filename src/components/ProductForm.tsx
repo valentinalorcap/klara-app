@@ -3,6 +3,7 @@
 import { useActionState } from 'react';
 import Link from 'next/link';
 import type { ProductFormState } from '@/app/(app)/products/actions';
+import { GlassCard } from './GlassCard';
 
 type Product = {
   name: string;
@@ -27,27 +28,25 @@ export function ProductForm({
   return (
     <form action={formAction} className="space-y-5">
       <Field
-        label="Nombre"
+        label="Name"
         name="name"
         defaultValue={initialValues?.name}
-        placeholder="Yogur skyr"
+        placeholder="Skyr yogurt"
         error={state.fieldErrors?.name}
         required
       />
       <Field
-        label="Marca (opcional)"
+        label="Brand (optional)"
         name="brand"
         defaultValue={initialValues?.brand ?? ''}
         placeholder="Sancor"
         error={state.fieldErrors?.brand}
       />
 
-      <fieldset className="space-y-3 rounded-xl border border-neutral-200 bg-white p-4">
-        <legend className="px-1 text-xs font-medium tracking-wider text-neutral-500 uppercase">
-          Por 100g
-        </legend>
+      <GlassCard className="space-y-3 p-5">
+        <p className="text-xs font-medium tracking-wider text-neutral-400 uppercase">Per 100g</p>
         <Field
-          label="Calorías (kcal)"
+          label="Calories (kcal)"
           name="kcalPer100g"
           type="number"
           step="0.1"
@@ -56,7 +55,7 @@ export function ProductForm({
           required
         />
         <Field
-          label="Proteína (g)"
+          label="Protein (g)"
           name="proteinPer100g"
           type="number"
           step="0.1"
@@ -65,7 +64,7 @@ export function ProductForm({
           required
         />
         <Field
-          label="Carbohidratos (g)"
+          label="Carbs (g)"
           name="carbsPer100g"
           type="number"
           step="0.1"
@@ -74,7 +73,7 @@ export function ProductForm({
           required
         />
         <Field
-          label="Grasas (g)"
+          label="Fat (g)"
           name="fatPer100g"
           type="number"
           step="0.1"
@@ -82,10 +81,10 @@ export function ProductForm({
           error={state.fieldErrors?.fatPer100g}
           required
         />
-      </fieldset>
+      </GlassCard>
 
       {state.formError ? (
-        <p className="text-sm text-red-600" role="alert">
+        <p className="text-sm text-[var(--danger)]" role="alert">
           {state.formError}
         </p>
       ) : null}
@@ -94,15 +93,15 @@ export function ProductForm({
         <button
           type="submit"
           disabled={pending}
-          className="w-full rounded-md bg-neutral-900 px-4 py-3 text-sm font-medium text-white transition hover:bg-neutral-800 disabled:opacity-50"
+          className="w-full rounded-2xl bg-[var(--accent)] px-4 py-3.5 text-sm font-semibold text-white shadow-[0_8px_24px_-8px_var(--accent-glow)] transition hover:bg-[var(--accent-hover)] active:scale-[0.98] disabled:opacity-50"
         >
-          {pending ? 'Guardando…' : submitLabel}
+          {pending ? 'Saving…' : submitLabel}
         </button>
         <Link
           href="/products"
-          className="block w-full rounded-md border border-neutral-300 bg-white px-4 py-2 text-center text-sm font-medium text-neutral-700 transition hover:bg-neutral-100"
+          className="block w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-center text-sm font-medium text-neutral-300 transition hover:bg-white/[0.08]"
         >
-          Cancelar
+          Cancel
         </Link>
       </div>
     </form>
@@ -130,7 +129,7 @@ function Field({
 }) {
   return (
     <label className="block">
-      <span className="text-sm font-medium text-neutral-700">{label}</span>
+      <span className="text-xs font-medium text-neutral-300">{label}</span>
       <input
         name={name}
         type={type}
@@ -139,12 +138,12 @@ function Field({
         defaultValue={defaultValue}
         required={required}
         inputMode={type === 'number' ? 'decimal' : undefined}
-        className={`mt-1 block w-full rounded-md border bg-white px-3 py-2 text-sm shadow-sm transition focus:ring-2 focus:ring-neutral-900 focus:outline-none ${
-          error ? 'border-red-400' : 'border-neutral-300'
+        className={`mt-2 block w-full rounded-2xl border bg-white/[0.04] px-4 py-3 text-sm text-white transition placeholder:text-neutral-500 focus:bg-white/[0.08] focus:ring-2 focus:ring-[var(--accent)]/60 focus:outline-none ${
+          error ? 'border-[var(--danger)]/60' : 'border-white/10'
         }`}
         aria-invalid={Boolean(error)}
       />
-      {error ? <p className="mt-1 text-xs text-red-600">{error}</p> : null}
+      {error ? <p className="mt-1.5 text-xs text-[var(--danger)]">{error}</p> : null}
     </label>
   );
 }

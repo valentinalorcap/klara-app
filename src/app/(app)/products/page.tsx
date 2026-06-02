@@ -3,6 +3,7 @@ import { Plus, Package } from 'lucide-react';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { EmptyTab } from '@/components/EmptyTab';
+import { GlassCard } from '@/components/GlassCard';
 
 export default async function ProductsPage() {
   const session = await auth();
@@ -12,57 +13,54 @@ export default async function ProductsPage() {
   });
 
   return (
-    <main className="px-6 py-8">
-      <header className="flex items-center justify-between">
+    <main className="px-6 py-10">
+      <header className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Productos</h1>
-          <p className="mt-1 text-sm text-neutral-500">
-            Tu biblioteca de alimentos con macros por 100g.
-          </p>
+          <h1 className="text-2xl font-bold tracking-tight text-white">Products</h1>
+          <p className="mt-1 text-sm text-neutral-400">Your food library — macros per 100g.</p>
         </div>
         <Link
           href="/products/new"
-          className="flex h-10 w-10 items-center justify-center rounded-full bg-neutral-900 text-white transition hover:bg-neutral-800"
-          aria-label="Crear producto"
+          aria-label="Add product"
+          className="flex h-11 w-11 items-center justify-center rounded-full bg-[var(--accent)] text-white shadow-[0_8px_24px_-8px_var(--accent-glow)] transition hover:bg-[var(--accent-hover)] active:scale-95"
         >
           <Plus size={20} />
         </Link>
       </header>
 
       {products.length === 0 ? (
-        <div className="mt-12">
+        <div className="mt-10">
           <EmptyTab
             icon={Package}
-            title="Aún no tienes productos"
-            message="Crea el primero con el botón + arriba a la derecha. Por ejemplo, tu yogur skyr o tu salsa chipotle."
+            title="No products yet"
+            message="Tap the + button to add your first one — your yogurt, your protein powder, your favorite sauce."
           />
         </div>
       ) : (
-        <ul className="mt-6 space-y-2">
+        <ul className="mt-8 space-y-3">
           {products.map((p) => (
             <li key={p.id}>
-              <Link
-                href={`/products/${p.id}/edit`}
-                className="block rounded-xl border border-neutral-200 bg-white p-4 transition hover:border-neutral-300"
-              >
-                <div className="flex items-baseline justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold text-neutral-900">{p.name}</p>
-                    {p.brand ? (
-                      <p className="truncate text-xs text-neutral-500">{p.brand}</p>
-                    ) : null}
+              <Link href={`/products/${p.id}/edit`} className="block">
+                <GlassCard className="p-4 transition hover:border-white/20 active:scale-[0.99]">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-white">{p.name}</p>
+                      {p.brand ? (
+                        <p className="truncate text-xs text-neutral-400">{p.brand}</p>
+                      ) : null}
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <p className="text-sm font-semibold text-white tabular-nums">
+                        {Math.round(p.kcalPer100g)} kcal
+                      </p>
+                      <p className="text-xs text-neutral-500">per 100g</p>
+                    </div>
                   </div>
-                  <div className="shrink-0 text-right">
-                    <p className="text-sm font-semibold text-neutral-900 tabular-nums">
-                      {Math.round(p.kcalPer100g)} kcal
-                    </p>
-                    <p className="text-xs text-neutral-500">por 100g</p>
-                  </div>
-                </div>
-                <p className="mt-2 text-xs text-neutral-500 tabular-nums">
-                  P {p.proteinPer100g.toFixed(1)}g · C {p.carbsPer100g.toFixed(1)}g · G{' '}
-                  {p.fatPer100g.toFixed(1)}g
-                </p>
+                  <p className="mt-3 text-xs text-neutral-400 tabular-nums">
+                    P {p.proteinPer100g.toFixed(1)}g · C {p.carbsPer100g.toFixed(1)}g · F{' '}
+                    {p.fatPer100g.toFixed(1)}g
+                  </p>
+                </GlassCard>
               </Link>
             </li>
           ))}
