@@ -4,6 +4,7 @@ import { ChevronLeft } from 'lucide-react';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { ProductForm } from '@/components/ProductForm';
+import { DeleteProductButton } from '@/components/DeleteProductButton';
 import { deleteProduct, updateProduct } from '../../actions';
 
 export default async function EditProductPage({ params }: { params: Promise<{ id: string }> }) {
@@ -31,12 +32,8 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
       <h1 className="mt-4 text-2xl font-bold tracking-tight">Editar producto</h1>
 
       <div className="mt-8">
-        <ProductForm
-          action={updateAction}
-          initialValues={product}
-          submitLabel="Guardar cambios"
-          onDelete={deleteAction}
-        />
+        <ProductForm action={updateAction} initialValues={product} submitLabel="Guardar cambios" />
+        <DeleteProductButton action={deleteAction} />
       </div>
     </main>
   );
