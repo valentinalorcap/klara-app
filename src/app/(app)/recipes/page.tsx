@@ -5,8 +5,8 @@ export default function RecipesPage() {
   return (
     <EmptyTab
       icon={ChefHat}
-      title="Recetas"
-      message="Tus recetas con macros calculadas automáticamente. Llegará en una fase próxima."
+      title="Recipes"
+      message="Your recipes with macros calculated automatically. Coming in an upcoming phase."
     />
   );
 }

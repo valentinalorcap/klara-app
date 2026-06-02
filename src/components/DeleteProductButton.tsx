@@ -5,12 +5,12 @@ export function DeleteProductButton({ action }: { action: () => Promise<void> })
     <form action={action} className="mt-3">
       <button
         type="submit"
-        className="w-full rounded-md px-4 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50"
+        className="w-full rounded-2xl px-4 py-3 text-sm font-medium text-[var(--danger)] transition hover:bg-[var(--danger)]/10"
         onClick={(e) => {
-          if (!confirm('¿Eliminar este producto?')) e.preventDefault();
+          if (!confirm('Delete this product?')) e.preventDefault();
         }}
       >
-        Eliminar
+        Delete
       </button>
     </form>
   );

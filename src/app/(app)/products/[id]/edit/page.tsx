@@ -20,19 +20,19 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
   const deleteAction = deleteProduct.bind(null, id);
 
   return (
-    <main className="px-6 py-8">
+    <main className="px-6 py-10">
       <Link
         href="/products"
-        className="-ml-2 inline-flex items-center gap-1 text-sm text-neutral-500 transition hover:text-neutral-700"
+        className="-ml-2 inline-flex items-center gap-1 text-sm text-neutral-400 transition hover:text-neutral-200"
       >
         <ChevronLeft size={16} />
-        Productos
+        Products
       </Link>
 
-      <h1 className="mt-4 text-2xl font-bold tracking-tight">Editar producto</h1>
+      <h1 className="mt-4 text-2xl font-bold tracking-tight text-white">Edit product</h1>
 
       <div className="mt-8">
-        <ProductForm action={updateAction} initialValues={product} submitLabel="Guardar cambios" />
+        <ProductForm action={updateAction} initialValues={product} submitLabel="Save changes" />
         <DeleteProductButton action={deleteAction} />
       </div>
     </main>

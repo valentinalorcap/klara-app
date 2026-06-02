@@ -6,7 +6,7 @@ export default function ChatPage() {
     <EmptyTab
       icon={MessageCircle}
       title="Chat"
-      message="Conversación con Klara — preguntas, recomendaciones, ajustes de tu día. En camino."
+      message="Talk to Klara — ask, get suggestions, fine-tune your day. On its way."
     />
   );
 }
