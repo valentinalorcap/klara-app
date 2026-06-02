@@ -4,6 +4,7 @@ import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { EmptyTab } from '@/components/EmptyTab';
 import { GlassCard } from '@/components/GlassCard';
+import { StaggerList, StaggerItem } from '@/components/StaggerList';
 
 export default async function ProductsPage() {
   const session = await auth();
@@ -37,11 +38,14 @@ export default async function ProductsPage() {
           />
         </div>
       ) : (
-        <ul className="mt-8 space-y-3">
+        <StaggerList className="mt-8 space-y-3">
           {products.map((p) => (
-            <li key={p.id}>
+            <StaggerItem key={p.id}>
               <Link href={`/products/${p.id}/edit`} className="block">
-                <GlassCard className="p-4 transition hover:border-white/20 active:scale-[0.99]">
+                <GlassCard
+                  noAnimate
+                  className="p-4 transition hover:border-white/20 active:scale-[0.99]"
+                >
                   <div className="flex items-baseline justify-between gap-3">
                     <div className="min-w-0">
                       <p className="truncate text-sm font-semibold text-white">{p.name}</p>
@@ -62,9 +66,9 @@ export default async function ProductsPage() {
                   </p>
                 </GlassCard>
               </Link>
-            </li>
+            </StaggerItem>
           ))}
-        </ul>
+        </StaggerList>
       )}
     </main>
   );
