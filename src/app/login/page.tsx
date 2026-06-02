@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 
 export default async function LoginPage() {
   const session = await auth();
-  if (session?.user) redirect('/dashboard');
+  if (session?.user) redirect('/today');
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-neutral-50 px-6">
@@ -16,7 +16,7 @@ export default async function LoginPage() {
         <form
           action={async () => {
             'use server';
-            await signIn('google', { redirectTo: '/dashboard' });
+            await signIn('google', { redirectTo: '/today' });
           }}
         >
           <button

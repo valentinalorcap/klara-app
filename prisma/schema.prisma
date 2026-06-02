@@ -22,6 +22,7 @@ model User {
 
   accounts Account[]
   sessions Session[]
+  products Product[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -61,4 +62,27 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+// ---------- Klara domain ----------
+
+/// A food product the user logs (e.g. "Skyr Sancor", "Salsa Chipotle Heinz").
+/// All macros are stored per 100g; actual portions are computed at log time.
+model Product {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name  String
+  brand String?
+
+  kcalPer100g    Float
+  proteinPer100g Float
+  carbsPer100g   Float
+  fatPer100g     Float
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
 }

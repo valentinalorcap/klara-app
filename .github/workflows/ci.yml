@@ -12,6 +12,8 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
+      # Opt into Node 24 for JavaScript actions (becomes default 2026-06-16).
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
       # Dummy values so the build step doesn't fail when reading env vars.
       # Real secrets live in Vercel and are NOT needed for static analysis.
       DATABASE_URL: 'postgresql://dummy:dummy@localhost:5432/dummy'
