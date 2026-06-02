@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  verify:
+    name: lint · typecheck · test · build
+    runs-on: ubuntu-latest
+
+    env:
+      # Dummy values so the build step doesn't fail when reading env vars.
+      # Real secrets live in Vercel and are NOT needed for static analysis.
+      DATABASE_URL: 'postgresql://dummy:dummy@localhost:5432/dummy'
+      DIRECT_URL: 'postgresql://dummy:dummy@localhost:5432/dummy'
+      AUTH_SECRET: 'ci-only-dummy-secret-not-used-anywhere'
+      AUTH_GOOGLE_ID: 'dummy-client-id'
+      AUTH_GOOGLE_SECRET: 'dummy-client-secret'
+      ANTHROPIC_API_KEY: 'sk-ant-dummy'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Format check
+        run: npm run format:check
+
+      - name: Unit tests (Vitest)
+        run: npm test
+
+      - name: Build
+        run: npm run build
