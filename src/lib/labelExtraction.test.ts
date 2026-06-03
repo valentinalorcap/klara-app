@@ -34,8 +34,9 @@ describe('extractedLabelSchema', () => {
   });
 
   it('rejects when a required macro is missing', () => {
-    const { proteinPer100g: _drop, ...rest } = validAi;
-    const result = extractedLabelSchema.safeParse(rest);
+    const incomplete: Record<string, unknown> = { ...validAi };
+    delete incomplete.proteinPer100g;
+    const result = extractedLabelSchema.safeParse(incomplete);
     expect(result.success).toBe(false);
   });
 
