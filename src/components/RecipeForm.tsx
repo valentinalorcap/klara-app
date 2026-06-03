@@ -145,18 +145,7 @@ export function RecipeForm({
       />
 
       <GlassCard className="relative z-10 space-y-4 p-5">
-        <div className="flex items-baseline justify-between">
-          <p className="text-xs font-medium tracking-wider text-neutral-400 uppercase">
-            Ingredients
-          </p>
-          <button
-            type="button"
-            onClick={addRow}
-            className="inline-flex items-center gap-1 text-xs font-medium text-[var(--accent)] transition hover:text-[var(--accent-hover)]"
-          >
-            <Plus size={14} /> Add
-          </button>
-        </div>
+        <p className="text-xs font-medium tracking-wider text-neutral-400 uppercase">Ingredients</p>
 
         {rows.map((row, i) => (
           <div key={i} className="space-y-2">
@@ -238,6 +227,14 @@ export function RecipeForm({
         {state.fieldErrors?.ingredients ? (
           <p className="text-xs text-[var(--danger)]">{state.fieldErrors.ingredients}</p>
         ) : null}
+
+        <button
+          type="button"
+          onClick={addRow}
+          className="flex w-full items-center justify-center gap-1.5 rounded-2xl border border-dashed border-white/15 px-4 py-3 text-xs font-medium text-[var(--accent)] transition hover:border-[var(--accent)]/60 hover:bg-[var(--accent)]/5"
+        >
+          <Plus size={14} /> Add ingredient
+        </button>
       </GlassCard>
 
       <GlassCard className="space-y-3 p-5">
