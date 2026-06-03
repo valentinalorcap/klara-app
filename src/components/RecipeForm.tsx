@@ -4,7 +4,7 @@ import { useActionState, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { Trash2, Plus } from 'lucide-react';
 import { GlassCard } from './GlassCard';
-import { IngredientPicker, type ProductOption } from './IngredientPicker';
+import { IngredientPicker, type ProductOption, type LibraryItem } from './IngredientPicker';
 import { computeRecipeTotals, perPortion } from '@/lib/recipes';
 import type { RecipeFormState } from '@/app/(app)/recipes/actions';
 
@@ -76,6 +76,11 @@ export function RecipeForm({
           fatPer100g: i.fatPer100g,
         }))
       : [emptyRow()],
+  );
+
+  const productsAsItems = useMemo<LibraryItem[]>(
+    () => products.map((p) => ({ kind: 'product', ...p })),
+    [products],
   );
 
   const resolvedRows = useMemo(
@@ -153,21 +158,24 @@ export function RecipeForm({
               <div className="min-w-0 flex-1">
                 <IngredientPicker
                   value={row.name}
-                  products={products}
+                  items={productsAsItems}
                   onNameChange={(name) =>
                     updateRow(i, { name, resolved: row.resolved && row.name === name })
                   }
-                  onSelectProduct={(p) =>
+                  onSelectItem={(item) => {
+                    // Recipes aren't passed in for the recipe form, so this is
+                    // always a product.
+                    if (item.kind !== 'product') return;
                     updateRow(i, {
-                      name: p.name,
-                      productId: p.id,
+                      name: item.name,
+                      productId: item.id,
                       resolved: true,
-                      kcalPer100g: p.kcalPer100g,
-                      proteinPer100g: p.proteinPer100g,
-                      carbsPer100g: p.carbsPer100g,
-                      fatPer100g: p.fatPer100g,
-                    })
-                  }
+                      kcalPer100g: item.kcalPer100g,
+                      proteinPer100g: item.proteinPer100g,
+                      carbsPer100g: item.carbsPer100g,
+                      fatPer100g: item.fatPer100g,
+                    });
+                  }}
                   onAiResolved={(data) =>
                     updateRow(i, {
                       name: data.canonicalName,

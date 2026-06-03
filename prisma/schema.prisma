@@ -24,6 +24,7 @@ model User {
   sessions Session[]
   products Product[]
   recipes  Recipe[]
+  meals    Meal[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -90,6 +91,7 @@ model Product {
   updatedAt DateTime @updatedAt
 
   recipeIngredients RecipeIngredient[]
+  mealEntries       MealEntry[]
 
   @@index([userId])
 }
@@ -111,6 +113,7 @@ model Recipe {
   totalFat     Float
 
   ingredients RecipeIngredient[]
+  mealEntries MealEntry[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -140,4 +143,61 @@ model RecipeIngredient {
 
   @@index([recipeId])
   @@index([productId])
+}
+
+enum MealType {
+  BREAKFAST
+  LUNCH
+  DINNER
+  SNACK
+  PREWORKOUT
+  OTHER
+}
+
+/// One meal logged on a specific day — breakfast, lunch, etc. Holds one
+/// or more entries (each entry is a food + grams).
+model Meal {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  date  DateTime @db.Date
+  type  MealType
+  notes String?
+
+  entries MealEntry[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, date])
+}
+
+/// A single food line logged inside a meal. Per-100g macros are stored
+/// as a snapshot so editing or deleting the source product/recipe later
+/// doesn't silently change the user's history. The optional FKs are
+/// traceability hints only — they go to NULL on source delete.
+model MealEntry {
+  id     String @id @default(cuid())
+  mealId String
+  meal   Meal   @relation(fields: [mealId], references: [id], onDelete: Cascade)
+
+  productId String?
+  product   Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  recipeId  String?
+  recipe    Recipe?  @relation(fields: [recipeId], references: [id], onDelete: SetNull)
+
+  name  String
+  grams Float
+
+  kcalPer100g    Float
+  proteinPer100g Float
+  carbsPer100g   Float
+  fatPer100g     Float
+
+  createdAt DateTime @default(now())
+
+  @@index([mealId])
+  @@index([productId])
+  @@index([recipeId])
 }
