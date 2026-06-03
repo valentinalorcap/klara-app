@@ -101,7 +101,7 @@ export function IngredientPicker({
       </label>
 
       {open ? (
-        <div className="absolute top-full right-0 left-0 z-20 mt-1 max-h-72 overflow-y-auto rounded-2xl border border-white/10 bg-[#1a1633]/95 p-1 shadow-2xl backdrop-blur-xl">
+        <div className="absolute top-full left-0 z-20 mt-1 max-h-72 w-[min(20rem,calc(100vw-3rem))] overflow-y-auto rounded-2xl border border-white/10 bg-[#1a1633]/95 p-1 shadow-2xl backdrop-blur-xl">
           {matches.slice(0, 6).map((p) => (
             <button
               key={p.id}
@@ -110,15 +110,12 @@ export function IngredientPicker({
                 e.preventDefault(); // keep focus on input
                 pickProduct(p);
               }}
-              className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition hover:bg-white/5"
+              className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left transition hover:bg-white/5"
             >
               <Package size={14} className="shrink-0 text-neutral-400" />
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm text-white">{p.name}</p>
-                {p.brand ? <p className="truncate text-xs text-neutral-500">{p.brand}</p> : null}
-              </div>
-              <p className="shrink-0 text-xs text-neutral-400 tabular-nums">
-                {Math.round(p.kcalPer100g)}/100g
+              <p className="min-w-0 flex-1 truncate text-sm text-white">
+                {p.name}
+                {p.brand ? <span className="text-neutral-500"> · {p.brand}</span> : null}
               </p>
             </button>
           ))}
