@@ -101,7 +101,7 @@ export function IngredientPicker({
       </label>
 
       {open ? (
-        <div className="absolute top-full left-0 z-20 mt-1 max-h-72 w-[min(20rem,calc(100vw-3rem))] overflow-y-auto rounded-2xl border border-white/10 bg-[#1a1633]/95 p-1 shadow-2xl backdrop-blur-xl">
+        <div className="absolute top-full left-0 z-20 mt-1 max-h-72 w-[min(20rem,calc(100vw-3rem))] overflow-y-auto rounded-2xl border border-white/10 bg-[#1a1633]/95 p-2 shadow-2xl backdrop-blur-xl">
           {matches.slice(0, 6).map((p) => (
             <button
               key={p.id}
