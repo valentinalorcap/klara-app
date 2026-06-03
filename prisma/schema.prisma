@@ -23,6 +23,7 @@ model User {
   accounts Account[]
   sessions Session[]
   products Product[]
+  recipes  Recipe[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -88,5 +89,45 @@ model Product {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  recipeIngredients RecipeIngredient[]
+
   @@index([userId])
+}
+
+/// A user-defined recipe (e.g. "banana bread") composed of ingredients from
+/// the user's Product library. Totals are denormalized — recomputed on save
+/// from the ingredients — so the list view doesn't have to join + sum.
+model Recipe {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name     String
+  portions Int
+
+  totalKcal    Float
+  totalProtein Float
+  totalCarbs   Float
+  totalFat     Float
+
+  ingredients RecipeIngredient[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model RecipeIngredient {
+  id       String @id @default(cuid())
+  recipeId String
+  recipe   Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  grams Float
+
+  @@index([recipeId])
+  @@index([productId])
 }
