@@ -1,0 +1,165 @@
+'use client';
+
+import { useState, useEffect, useRef, useTransition } from 'react';
+import { Sparkles, Package, Loader2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { suggestIngredientMacros } from '@/app/(app)/recipes/lookup-actions';
+
+export type ProductOption = {
+  id: string;
+  name: string;
+  brand: string | null;
+  kcalPer100g: number;
+  proteinPer100g: number;
+  carbsPer100g: number;
+  fatPer100g: number;
+};
+
+type IngredientPickerProps = {
+  value: string;
+  products: ProductOption[];
+  onNameChange: (name: string) => void;
+  onSelectProduct: (product: ProductOption) => void;
+  onAiResolved: (data: {
+    canonicalName: string;
+    kcalPer100g: number;
+    proteinPer100g: number;
+    carbsPer100g: number;
+    fatPer100g: number;
+    estimatedGrams?: number;
+  }) => void;
+  onError?: (msg: string) => void;
+};
+
+export function IngredientPicker({
+  value,
+  products,
+  onNameChange,
+  onSelectProduct,
+  onAiResolved,
+  onError,
+}: IngredientPickerProps) {
+  const [open, setOpen] = useState(false);
+  const [pending, startTransition] = useTransition();
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function onDocClick(e: MouseEvent) {
+      if (!wrapperRef.current?.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener('mousedown', onDocClick);
+    return () => document.removeEventListener('mousedown', onDocClick);
+  }, [open]);
+
+  const query = value.trim().toLowerCase();
+  const matches = query
+    ? products.filter((p) => `${p.name} ${p.brand ?? ''}`.toLowerCase().includes(query))
+    : products;
+  const showAiOption = query.length >= 2;
+
+  function pickProduct(p: ProductOption) {
+    onSelectProduct(p);
+    setOpen(false);
+  }
+
+  function askKlara() {
+    if (!showAiOption || pending) return;
+    startTransition(async () => {
+      const result = await suggestIngredientMacros(value);
+      if (!result.ok) {
+        onError?.(result.error);
+        return;
+      }
+      onAiResolved({
+        canonicalName: result.data.canonicalName ?? value.trim(),
+        kcalPer100g: result.data.kcalPer100g,
+        proteinPer100g: result.data.proteinPer100g,
+        carbsPer100g: result.data.carbsPer100g,
+        fatPer100g: result.data.fatPer100g,
+        estimatedGrams: result.data.estimatedGrams,
+      });
+      setOpen(false);
+    });
+  }
+
+  return (
+    <div ref={wrapperRef} className="relative">
+      <label className="block">
+        <span className="text-xs text-neutral-400">Ingredient</span>
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => {
+            onNameChange(e.target.value);
+            if (!open) setOpen(true);
+          }}
+          onFocus={() => setOpen(true)}
+          placeholder="Oats, banana, your yogurt..."
+          className="mt-1 block w-full rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm text-white transition placeholder:text-neutral-500 focus:bg-white/[0.08] focus:ring-2 focus:ring-[var(--accent)]/60 focus:outline-none"
+        />
+      </label>
+
+      {open ? (
+        <div className="absolute top-full right-0 left-0 z-20 mt-1 max-h-72 overflow-y-auto rounded-2xl border border-white/10 bg-[#1a1633]/95 p-1 shadow-2xl backdrop-blur-xl">
+          {matches.slice(0, 6).map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              onMouseDown={(e) => {
+                e.preventDefault(); // keep focus on input
+                pickProduct(p);
+              }}
+              className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition hover:bg-white/5"
+            >
+              <Package size={14} className="shrink-0 text-neutral-400" />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm text-white">{p.name}</p>
+                {p.brand ? <p className="truncate text-xs text-neutral-500">{p.brand}</p> : null}
+              </div>
+              <p className="shrink-0 text-xs text-neutral-400 tabular-nums">
+                {Math.round(p.kcalPer100g)}/100g
+              </p>
+            </button>
+          ))}
+
+          {matches.length > 0 && showAiOption ? <Divider /> : null}
+
+          {showAiOption ? (
+            <button
+              type="button"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                askKlara();
+              }}
+              disabled={pending}
+              className={cn(
+                'flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition',
+                pending ? 'opacity-60' : 'hover:bg-[var(--accent)]/10',
+              )}
+            >
+              {pending ? (
+                <Loader2 size={14} className="shrink-0 animate-spin text-[var(--accent)]" />
+              ) : (
+                <Sparkles size={14} className="shrink-0 text-[var(--accent)]" />
+              )}
+              <p className="min-w-0 flex-1 truncate text-sm text-[var(--accent)]">
+                {pending ? 'Asking Klara…' : `Ask Klara about "${value.trim()}"`}
+              </p>
+            </button>
+          ) : null}
+
+          {matches.length === 0 && !showAiOption ? (
+            <p className="px-3 py-3 text-xs text-neutral-500">
+              Type at least 2 characters to search or ask Klara.
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function Divider() {
+  return <div className="my-1 h-px bg-white/10" />;
+}
