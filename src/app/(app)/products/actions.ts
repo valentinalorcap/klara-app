@@ -22,6 +22,7 @@ function parseForm(formData: FormData) {
     proteinPer100g: formData.get('proteinPer100g'),
     carbsPer100g: formData.get('carbsPer100g'),
     fatPer100g: formData.get('fatPer100g'),
+    suggestedPortionGrams: formData.get('suggestedPortionGrams'),
   });
 }
 

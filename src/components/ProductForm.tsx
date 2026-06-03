@@ -12,6 +12,7 @@ type Product = {
   proteinPer100g: number;
   carbsPer100g: number;
   fatPer100g: number;
+  suggestedPortionGrams: number | null;
 };
 
 export function ProductForm({
@@ -82,6 +83,16 @@ export function ProductForm({
           required
         />
       </GlassCard>
+
+      <Field
+        label="Suggested portion (g / ml — optional)"
+        name="suggestedPortionGrams"
+        type="number"
+        step="1"
+        placeholder="e.g. 150"
+        defaultValue={initialValues?.suggestedPortionGrams ?? ''}
+        error={state.fieldErrors?.suggestedPortionGrams}
+      />
 
       {state.formError ? (
         <p className="text-sm text-[var(--danger)]" role="alert">
