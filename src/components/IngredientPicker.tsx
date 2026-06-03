@@ -20,15 +20,14 @@ type IngredientPickerProps = {
   products: ProductOption[];
   onNameChange: (name: string) => void;
   onSelectProduct: (product: ProductOption) => void;
-  onAiResolved: (
-    canonicalName: string,
-    macros: {
-      kcalPer100g: number;
-      proteinPer100g: number;
-      carbsPer100g: number;
-      fatPer100g: number;
-    },
-  ) => void;
+  onAiResolved: (data: {
+    canonicalName: string;
+    kcalPer100g: number;
+    proteinPer100g: number;
+    carbsPer100g: number;
+    fatPer100g: number;
+    estimatedGrams?: number;
+  }) => void;
   onError?: (msg: string) => void;
 };
 
@@ -72,11 +71,13 @@ export function IngredientPicker({
         onError?.(result.error);
         return;
       }
-      onAiResolved(result.data.canonicalName ?? value.trim(), {
+      onAiResolved({
+        canonicalName: result.data.canonicalName ?? value.trim(),
         kcalPer100g: result.data.kcalPer100g,
         proteinPer100g: result.data.proteinPer100g,
         carbsPer100g: result.data.carbsPer100g,
         fatPer100g: result.data.fatPer100g,
+        estimatedGrams: result.data.estimatedGrams,
       });
       setOpen(false);
     });

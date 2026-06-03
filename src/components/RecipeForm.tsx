@@ -179,12 +179,21 @@ export function RecipeForm({
                       fatPer100g: p.fatPer100g,
                     })
                   }
-                  onAiResolved={(canonical, macros) =>
+                  onAiResolved={(data) =>
                     updateRow(i, {
-                      name: canonical,
+                      name: data.canonicalName,
                       productId: undefined,
                       resolved: true,
-                      ...macros,
+                      kcalPer100g: data.kcalPer100g,
+                      proteinPer100g: data.proteinPer100g,
+                      carbsPer100g: data.carbsPer100g,
+                      fatPer100g: data.fatPer100g,
+                      // Only auto-fill grams if the user hasn't typed any yet —
+                      // respect manual input.
+                      grams:
+                        data.estimatedGrams && row.grams.trim() === ''
+                          ? String(data.estimatedGrams)
+                          : row.grams,
                     })
                   }
                   onError={(msg) => setRowError(msg)}
