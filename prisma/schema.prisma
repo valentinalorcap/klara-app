@@ -81,6 +81,10 @@ model Product {
   carbsPer100g   Float
   fatPer100g     Float
 
+  /// Optional "one portion" hint in grams (or ml — treated equivalently).
+  /// Comes from the nutrition label's "porción sugerida" / serving size.
+  suggestedPortionGrams Float?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

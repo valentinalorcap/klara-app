@@ -64,7 +64,7 @@ describe('productInputSchema', () => {
     expect(result.success).toBe(false);
     if (!result.success) {
       const nameIssue = result.error.issues.find((i) => i.path[0] === 'name');
-      expect(nameIssue?.message).toMatch(/obligatorio/i);
+      expect(nameIssue?.message).toMatch(/required/i);
     }
   });
 
@@ -75,6 +75,23 @@ describe('productInputSchema', () => {
 
   it('rejects implausibly high macros', () => {
     const result = productInputSchema.safeParse({ ...validInput, proteinPer100g: '300' });
+    expect(result.success).toBe(false);
+  });
+
+  it('accepts an empty suggestedPortionGrams as undefined', () => {
+    const result = productInputSchema.safeParse({ ...validInput, suggestedPortionGrams: '' });
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.suggestedPortionGrams).toBeUndefined();
+  });
+
+  it('parses suggestedPortionGrams from a numeric string', () => {
+    const result = productInputSchema.safeParse({ ...validInput, suggestedPortionGrams: '150' });
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.suggestedPortionGrams).toBe(150);
+  });
+
+  it('rejects a zero or negative suggested portion', () => {
+    const result = productInputSchema.safeParse({ ...validInput, suggestedPortionGrams: '0' });
     expect(result.success).toBe(false);
   });
 });

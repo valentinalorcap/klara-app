@@ -64,6 +64,11 @@ export default async function ProductsPage() {
                     P {p.proteinPer100g.toFixed(1)}g · C {p.carbsPer100g.toFixed(1)}g · F{' '}
                     {p.fatPer100g.toFixed(1)}g
                   </p>
+                  {p.suggestedPortionGrams ? (
+                    <p className="mt-1 text-xs text-[var(--accent)]">
+                      {p.suggestedPortionGrams}g per portion
+                    </p>
+                  ) : null}
                 </GlassCard>
               </Link>
             </StaggerItem>
