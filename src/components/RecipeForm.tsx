@@ -204,7 +204,7 @@ export function RecipeForm({
                 onClick={() => removeRow(i)}
                 aria-label="Remove ingredient"
                 disabled={rows.length === 1}
-                className="-mr-2 flex h-10 w-8 shrink-0 items-center justify-end self-end text-neutral-400 transition hover:text-[var(--danger)] disabled:opacity-30"
+                className="-mr-2 flex h-10 w-8 shrink-0 items-center justify-center self-end text-neutral-400 transition hover:text-[var(--danger)] disabled:opacity-30"
               >
                 <Trash2 size={16} />
               </button>
