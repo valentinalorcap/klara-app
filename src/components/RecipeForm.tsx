@@ -149,7 +149,7 @@ export function RecipeForm({
 
         {rows.map((row, i) => (
           <div key={i} className="space-y-2">
-            <div className="flex items-end gap-2">
+            <div className="flex items-end gap-1.5">
               <div className="min-w-0 flex-1">
                 <IngredientPicker
                   value={row.name}
@@ -188,7 +188,7 @@ export function RecipeForm({
                   onError={(msg) => setRowError(msg)}
                 />
               </div>
-              <label className="block w-24">
+              <label className="block w-16 shrink-0">
                 <span className="text-xs text-neutral-400">Grams</span>
                 <input
                   type="number"
@@ -196,7 +196,7 @@ export function RecipeForm({
                   value={row.grams}
                   onChange={(e) => updateRow(i, { grams: e.target.value })}
                   placeholder="100"
-                  className="mt-1 block w-full rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm text-white placeholder:text-neutral-500 focus:bg-white/[0.08] focus:ring-2 focus:ring-[var(--accent)]/60 focus:outline-none"
+                  className="mt-1 block w-full rounded-2xl border border-white/10 bg-white/[0.04] px-2 py-2.5 text-center text-sm text-white tabular-nums placeholder:text-neutral-500 focus:bg-white/[0.08] focus:ring-2 focus:ring-[var(--accent)]/60 focus:outline-none"
                 />
               </label>
               <button
@@ -204,7 +204,7 @@ export function RecipeForm({
                 onClick={() => removeRow(i)}
                 aria-label="Remove ingredient"
                 disabled={rows.length === 1}
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-neutral-400 transition hover:bg-white/5 hover:text-[var(--danger)] disabled:opacity-30"
+                className="-mr-2 flex h-10 w-8 shrink-0 items-center justify-center self-end text-neutral-400 transition hover:text-[var(--danger)] disabled:opacity-30"
               >
                 <Trash2 size={16} />
               </button>
