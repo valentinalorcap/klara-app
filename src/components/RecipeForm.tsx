@@ -144,7 +144,7 @@ export function RecipeForm({
         error={state.fieldErrors?.portions}
       />
 
-      <GlassCard className="space-y-4 p-5">
+      <GlassCard className="relative z-10 space-y-4 p-5">
         <div className="flex items-baseline justify-between">
           <p className="text-xs font-medium tracking-wider text-neutral-400 uppercase">
             Ingredients

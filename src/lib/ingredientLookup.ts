@@ -49,13 +49,29 @@ whole wheat bread", "half an avocado").
 Extract three things:
 
 1. **canonicalName** — the base food in clean form (e.g. "Banana", "Egg",
-   "Whole wheat bread"). Don't include the count in the name.
+   "Whole wheat bread"). Don't include the count or size in the name.
 2. **Per-100g macros** (or per-100ml for liquids). Use widely accepted
-   averages — these values will be used in a personal recipe, not for
-   medical decisions. Round to one decimal place.
-3. **estimatedGrams** — ONLY when the user implied a count or quantity
-   (e.g. "2 medium bananas" → ~240, "1 egg" → ~50). If the user just named
-   the food without a quantity, omit this field.
+   averages from standard nutrition databases (USDA, etc.). Round to
+   one decimal place.
+3. **estimatedGrams** — ONLY when the user implied a count or quantity.
+   Use these standard reference weights and multiply by the count:
 
-Use the save_ingredient_macros tool to return the result. If the input is
-not a recognizable food, omit the tool call.`;
+   Bananas:    small ~100g    medium ~120g    large ~140g    (default: medium)
+   Eggs:       small ~45g     medium ~50g     large ~55g     (default: large = 55g)
+   Bread:      thin slice ~25g  regular slice ~30g  thick ~40g
+   Avocado:    half ~100g    whole ~200g
+   Apple:      small ~150g    medium ~180g    large ~220g
+   Orange:     small ~130g    medium ~160g    large ~200g
+   Tomato:     cherry ~10g    regular ~120g    large ~180g
+   Potato:     small ~100g    medium ~170g    large ~300g
+   Egg whites: ~30g each
+
+   For other foods or units not listed (cups, tablespoons, etc.), use
+   standard USDA reference values.
+
+   If the user just named the food without a count or unit, OMIT this
+   field — don't guess a default amount.
+
+Be consistent: the same input string should always give the same numeric
+output. Use the save_ingredient_macros tool to return the result. If the
+input is not a recognizable food, omit the tool call.`;

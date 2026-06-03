@@ -31,9 +31,20 @@ export async function suggestIngredientMacros(name: string): Promise<SuggestIngr
   let response;
   try {
     response = await anthropic.messages.create({
-      model: MODELS.haiku,
+      model: MODELS.sonnet,
       max_tokens: 256,
-      system: INGREDIENT_LOOKUP_SYSTEM,
+      // temperature 0 = deterministic; the same input always returns the same
+      // numbers, so "3 plátanos grandes" doesn't waver between 360 and 420.
+      temperature: 0,
+      system: [
+        {
+          type: 'text',
+          text: INGREDIENT_LOOKUP_SYSTEM,
+          // The system prompt is stable across every lookup, so caching it
+          // keeps cost in check while we're on Sonnet.
+          cache_control: { type: 'ephemeral' },
+        },
+      ],
       tools: [ingredientLookupTool],
       tool_choice: { type: 'tool', name: ingredientLookupTool.name },
       messages: [{ role: 'user', content: cleaned }],
