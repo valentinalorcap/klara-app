@@ -71,12 +71,11 @@ export function ScanFlow() {
             ref={fileInputRef}
             type="file"
             accept="image/*"
-            capture="environment"
             onChange={onFileChange}
             className="sr-only"
           />
           <span className="inline-flex w-full cursor-pointer items-center justify-center rounded-2xl bg-[var(--accent)] px-4 py-3.5 text-sm font-semibold text-white shadow-[0_8px_24px_-8px_var(--accent-glow)] transition hover:bg-[var(--accent-hover)] active:scale-[0.98]">
-            Take photo
+            Take photo or choose one
           </span>
         </label>
       </GlassCard>
