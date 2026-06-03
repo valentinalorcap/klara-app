@@ -4,24 +4,48 @@ import { useActionState, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { Trash2, Plus } from 'lucide-react';
 import { GlassCard } from './GlassCard';
-import { computeRecipeTotals, perPortion, type ProductMacros } from '@/lib/recipes';
+import { IngredientPicker, type ProductOption } from './IngredientPicker';
+import { computeRecipeTotals, perPortion } from '@/lib/recipes';
 import type { RecipeFormState } from '@/app/(app)/recipes/actions';
 
-type ProductOption = ProductMacros & {
-  id: string;
+type IngredientRow = {
+  /** The displayed/typed name. Always present after the user types or picks. */
   name: string;
-  brand: string | null;
+  /** Stored as string while editing so the input can be cleared. */
+  grams: string;
+  /** Whether macros have been filled (by AI or library). */
+  resolved: boolean;
+  productId?: string;
+  kcalPer100g: number;
+  proteinPer100g: number;
+  carbsPer100g: number;
+  fatPer100g: number;
 };
 
-type IngredientRow = {
-  productId: string;
-  grams: string; // kept as string while editing so empty input is allowed
-};
+function emptyRow(): IngredientRow {
+  return {
+    name: '',
+    grams: '',
+    resolved: false,
+    kcalPer100g: 0,
+    proteinPer100g: 0,
+    carbsPer100g: 0,
+    fatPer100g: 0,
+  };
+}
 
 type InitialRecipe = {
   name: string;
   portions: number;
-  ingredients: { productId: string; grams: number }[];
+  ingredients: {
+    name: string;
+    grams: number;
+    productId: string | null;
+    kcalPer100g: number;
+    proteinPer100g: number;
+    carbsPer100g: number;
+    fatPer100g: number;
+  }[];
 };
 
 export function RecipeForm({
@@ -38,24 +62,37 @@ export function RecipeForm({
   const [state, formAction, pending] = useActionState<RecipeFormState, FormData>(action, {});
   const [name, setName] = useState(initialValues?.name ?? '');
   const [portions, setPortions] = useState(String(initialValues?.portions ?? 1));
+  const [rowError, setRowError] = useState<string | null>(null);
   const [rows, setRows] = useState<IngredientRow[]>(
     initialValues?.ingredients.length
-      ? initialValues.ingredients.map((i) => ({ productId: i.productId, grams: String(i.grams) }))
-      : [{ productId: '', grams: '' }],
+      ? initialValues.ingredients.map((i) => ({
+          name: i.name,
+          grams: String(i.grams),
+          resolved: true,
+          productId: i.productId ?? undefined,
+          kcalPer100g: i.kcalPer100g,
+          proteinPer100g: i.proteinPer100g,
+          carbsPer100g: i.carbsPer100g,
+          fatPer100g: i.fatPer100g,
+        }))
+      : [emptyRow()],
   );
 
-  const productsById = useMemo(
-    () => Object.fromEntries(products.map((p) => [p.id, p])),
-    [products],
+  const resolvedRows = useMemo(
+    () =>
+      rows
+        .filter((r) => r.resolved && r.name.trim() && Number(r.grams) > 0)
+        .map((r) => ({
+          name: r.name,
+          grams: Number(r.grams),
+          kcalPer100g: r.kcalPer100g,
+          proteinPer100g: r.proteinPer100g,
+          carbsPer100g: r.carbsPer100g,
+          fatPer100g: r.fatPer100g,
+        })),
+    [rows],
   );
-
-  const totals = useMemo(() => {
-    const parsed = rows
-      .map((r) => ({ productId: r.productId, grams: Number(r.grams) }))
-      .filter((r) => r.productId && Number.isFinite(r.grams) && r.grams > 0);
-    return computeRecipeTotals(parsed, productsById);
-  }, [rows, productsById]);
-
+  const totals = useMemo(() => computeRecipeTotals(resolvedRows), [resolvedRows]);
   const portionsNum = Number(portions) || 1;
   const perPortionMacros = perPortion(totals, portionsNum);
 
@@ -63,34 +100,27 @@ export function RecipeForm({
     setRows((prev) => prev.map((r, i) => (i === index ? { ...r, ...patch } : r)));
   }
   function addRow() {
-    setRows((prev) => [...prev, { productId: '', grams: '' }]);
+    setRowError(null);
+    setRows((prev) => [...prev, emptyRow()]);
   }
   function removeRow(index: number) {
     setRows((prev) => (prev.length > 1 ? prev.filter((_, i) => i !== index) : prev));
   }
 
-  // Server expects `ingredients` as JSON string.
+  // Server expects `ingredients` as JSON.
   const ingredientsJson = JSON.stringify(
     rows
-      .map((r) => ({ productId: r.productId, grams: Number(r.grams) }))
-      .filter((r) => r.productId && Number.isFinite(r.grams) && r.grams > 0),
+      .filter((r) => r.resolved && r.name.trim() && Number(r.grams) > 0)
+      .map((r) => ({
+        name: r.name.trim(),
+        grams: Number(r.grams),
+        productId: r.productId,
+        kcalPer100g: r.kcalPer100g,
+        proteinPer100g: r.proteinPer100g,
+        carbsPer100g: r.carbsPer100g,
+        fatPer100g: r.fatPer100g,
+      })),
   );
-
-  if (products.length === 0) {
-    return (
-      <GlassCard className="p-8 text-center">
-        <p className="text-sm leading-relaxed text-neutral-300">
-          You need at least one product to build a recipe.
-        </p>
-        <Link
-          href="/products/new"
-          className="mt-5 inline-flex w-full items-center justify-center rounded-2xl bg-[var(--accent)] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[var(--accent-hover)]"
-        >
-          Add a product first
-        </Link>
-      </GlassCard>
-    );
-  }
 
   return (
     <form action={formAction} className="space-y-5">
@@ -114,7 +144,7 @@ export function RecipeForm({
         error={state.fieldErrors?.portions}
       />
 
-      <GlassCard className="space-y-3 p-5">
+      <GlassCard className="space-y-4 p-5">
         <div className="flex items-baseline justify-between">
           <p className="text-xs font-medium tracking-wider text-neutral-400 uppercase">
             Ingredients
@@ -129,46 +159,73 @@ export function RecipeForm({
         </div>
 
         {rows.map((row, i) => (
-          <div key={i} className="flex items-end gap-2">
-            <label className="block flex-1">
-              <span className="text-xs text-neutral-400">Product</span>
-              <select
-                value={row.productId}
-                onChange={(e) => updateRow(i, { productId: e.target.value })}
-                className="mt-1 block w-full rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm text-white focus:bg-white/[0.08] focus:ring-2 focus:ring-[var(--accent)]/60 focus:outline-none"
+          <div key={i} className="space-y-2">
+            <div className="flex items-end gap-2">
+              <div className="min-w-0 flex-1">
+                <IngredientPicker
+                  value={row.name}
+                  products={products}
+                  onNameChange={(name) =>
+                    updateRow(i, { name, resolved: row.resolved && row.name === name })
+                  }
+                  onSelectProduct={(p) =>
+                    updateRow(i, {
+                      name: p.name,
+                      productId: p.id,
+                      resolved: true,
+                      kcalPer100g: p.kcalPer100g,
+                      proteinPer100g: p.proteinPer100g,
+                      carbsPer100g: p.carbsPer100g,
+                      fatPer100g: p.fatPer100g,
+                    })
+                  }
+                  onAiResolved={(canonical, macros) =>
+                    updateRow(i, {
+                      name: canonical,
+                      productId: undefined,
+                      resolved: true,
+                      ...macros,
+                    })
+                  }
+                  onError={(msg) => setRowError(msg)}
+                />
+              </div>
+              <label className="block w-24">
+                <span className="text-xs text-neutral-400">Grams</span>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  value={row.grams}
+                  onChange={(e) => updateRow(i, { grams: e.target.value })}
+                  placeholder="100"
+                  className="mt-1 block w-full rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm text-white placeholder:text-neutral-500 focus:bg-white/[0.08] focus:ring-2 focus:ring-[var(--accent)]/60 focus:outline-none"
+                />
+              </label>
+              <button
+                type="button"
+                onClick={() => removeRow(i)}
+                aria-label="Remove ingredient"
+                disabled={rows.length === 1}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-neutral-400 transition hover:bg-white/5 hover:text-[var(--danger)] disabled:opacity-30"
               >
-                <option value="">Pick a product</option>
-                {products.map((p) => (
-                  <option key={p.id} value={p.id} className="bg-[#1e1b4b]">
-                    {p.name}
-                    {p.brand ? ` · ${p.brand}` : ''}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="block w-24">
-              <span className="text-xs text-neutral-400">Grams</span>
-              <input
-                type="number"
-                inputMode="decimal"
-                value={row.grams}
-                onChange={(e) => updateRow(i, { grams: e.target.value })}
-                placeholder="100"
-                className="mt-1 block w-full rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm text-white placeholder:text-neutral-500 focus:bg-white/[0.08] focus:ring-2 focus:ring-[var(--accent)]/60 focus:outline-none"
-              />
-            </label>
-            <button
-              type="button"
-              onClick={() => removeRow(i)}
-              aria-label="Remove ingredient"
-              disabled={rows.length === 1}
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-neutral-400 transition hover:bg-white/5 hover:text-[var(--danger)] disabled:opacity-30"
-            >
-              <Trash2 size={16} />
-            </button>
+                <Trash2 size={16} />
+              </button>
+            </div>
+
+            {row.resolved ? (
+              <p className="pl-1 text-[11px] text-neutral-500 tabular-nums">
+                {Math.round(row.kcalPer100g)} kcal · P {row.proteinPer100g.toFixed(1)}g · C{' '}
+                {row.carbsPer100g.toFixed(1)}g · F {row.fatPer100g.toFixed(1)}g · per 100g
+              </p>
+            ) : null}
           </div>
         ))}
 
+        {rowError ? (
+          <p className="text-xs text-[var(--danger)]" role="alert">
+            {rowError}
+          </p>
+        ) : null}
         {state.fieldErrors?.ingredients ? (
           <p className="text-xs text-[var(--danger)]">{state.fieldErrors.ingredients}</p>
         ) : null}

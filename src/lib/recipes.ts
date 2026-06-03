@@ -1,10 +1,22 @@
 import { z } from 'zod';
 import { macrosForGrams } from './products';
 
-/** A single line in a recipe: a product reference + how many grams of it. */
-export const recipeIngredientSchema = z.object({
-  productId: z.string().min(1, 'Pick a product'),
+/** Per-100g macros embedded on every ingredient (snapshot). */
+export const ingredientMacrosSchema = z.object({
+  kcalPer100g: z.coerce.number().min(0).max(2000),
+  proteinPer100g: z.coerce.number().min(0).max(200),
+  carbsPer100g: z.coerce.number().min(0).max(200),
+  fatPer100g: z.coerce.number().min(0).max(200),
+});
+
+export type IngredientMacros = z.infer<typeof ingredientMacrosSchema>;
+
+/** A single ingredient line in a recipe form. */
+export const recipeIngredientSchema = ingredientMacrosSchema.extend({
+  name: z.string().trim().min(1, 'Name is required').max(120),
   grams: z.coerce.number().positive('Must be greater than 0').max(10_000),
+  /** Optional reference to a user's product, when the ingredient came from the library. */
+  productId: z.string().min(1).optional(),
 });
 
 export type RecipeIngredientInput = z.infer<typeof recipeIngredientSchema>;
@@ -18,14 +30,6 @@ export const recipeInputSchema = z.object({
 
 export type RecipeInput = z.infer<typeof recipeInputSchema>;
 
-/** Per-100g macros for a product — the only fields the calculator needs. */
-export type ProductMacros = {
-  kcalPer100g: number;
-  proteinPer100g: number;
-  carbsPer100g: number;
-  fatPer100g: number;
-};
-
 /** What `computeRecipeTotals` returns. */
 export type RecipeTotals = {
   totalKcal: number;
@@ -35,19 +39,13 @@ export type RecipeTotals = {
 };
 
 /**
- * Sum each ingredient's macros for its grams. Pure and deterministic.
- * If a product is missing from `productsById` (e.g. it was deleted), that
- * ingredient contributes zero — the recipe still resolves to a number.
+ * Sum each ingredient's macros for its grams. Pure and deterministic —
+ * uses the macros stored on each ingredient, no external lookup needed.
  */
-export function computeRecipeTotals(
-  ingredients: RecipeIngredientInput[],
-  productsById: Record<string, ProductMacros>,
-): RecipeTotals {
+export function computeRecipeTotals(ingredients: RecipeIngredientInput[]): RecipeTotals {
   return ingredients.reduce<RecipeTotals>(
     (acc, ing) => {
-      const product = productsById[ing.productId];
-      if (!product) return acc;
-      const m = macrosForGrams(product, ing.grams);
+      const m = macrosForGrams(ing, ing.grams);
       acc.totalKcal += m.kcal;
       acc.totalProtein += m.protein;
       acc.totalCarbs += m.carbs;

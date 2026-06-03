@@ -1,24 +1,36 @@
 import { describe, it, expect } from 'vitest';
 import { computeRecipeTotals, perPortion, recipeInputSchema } from './recipes';
 
-const oats = { kcalPer100g: 380, proteinPer100g: 13, carbsPer100g: 60, fatPer100g: 7 };
-const cottage = { kcalPer100g: 70, proteinPer100g: 11, carbsPer100g: 3, fatPer100g: 1 };
-const banana = { kcalPer100g: 90, proteinPer100g: 1, carbsPer100g: 23, fatPer100g: 0.3 };
-
-const products = {
-  oats,
-  cottage,
-  banana,
+const oats = {
+  name: 'Oats',
+  kcalPer100g: 380,
+  proteinPer100g: 13,
+  carbsPer100g: 60,
+  fatPer100g: 7,
+};
+const cottage = {
+  name: 'Cottage cheese',
+  kcalPer100g: 70,
+  proteinPer100g: 11,
+  carbsPer100g: 3,
+  fatPer100g: 1,
+};
+const banana = {
+  name: 'Banana',
+  kcalPer100g: 90,
+  proteinPer100g: 1,
+  carbsPer100g: 23,
+  fatPer100g: 0.3,
 };
 
 describe('computeRecipeTotals', () => {
   it('returns zeros for an empty ingredient list', () => {
-    const totals = computeRecipeTotals([], products);
+    const totals = computeRecipeTotals([]);
     expect(totals).toEqual({ totalKcal: 0, totalProtein: 0, totalCarbs: 0, totalFat: 0 });
   });
 
   it('scales a single ingredient by grams', () => {
-    const totals = computeRecipeTotals([{ productId: 'oats', grams: 50 }], products);
+    const totals = computeRecipeTotals([{ ...oats, grams: 50 }]);
     expect(totals.totalKcal).toBe(190);
     expect(totals.totalProtein).toBe(6.5);
     expect(totals.totalCarbs).toBe(30);
@@ -26,27 +38,13 @@ describe('computeRecipeTotals', () => {
   });
 
   it('sums multiple ingredients', () => {
-    const totals = computeRecipeTotals(
-      [
-        { productId: 'oats', grams: 120 }, // 456 kcal
-        { productId: 'cottage', grams: 300 }, // 210 kcal
-        { productId: 'banana', grams: 200 }, // 180 kcal
-      ],
-      products,
-    );
+    const totals = computeRecipeTotals([
+      { ...oats, grams: 120 }, // 456 kcal
+      { ...cottage, grams: 300 }, // 210 kcal
+      { ...banana, grams: 200 }, // 180 kcal
+    ]);
     expect(totals.totalKcal).toBeCloseTo(846, 1);
     expect(totals.totalProtein).toBeCloseTo(50.6, 1);
-  });
-
-  it('treats missing products as a zero contribution', () => {
-    const totals = computeRecipeTotals(
-      [
-        { productId: 'oats', grams: 100 },
-        { productId: 'deleted', grams: 999 },
-      ],
-      products,
-    );
-    expect(totals.totalKcal).toBe(380);
   });
 });
 
@@ -76,17 +74,33 @@ describe('recipeInputSchema', () => {
     name: 'Banana bread',
     portions: '8',
     ingredients: [
-      { productId: 'oats', grams: '120' },
-      { productId: 'cottage', grams: '300' },
+      {
+        name: 'Oats',
+        grams: '120',
+        kcalPer100g: '380',
+        proteinPer100g: '13',
+        carbsPer100g: '60',
+        fatPer100g: '7',
+      },
+      {
+        name: 'Cottage',
+        grams: '300',
+        productId: 'p_cottage',
+        kcalPer100g: '70',
+        proteinPer100g: '11',
+        carbsPer100g: '3',
+        fatPer100g: '1',
+      },
     ],
   };
 
-  it('coerces portions and grams from strings', () => {
+  it('coerces portions, grams and macros from strings', () => {
     const result = recipeInputSchema.safeParse(validInput);
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.portions).toBe(8);
       expect(result.data.ingredients[0].grams).toBe(120);
+      expect(result.data.ingredients[0].kcalPer100g).toBe(380);
     }
   });
 
@@ -98,7 +112,7 @@ describe('recipeInputSchema', () => {
   it('rejects an ingredient with zero grams', () => {
     const result = recipeInputSchema.safeParse({
       ...validInput,
-      ingredients: [{ productId: 'oats', grams: '0' }],
+      ingredients: [{ ...validInput.ingredients[0], grams: '0' }],
     });
     expect(result.success).toBe(false);
   });
@@ -106,5 +120,14 @@ describe('recipeInputSchema', () => {
   it('rejects portions of zero', () => {
     const result = recipeInputSchema.safeParse({ ...validInput, portions: '0' });
     expect(result.success).toBe(false);
+  });
+
+  it('accepts an ingredient without a productId (AI-supplied)', () => {
+    const result = recipeInputSchema.safeParse({
+      ...validInput,
+      ingredients: [{ ...validInput.ingredients[0] }], // no productId
+    });
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.ingredients[0].productId).toBeUndefined();
   });
 });

@@ -118,15 +118,25 @@ model Recipe {
   @@index([userId])
 }
 
+/// A single line in a recipe. Stores its own snapshot of macros — that
+/// way edits or deletions of a referenced Product don't silently change
+/// past recipes. `productId` is an optional traceability hint when the
+/// ingredient came from the user's library.
 model RecipeIngredient {
   id       String @id @default(cuid())
   recipeId String
   recipe   Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
 
-  productId String
-  product   Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+  productId String?
+  product   Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
 
+  name  String
   grams Float
+
+  kcalPer100g    Float
+  proteinPer100g Float
+  carbsPer100g   Float
+  fatPer100g     Float
 
   @@index([recipeId])
   @@index([productId])

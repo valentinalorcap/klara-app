@@ -41,7 +41,7 @@ function parseForm(formData: FormData) {
     try {
       ingredients = JSON.parse(rawIngredients);
     } catch {
-      // schema will reject as not-an-array
+      // schema will reject
     }
   }
   return recipeInputSchema.safeParse({
@@ -52,29 +52,22 @@ function parseForm(formData: FormData) {
 }
 
 /**
- * Fetch the user's products referenced by `ingredients`, verify ownership,
- * and return them keyed by id. Throws if any ingredient points to a product
- * the user does not own.
+ * If any ingredient claims to come from the library, make sure the productId
+ * actually belongs to this user. Macros themselves are trusted (snapshot).
  */
-async function loadOwnedProducts(userId: string, ingredients: RecipeIngredientInput[]) {
-  const ids = Array.from(new Set(ingredients.map((i) => i.productId)));
-  const products = await prisma.product.findMany({
+async function assertLibraryRefsBelongToUser(userId: string, ingredients: RecipeIngredientInput[]) {
+  const ids = ingredients.map((i) => i.productId).filter((id): id is string => Boolean(id));
+  if (ids.length === 0) return;
+  const owned = await prisma.product.count({
     where: { id: { in: ids }, userId },
-    select: {
-      id: true,
-      kcalPer100g: true,
-      proteinPer100g: true,
-      carbsPer100g: true,
-      fatPer100g: true,
-    },
   });
-  if (products.length !== ids.length) {
+  if (owned !== new Set(ids).size) {
     throw new Error('One of the ingredients refers to a product that is not yours.');
   }
-  return Object.fromEntries(products.map((p) => [p.id, p]));
 }
 
-function buildRecipeData(input: RecipeInput, totals: ReturnType<typeof computeRecipeTotals>) {
+function buildRecipeData(input: RecipeInput) {
+  const totals = computeRecipeTotals(input.ingredients);
   return {
     name: input.name,
     portions: input.portions,
@@ -85,6 +78,18 @@ function buildRecipeData(input: RecipeInput, totals: ReturnType<typeof computeRe
   };
 }
 
+function ingredientCreates(ingredients: RecipeIngredientInput[]) {
+  return ingredients.map((ing) => ({
+    name: ing.name,
+    grams: ing.grams,
+    productId: ing.productId ?? null,
+    kcalPer100g: ing.kcalPer100g,
+    proteinPer100g: ing.proteinPer100g,
+    carbsPer100g: ing.carbsPer100g,
+    fatPer100g: ing.fatPer100g,
+  }));
+}
+
 export async function createRecipe(
   _prev: RecipeFormState,
   formData: FormData,
@@ -93,24 +98,17 @@ export async function createRecipe(
   const parsed = parseForm(formData);
   if (!parsed.success) return { fieldErrors: flattenFieldErrors(parsed.error) };
 
-  let productsById;
   try {
-    productsById = await loadOwnedProducts(userId, parsed.data.ingredients);
+    await assertLibraryRefsBelongToUser(userId, parsed.data.ingredients);
   } catch (err) {
     return { formError: err instanceof Error ? err.message : 'Could not save the recipe.' };
   }
-  const totals = computeRecipeTotals(parsed.data.ingredients, productsById);
 
   await prisma.recipe.create({
     data: {
       userId,
-      ...buildRecipeData(parsed.data, totals),
-      ingredients: {
-        create: parsed.data.ingredients.map((ing) => ({
-          productId: ing.productId,
-          grams: ing.grams,
-        })),
-      },
+      ...buildRecipeData(parsed.data),
+      ingredients: { create: ingredientCreates(parsed.data.ingredients) },
     },
   });
   revalidatePath('/recipes');
@@ -131,26 +129,19 @@ export async function updateRecipe(
     return { formError: 'Recipe not found.' };
   }
 
-  let productsById;
   try {
-    productsById = await loadOwnedProducts(userId, parsed.data.ingredients);
+    await assertLibraryRefsBelongToUser(userId, parsed.data.ingredients);
   } catch (err) {
     return { formError: err instanceof Error ? err.message : 'Could not save the recipe.' };
   }
-  const totals = computeRecipeTotals(parsed.data.ingredients, productsById);
 
   await prisma.$transaction([
     prisma.recipeIngredient.deleteMany({ where: { recipeId } }),
     prisma.recipe.update({
       where: { id: recipeId },
       data: {
-        ...buildRecipeData(parsed.data, totals),
-        ingredients: {
-          create: parsed.data.ingredients.map((ing) => ({
-            productId: ing.productId,
-            grams: ing.grams,
-          })),
-        },
+        ...buildRecipeData(parsed.data),
+        ingredients: { create: ingredientCreates(parsed.data.ingredients) },
       },
     }),
   ]);

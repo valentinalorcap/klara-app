@@ -56,8 +56,13 @@ export default async function EditRecipePage({ params }: { params: Promise<{ id:
             name: recipe.name,
             portions: recipe.portions,
             ingredients: recipe.ingredients.map((i) => ({
-              productId: i.productId,
+              name: i.name,
               grams: i.grams,
+              productId: i.productId,
+              kcalPer100g: i.kcalPer100g,
+              proteinPer100g: i.proteinPer100g,
+              carbsPer100g: i.carbsPer100g,
+              fatPer100g: i.fatPer100g,
             })),
           }}
           submitLabel="Save changes"
