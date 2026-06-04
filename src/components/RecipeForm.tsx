@@ -6,7 +6,7 @@ import { Trash2, Plus } from 'lucide-react';
 import { GlassCard } from './GlassCard';
 import { IngredientPicker, type ProductOption, type LibraryItem } from './IngredientPicker';
 import { computeRecipeTotals, perPortion } from '@/lib/recipes';
-import type { RecipeFormState } from '@/app/(app)/recipes/actions';
+import type { RecipeFormState } from '@/app/(app)/library/recipes/actions';
 
 type IngredientRow = {
   /** The displayed/typed name. Always present after the user types or picks. */
@@ -37,6 +37,8 @@ function emptyRow(): IngredientRow {
 type InitialRecipe = {
   name: string;
   portions: number;
+  totalGrams: number | null;
+  suggestedPortionGrams: number | null;
   ingredients: {
     name: string;
     grams: number;
@@ -62,6 +64,12 @@ export function RecipeForm({
   const [state, formAction, pending] = useActionState<RecipeFormState, FormData>(action, {});
   const [name, setName] = useState(initialValues?.name ?? '');
   const [portions, setPortions] = useState(String(initialValues?.portions ?? 1));
+  const [totalGrams, setTotalGrams] = useState(
+    initialValues?.totalGrams != null ? String(initialValues.totalGrams) : '',
+  );
+  const [suggestedPortionGrams, setSuggestedPortionGrams] = useState(
+    initialValues?.suggestedPortionGrams != null ? String(initialValues.suggestedPortionGrams) : '',
+  );
   const [rowError, setRowError] = useState<string | null>(null);
   const [rows, setRows] = useState<IngredientRow[]>(
     initialValues?.ingredients.length
@@ -100,6 +108,12 @@ export function RecipeForm({
   const totals = useMemo(() => computeRecipeTotals(resolvedRows), [resolvedRows]);
   const portionsNum = Number(portions) || 1;
   const perPortionMacros = perPortion(totals, portionsNum);
+
+  const ingredientSumGrams = useMemo(
+    () => resolvedRows.reduce((sum, r) => sum + r.grams, 0),
+    [resolvedRows],
+  );
+  const totalGramsForDefault = Number(totalGrams) || ingredientSumGrams;
 
   function updateRow(index: number, patch: Partial<IngredientRow>) {
     setRows((prev) => prev.map((r, i) => (i === index ? { ...r, ...patch } : r)));
@@ -247,6 +261,38 @@ export function RecipeForm({
 
       <GlassCard className="space-y-3 p-5">
         <p className="text-xs font-medium tracking-wider text-neutral-400 uppercase">
+          Optional weight
+        </p>
+        <p className="-mt-1 text-[11px] text-neutral-500">
+          If you weigh the cooked dish, set the total grams here. When logging this recipe to a
+          meal, the suggested portion seeds the grams field.
+        </p>
+        <TextField
+          label="Total cooked weight (g)"
+          name="totalGrams"
+          type="number"
+          value={totalGrams}
+          onChange={setTotalGrams}
+          placeholder={ingredientSumGrams ? `e.g. ${Math.round(ingredientSumGrams)}` : 'e.g. 1100'}
+          error={state.fieldErrors?.totalGrams}
+        />
+        <TextField
+          label="Suggested portion (g)"
+          name="suggestedPortionGrams"
+          type="number"
+          value={suggestedPortionGrams}
+          onChange={setSuggestedPortionGrams}
+          placeholder={
+            totalGramsForDefault && portionsNum > 0
+              ? `e.g. ${Math.round(totalGramsForDefault / portionsNum)}`
+              : 'e.g. 150'
+          }
+          error={state.fieldErrors?.suggestedPortionGrams}
+        />
+      </GlassCard>
+
+      <GlassCard className="space-y-3 p-5">
+        <p className="text-xs font-medium tracking-wider text-neutral-400 uppercase">
           Per portion (live)
         </p>
         <div className="grid grid-cols-4 gap-3 text-center">
@@ -272,7 +318,7 @@ export function RecipeForm({
           {pending ? 'Saving…' : submitLabel}
         </button>
         <Link
-          href="/recipes"
+          href="/library"
           className="block w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-center text-sm font-medium text-neutral-300 transition hover:bg-white/[0.08]"
         >
           Cancel

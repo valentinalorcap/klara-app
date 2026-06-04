@@ -39,11 +39,11 @@ export default async function EditRecipePage({ params }: { params: Promise<{ id:
   return (
     <main className="px-6 py-10">
       <Link
-        href="/recipes"
+        href="/library"
         className="-ml-2 inline-flex items-center gap-1 text-sm text-neutral-400 transition hover:text-neutral-200"
       >
         <ChevronLeft size={16} />
-        Recipes
+        Library
       </Link>
 
       <h1 className="mt-4 text-2xl font-bold tracking-tight text-white">Edit recipe</h1>
@@ -55,6 +55,8 @@ export default async function EditRecipePage({ params }: { params: Promise<{ id:
           initialValues={{
             name: recipe.name,
             portions: recipe.portions,
+            totalGrams: recipe.totalGrams,
+            suggestedPortionGrams: recipe.suggestedPortionGrams,
             ingredients: recipe.ingredients.map((i) => ({
               name: i.name,
               grams: i.grams,

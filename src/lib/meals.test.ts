@@ -1,12 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  entryMacros,
-  sumEntries,
-  recipePer100g,
-  isoDate,
-  mealInputSchema,
-  MealType,
-} from './meals';
+import { entryMacros, sumEntries, isoDate, createMealInputSchema, MealType } from './meals';
 
 const banana = {
   kcalPer100g: 90,
@@ -33,8 +26,8 @@ describe('entryMacros', () => {
 describe('sumEntries', () => {
   it('sums macros across entries', () => {
     const totals = sumEntries([
-      { ...banana, grams: 100 }, // 90 kcal
-      { ...banana, grams: 50 }, // 45 kcal
+      { ...banana, grams: 100 },
+      { ...banana, grams: 50 },
     ]);
     expect(totals.kcal).toBe(135);
     expect(totals.protein).toBe(1.5);
@@ -45,35 +38,9 @@ describe('sumEntries', () => {
   });
 });
 
-describe('recipePer100g', () => {
-  it('rescales a recipe totals back to per-100g', () => {
-    const per = recipePer100g(
-      { totalKcal: 800, totalProtein: 40, totalCarbs: 100, totalFat: 20 },
-      400, // total grams
-    );
-    expect(per.kcalPer100g).toBe(200);
-    expect(per.proteinPer100g).toBe(10);
-    expect(per.carbsPer100g).toBe(25);
-    expect(per.fatPer100g).toBe(5);
-  });
-
-  it('returns zeros when totalGrams is 0', () => {
-    const per = recipePer100g(
-      { totalKcal: 800, totalProtein: 40, totalCarbs: 100, totalFat: 20 },
-      0,
-    );
-    expect(per).toEqual({
-      kcalPer100g: 0,
-      proteinPer100g: 0,
-      carbsPer100g: 0,
-      fatPer100g: 0,
-    });
-  });
-});
-
 describe('isoDate', () => {
   it('formats as YYYY-MM-DD in local time', () => {
-    const d = new Date(2026, 5, 3); // June 3, 2026 (month 5 because 0-indexed)
+    const d = new Date(2026, 5, 3);
     expect(isoDate(d)).toBe('2026-06-03');
   });
 
@@ -82,7 +49,7 @@ describe('isoDate', () => {
   });
 });
 
-describe('mealInputSchema', () => {
+describe('createMealInputSchema', () => {
   const baseEntry = {
     name: 'Banana',
     grams: 150,
@@ -93,37 +60,48 @@ describe('mealInputSchema', () => {
   };
 
   it('accepts a well-formed input', () => {
-    const result = mealInputSchema.safeParse({
+    const result = createMealInputSchema.safeParse({
       date: '2026-06-03',
       type: MealType.BREAKFAST,
-      entry: baseEntry,
+      entries: [baseEntry],
     });
     expect(result.success).toBe(true);
   });
 
+  it('treats an empty name as undefined', () => {
+    const result = createMealInputSchema.safeParse({
+      date: '2026-06-03',
+      type: MealType.BREAKFAST,
+      name: '',
+      entries: [baseEntry],
+    });
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.name).toBeUndefined();
+  });
+
   it('rejects a bad date string', () => {
-    const result = mealInputSchema.safeParse({
+    const result = createMealInputSchema.safeParse({
       date: '06/03/2026',
       type: MealType.BREAKFAST,
-      entry: baseEntry,
+      entries: [baseEntry],
     });
     expect(result.success).toBe(false);
   });
 
-  it('rejects zero grams', () => {
-    const result = mealInputSchema.safeParse({
+  it('rejects an empty entries array', () => {
+    const result = createMealInputSchema.safeParse({
       date: '2026-06-03',
       type: MealType.BREAKFAST,
-      entry: { ...baseEntry, grams: 0 },
+      entries: [],
     });
     expect(result.success).toBe(false);
   });
 
   it('rejects an unknown meal type', () => {
-    const result = mealInputSchema.safeParse({
+    const result = createMealInputSchema.safeParse({
       date: '2026-06-03',
       type: 'BRUNCH',
-      entry: baseEntry,
+      entries: [baseEntry],
     });
     expect(result.success).toBe(false);
   });

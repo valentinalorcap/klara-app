@@ -112,6 +112,15 @@ model Recipe {
   totalCarbs   Float
   totalFat     Float
 
+  /// Optional final cooked weight. If set, per-100g macros for logging
+  /// are computed from this, not the raw ingredient grams sum. Reflects
+  /// what the food actually weighs after baking / cooking down.
+  totalGrams Float?
+
+  /// Optional default portion size in grams. When the recipe is added
+  /// to a meal, the entry's grams field auto-fills with this value.
+  suggestedPortionGrams Float?
+
   ingredients RecipeIngredient[]
   mealEntries MealEntry[]
 
@@ -163,6 +172,14 @@ model Meal {
 
   date  DateTime @db.Date
   type  MealType
+
+  /// User-chosen label for this meal. Most days will leave it blank; the
+  /// UI falls back to the type label.
+  name String?
+
+  /// Marked as a reusable template the user can import into future meals.
+  isFavorite Boolean @default(false)
+
   notes String?
 
   entries MealEntry[]
@@ -171,6 +188,7 @@ model Meal {
   updatedAt DateTime @updatedAt
 
   @@index([userId, date])
+  @@index([userId, isFavorite])
 }
 
 /// A single food line logged inside a meal. Per-100g macros are stored

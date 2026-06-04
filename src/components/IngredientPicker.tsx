@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useTransition } from 'react';
 import { Sparkles, Package, ChefHat, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { suggestIngredientMacros } from '@/app/(app)/recipes/lookup-actions';
+import { suggestIngredientMacros } from '@/app/(app)/library/recipes/lookup-actions';
 
 export type ProductOption = {
   id: string;

@@ -9,7 +9,7 @@ export const config = {
   matcher: [
     '/today/:path*',
     '/products/:path*',
-    '/recipes/:path*',
+    '/library/:path*',
     '/chat/:path*',
     '/history/:path*',
   ],

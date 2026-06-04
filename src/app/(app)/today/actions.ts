@@ -1,12 +1,13 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
-import { mealInputSchema, type MealEntryInput } from '@/lib/meals';
+import { createMealInputSchema, type CreateMealInput } from '@/lib/meals';
 
-export type ActionResult = { ok: true } | { ok: false; error: string };
+export type ActionResult = { ok: true; mealId?: string } | { ok: false; error: string };
 
 async function requireUserId(): Promise<string> {
   const session = await auth();
@@ -15,126 +16,98 @@ async function requireUserId(): Promise<string> {
 }
 
 function flatFirstError(error: z.ZodError): string {
-  const issue = error.issues[0];
-  return issue?.message ?? 'Invalid input.';
+  return error.issues[0]?.message ?? 'Invalid input.';
 }
 
-/** If the entry references a library item, make sure it belongs to the user. */
-async function assertOwnership(userId: string, entry: MealEntryInput) {
-  if (entry.productId) {
-    const p = await prisma.product.findFirst({
-      where: { id: entry.productId, userId },
-      select: { id: true },
+/** Verify every productId/recipeId referenced in the entries belongs to the user. */
+async function assertOwnership(userId: string, entries: CreateMealInput['entries']) {
+  const productIds = Array.from(
+    new Set(entries.map((e) => e.productId).filter((id): id is string => Boolean(id))),
+  );
+  const recipeIds = Array.from(
+    new Set(entries.map((e) => e.recipeId).filter((id): id is string => Boolean(id))),
+  );
+  if (productIds.length > 0) {
+    const owned = await prisma.product.count({
+      where: { id: { in: productIds }, userId },
     });
-    if (!p) throw new Error('That product is not yours.');
+    if (owned !== productIds.length) {
+      throw new Error('One of the products is not yours.');
+    }
   }
-  if (entry.recipeId) {
-    const r = await prisma.recipe.findFirst({
-      where: { id: entry.recipeId, userId },
-      select: { id: true },
+  if (recipeIds.length > 0) {
+    const owned = await prisma.recipe.count({
+      where: { id: { in: recipeIds }, userId },
     });
-    if (!r) throw new Error('That recipe is not yours.');
+    if (owned !== recipeIds.length) {
+      throw new Error('One of the recipes is not yours.');
+    }
   }
 }
 
-function entryDataFromInput(entry: MealEntryInput) {
-  return {
-    name: entry.name,
-    grams: entry.grams,
-    kcalPer100g: entry.kcalPer100g,
-    proteinPer100g: entry.proteinPer100g,
-    carbsPer100g: entry.carbsPer100g,
-    fatPer100g: entry.fatPer100g,
-    productId: entry.productId ?? null,
-    recipeId: entry.recipeId ?? null,
-  };
-}
-
-/**
- * Append an entry to today's meal of a given type. Creates the parent Meal
- * row if this is the first entry for that (user, date, type).
- */
-export async function logEntry(input: unknown): Promise<ActionResult> {
+/** Create a full meal — type + optional name + entries — in one shot. */
+export async function createMeal(input: unknown): Promise<ActionResult> {
   const userId = await requireUserId();
-  const parsed = mealInputSchema.safeParse(input);
+  const parsed = createMealInputSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: flatFirstError(parsed.error) };
 
   try {
-    await assertOwnership(userId, parsed.data.entry);
+    await assertOwnership(userId, parsed.data.entries);
   } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : 'Could not log.' };
+    return { ok: false, error: err instanceof Error ? err.message : 'Could not save.' };
   }
 
   const dayDate = new Date(parsed.data.date + 'T00:00:00Z');
-  const existing = await prisma.meal.findFirst({
-    where: { userId, date: dayDate, type: parsed.data.type },
+  const meal = await prisma.meal.create({
+    data: {
+      userId,
+      date: dayDate,
+      type: parsed.data.type,
+      name: parsed.data.name ?? null,
+      entries: {
+        create: parsed.data.entries.map((e) => ({
+          name: e.name,
+          grams: e.grams,
+          kcalPer100g: e.kcalPer100g,
+          proteinPer100g: e.proteinPer100g,
+          carbsPer100g: e.carbsPer100g,
+          fatPer100g: e.fatPer100g,
+          productId: e.productId ?? null,
+          recipeId: e.recipeId ?? null,
+        })),
+      },
+    },
+  });
+  revalidatePath('/today');
+  redirect('/today');
+  return { ok: true, mealId: meal.id };
+}
+
+export async function toggleFavorite(mealId: string): Promise<ActionResult> {
+  const userId = await requireUserId();
+  const meal = await prisma.meal.findFirst({
+    where: { id: mealId, userId },
+    select: { id: true, isFavorite: true },
+  });
+  if (!meal) return { ok: false, error: 'Meal not found.' };
+  await prisma.meal.update({
+    where: { id: mealId },
+    data: { isFavorite: !meal.isFavorite },
+  });
+  revalidatePath('/today');
+  revalidatePath('/library');
+  return { ok: true };
+}
+
+export async function deleteMeal(mealId: string): Promise<ActionResult> {
+  const userId = await requireUserId();
+  const meal = await prisma.meal.findFirst({
+    where: { id: mealId, userId },
     select: { id: true },
   });
-
-  if (existing) {
-    await prisma.mealEntry.create({
-      data: { mealId: existing.id, ...entryDataFromInput(parsed.data.entry) },
-    });
-  } else {
-    await prisma.meal.create({
-      data: {
-        userId,
-        date: dayDate,
-        type: parsed.data.type,
-        entries: { create: entryDataFromInput(parsed.data.entry) },
-      },
-    });
-  }
-
+  if (!meal) return { ok: false, error: 'Meal not found.' };
+  await prisma.meal.delete({ where: { id: mealId } });
   revalidatePath('/today');
+  revalidatePath('/library');
   return { ok: true };
 }
-
-const updateEntrySchema = z.object({
-  entryId: z.string().min(1),
-  grams: z.coerce.number().positive().max(10_000),
-});
-
-export async function updateEntry(input: unknown): Promise<ActionResult> {
-  const userId = await requireUserId();
-  const parsed = updateEntrySchema.safeParse(input);
-  if (!parsed.success) return { ok: false, error: flatFirstError(parsed.error) };
-
-  const entry = await prisma.mealEntry.findUnique({
-    where: { id: parsed.data.entryId },
-    select: { id: true, meal: { select: { userId: true } } },
-  });
-  if (!entry || entry.meal.userId !== userId) {
-    return { ok: false, error: 'Entry not found.' };
-  }
-
-  await prisma.mealEntry.update({
-    where: { id: parsed.data.entryId },
-    data: { grams: parsed.data.grams },
-  });
-  revalidatePath('/today');
-  return { ok: true };
-}
-
-export async function deleteEntry(entryId: string): Promise<ActionResult> {
-  const userId = await requireUserId();
-  const entry = await prisma.mealEntry.findUnique({
-    where: { id: entryId },
-    select: { id: true, mealId: true, meal: { select: { userId: true } } },
-  });
-  if (!entry || entry.meal.userId !== userId) {
-    return { ok: false, error: 'Entry not found.' };
-  }
-
-  await prisma.mealEntry.delete({ where: { id: entryId } });
-
-  // Clean up the parent Meal if it's now empty.
-  const remaining = await prisma.mealEntry.count({ where: { mealId: entry.mealId } });
-  if (remaining === 0) {
-    await prisma.meal.delete({ where: { id: entry.mealId } });
-  }
-
-  revalidatePath('/today');
-  return { ok: true };
-}
-

@@ -12,7 +12,9 @@ import {
   type RecipeIngredientInput,
 } from '@/lib/recipes';
 
-type FieldErrors = Partial<Record<'name' | 'portions' | 'ingredients', string>>;
+type FieldErrors = Partial<
+  Record<'name' | 'portions' | 'ingredients' | 'totalGrams' | 'suggestedPortionGrams', string>
+>;
 
 export type RecipeFormState = {
   fieldErrors?: FieldErrors;
@@ -47,6 +49,8 @@ function parseForm(formData: FormData) {
   return recipeInputSchema.safeParse({
     name: formData.get('name'),
     portions: formData.get('portions'),
+    totalGrams: formData.get('totalGrams'),
+    suggestedPortionGrams: formData.get('suggestedPortionGrams'),
     ingredients,
   });
 }
@@ -75,6 +79,8 @@ function buildRecipeData(input: RecipeInput) {
     totalProtein: totals.totalProtein,
     totalCarbs: totals.totalCarbs,
     totalFat: totals.totalFat,
+    totalGrams: input.totalGrams ?? null,
+    suggestedPortionGrams: input.suggestedPortionGrams ?? null,
   };
 }
 
@@ -111,8 +117,8 @@ export async function createRecipe(
       ingredients: { create: ingredientCreates(parsed.data.ingredients) },
     },
   });
-  revalidatePath('/recipes');
-  redirect('/recipes');
+  revalidatePath('/library');
+  redirect('/library');
 }
 
 export async function updateRecipe(
@@ -145,8 +151,8 @@ export async function updateRecipe(
       },
     }),
   ]);
-  revalidatePath('/recipes');
-  redirect('/recipes');
+  revalidatePath('/library');
+  redirect('/library');
 }
 
 export async function deleteRecipe(recipeId: string) {
@@ -154,6 +160,6 @@ export async function deleteRecipe(recipeId: string) {
   const existing = await prisma.recipe.findUnique({ where: { id: recipeId } });
   if (!existing || existing.userId !== userId) return;
   await prisma.recipe.delete({ where: { id: recipeId } });
-  revalidatePath('/recipes');
-  redirect('/recipes');
+  revalidatePath('/library');
+  redirect('/library');
 }
