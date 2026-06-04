@@ -100,15 +100,15 @@ export function MealCard({
           </div>
         </div>
 
-        <p className="mt-3 text-2xl font-bold text-white tabular-nums">
+        <p className="mt-3 text-2xl font-bold whitespace-nowrap text-white tabular-nums">
           {totals.protein.toFixed(1)}
-          <span className="text-base font-medium text-neutral-400">g protein</span>
+          <span className="text-sm font-medium text-neutral-400">g P</span>
           <span className="mx-2 text-neutral-500">·</span>
           {Math.round(totals.kcal)}
-          <span className="text-base font-medium text-neutral-400"> kcal</span>
+          <span className="text-sm font-medium text-neutral-400"> kcal</span>
         </p>
         <p className="mt-1 text-xs text-neutral-400 tabular-nums">
-          Carbs {totals.carbs.toFixed(1)}g · Fat {totals.fat.toFixed(1)}g
+          C {totals.carbs.toFixed(1)}g · F {totals.fat.toFixed(1)}g
         </p>
 
         <ul className="mt-4 space-y-1.5">
