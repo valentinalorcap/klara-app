@@ -83,6 +83,54 @@ export async function createMeal(input: unknown): Promise<ActionResult> {
   return { ok: true, mealId: meal.id };
 }
 
+/** Replace a meal's metadata + entries atomically. */
+export async function updateMeal(mealId: string, input: unknown): Promise<ActionResult> {
+  const userId = await requireUserId();
+  const parsed = createMealInputSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: flatFirstError(parsed.error) };
+
+  const existing = await prisma.meal.findFirst({
+    where: { id: mealId, userId },
+    select: { id: true },
+  });
+  if (!existing) return { ok: false, error: 'Meal not found.' };
+
+  try {
+    await assertOwnership(userId, parsed.data.entries);
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'Could not save.' };
+  }
+
+  const dayDate = new Date(parsed.data.date + 'T00:00:00Z');
+  await prisma.$transaction([
+    prisma.mealEntry.deleteMany({ where: { mealId } }),
+    prisma.meal.update({
+      where: { id: mealId },
+      data: {
+        date: dayDate,
+        type: parsed.data.type,
+        name: parsed.data.name ?? null,
+        entries: {
+          create: parsed.data.entries.map((e) => ({
+            name: e.name,
+            grams: e.grams,
+            kcalPer100g: e.kcalPer100g,
+            proteinPer100g: e.proteinPer100g,
+            carbsPer100g: e.carbsPer100g,
+            fatPer100g: e.fatPer100g,
+            productId: e.productId ?? null,
+            recipeId: e.recipeId ?? null,
+          })),
+        },
+      },
+    }),
+  ]);
+  revalidatePath('/today');
+  revalidatePath('/library');
+  redirect('/today');
+  return { ok: true };
+}
+
 export async function toggleFavorite(mealId: string): Promise<ActionResult> {
   const userId = await requireUserId();
   const meal = await prisma.meal.findFirst({

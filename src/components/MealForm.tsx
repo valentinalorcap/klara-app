@@ -12,7 +12,7 @@ import {
   sumEntries,
   isoDate,
 } from '@/lib/meals';
-import { createMeal } from '@/app/(app)/today/actions';
+import { createMeal, updateMeal } from '@/app/(app)/today/actions';
 import { cn } from '@/lib/utils';
 
 type IngredientRow = {
@@ -58,16 +58,49 @@ export type FavoriteMeal = {
   }[];
 };
 
+export type MealInitialValues = {
+  mealId: string;
+  type: MealType;
+  name: string | null;
+  entries: {
+    name: string;
+    grams: number;
+    productId: string | null;
+    recipeId: string | null;
+    kcalPer100g: number;
+    proteinPer100g: number;
+    carbsPer100g: number;
+    fatPer100g: number;
+  }[];
+};
+
 export function MealForm({
   items,
   favorites,
+  initial,
 }: {
   items: LibraryItem[];
   favorites: FavoriteMeal[];
+  initial?: MealInitialValues;
 }) {
-  const [type, setType] = useState<MealType>('BREAKFAST');
-  const [name, setName] = useState('');
-  const [rows, setRows] = useState<IngredientRow[]>([emptyRow()]);
+  const editMode = Boolean(initial);
+  const [type, setType] = useState<MealType>(initial?.type ?? 'BREAKFAST');
+  const [name, setName] = useState(initial?.name ?? '');
+  const [rows, setRows] = useState<IngredientRow[]>(
+    initial?.entries.length
+      ? initial.entries.map((e) => ({
+          name: e.name,
+          grams: String(e.grams),
+          resolved: true,
+          productId: e.productId ?? undefined,
+          recipeId: e.recipeId ?? undefined,
+          kcalPer100g: e.kcalPer100g,
+          proteinPer100g: e.proteinPer100g,
+          carbsPer100g: e.carbsPer100g,
+          fatPer100g: e.fatPer100g,
+        }))
+      : [emptyRow()],
+  );
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -134,12 +167,15 @@ export function MealForm({
       return;
     }
     startTransition(async () => {
-      const result = await createMeal({
+      const payload = {
         date: isoDate(new Date()),
         type,
         name: name.trim() || undefined,
         entries,
-      });
+      };
+      const result = editMode
+        ? await updateMeal(initial!.mealId, payload)
+        : await createMeal(payload);
       // On success the action redirects to /today; we only get here on error.
       if (result && !result.ok) setError(result.error);
     });
@@ -335,7 +371,7 @@ export function MealForm({
           disabled={pending}
           className="w-full rounded-2xl bg-[var(--accent)] px-4 py-3.5 text-sm font-semibold text-white shadow-[0_8px_24px_-8px_var(--accent-glow)] transition hover:bg-[var(--accent-hover)] active:scale-[0.98] disabled:opacity-50"
         >
-          {pending ? 'Saving…' : 'Save meal'}
+          {pending ? 'Saving…' : editMode ? 'Save changes' : 'Save meal'}
         </button>
         <Link
           href="/today"
