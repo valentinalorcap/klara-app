@@ -83,8 +83,20 @@ export async function createMeal(input: unknown): Promise<ActionResult> {
   return { ok: true, mealId: meal.id };
 }
 
+const ALLOWED_REDIRECTS = ['/today', '/library'] as const;
+
+function safeReturnTo(returnTo: unknown): string {
+  return typeof returnTo === 'string' && (ALLOWED_REDIRECTS as readonly string[]).includes(returnTo)
+    ? returnTo
+    : '/today';
+}
+
 /** Replace a meal's metadata + entries atomically. */
-export async function updateMeal(mealId: string, input: unknown): Promise<ActionResult> {
+export async function updateMeal(
+  mealId: string,
+  input: unknown,
+  returnTo?: string,
+): Promise<ActionResult> {
   const userId = await requireUserId();
   const parsed = createMealInputSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: flatFirstError(parsed.error) };
@@ -127,7 +139,7 @@ export async function updateMeal(mealId: string, input: unknown): Promise<Action
   ]);
   revalidatePath('/today');
   revalidatePath('/library');
-  redirect('/today');
+  redirect(safeReturnTo(returnTo));
   return { ok: true };
 }
 

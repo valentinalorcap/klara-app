@@ -65,15 +65,24 @@ export default async function TodayPage() {
         <p className="text-xs font-medium tracking-wider text-neutral-400 uppercase">
           Today so far
         </p>
-        <p className="mt-2 text-4xl font-bold text-white tabular-nums">
-          {Math.round(dayTotals.kcal)}{' '}
-          <span className="text-base font-medium text-neutral-400">kcal</span>
-        </p>
-        <div className="mt-4 grid grid-cols-3 gap-3 text-center">
-          <Stat label="Protein" value={dayTotals.protein.toFixed(1) + 'g'} />
-          <Stat label="Carbs" value={dayTotals.carbs.toFixed(1) + 'g'} />
-          <Stat label="Fat" value={dayTotals.fat.toFixed(1) + 'g'} />
+        <div className="mt-3 grid grid-cols-2 gap-4">
+          <div>
+            <p className="text-4xl font-bold text-white tabular-nums">
+              {Math.round(dayTotals.kcal)}
+            </p>
+            <p className="mt-1 text-[10px] tracking-wider text-neutral-500 uppercase">kcal</p>
+          </div>
+          <div>
+            <p className="text-4xl font-bold text-white tabular-nums">
+              {dayTotals.protein.toFixed(1)}
+              <span className="ml-0.5 text-2xl font-medium text-neutral-400">g</span>
+            </p>
+            <p className="mt-1 text-[10px] tracking-wider text-neutral-500 uppercase">protein</p>
+          </div>
         </div>
+        <p className="mt-4 text-xs text-neutral-400 tabular-nums">
+          Carbs {dayTotals.carbs.toFixed(1)}g · Fat {dayTotals.fat.toFixed(1)}g
+        </p>
       </GlassCard>
 
       {meals.length === 0 ? (
@@ -106,14 +115,5 @@ export default async function TodayPage() {
         </div>
       )}
     </main>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <p className="text-base font-semibold text-white tabular-nums">{value}</p>
-      <p className="mt-0.5 text-[10px] tracking-wider text-neutral-500 uppercase">{label}</p>
-    </div>
   );
 }

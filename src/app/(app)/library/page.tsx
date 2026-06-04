@@ -118,6 +118,7 @@ export default async function LibraryPage() {
             {favorites.map((f) => (
               <MealCard
                 key={f.id}
+                returnTo="/library"
                 meal={{
                   id: f.id,
                   type: f.type,

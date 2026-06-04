@@ -78,10 +78,13 @@ export function MealForm({
   items,
   favorites,
   initial,
+  returnTo,
 }: {
   items: LibraryItem[];
   favorites: FavoriteMeal[];
   initial?: MealInitialValues;
+  /** Where the form should redirect after a successful save (edit mode only). */
+  returnTo?: string;
 }) {
   const editMode = Boolean(initial);
   const [type, setType] = useState<MealType>(initial?.type ?? 'BREAKFAST');
@@ -174,7 +177,7 @@ export function MealForm({
         entries,
       };
       const result = editMode
-        ? await updateMeal(initial!.mealId, payload)
+        ? await updateMeal(initial!.mealId, payload, returnTo)
         : await createMeal(payload);
       // On success the action redirects to /today; we only get here on error.
       if (result && !result.ok) setError(result.error);
@@ -374,7 +377,7 @@ export function MealForm({
           {pending ? 'Saving…' : editMode ? 'Save changes' : 'Save meal'}
         </button>
         <Link
-          href="/today"
+          href={returnTo ?? '/today'}
           className="block w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-center text-sm font-medium text-neutral-300 transition hover:bg-white/[0.08]"
         >
           Cancel

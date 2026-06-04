@@ -20,6 +20,7 @@ export type MealCardEntry = {
 
 export function MealCard({
   meal,
+  returnTo = '/today',
 }: {
   meal: {
     id: string;
@@ -28,6 +29,8 @@ export function MealCard({
     isFavorite: boolean;
     entries: MealCardEntry[];
   };
+  /** Where the edit page should send the user after saving. */
+  returnTo?: string;
 }) {
   const [pendingStar, startStar] = useTransition();
   const [pendingDelete, startDelete] = useTransition();
@@ -54,7 +57,7 @@ export function MealCard({
   return (
     <GlassCard className="relative p-5 transition hover:border-white/20">
       <Link
-        href={`/today/${meal.id}/edit`}
+        href={`/today/${meal.id}/edit?from=${encodeURIComponent(returnTo)}`}
         aria-label={`Edit ${meal.name ?? MEAL_TYPE_LABELS[meal.type]}`}
         className="absolute inset-0 rounded-3xl"
       />
@@ -91,16 +94,13 @@ export function MealCard({
           </div>
         </div>
 
-        <div className="mt-3 flex items-baseline gap-3">
-          <p className="text-2xl font-bold text-white tabular-nums">
-            {Math.round(totals.kcal)}
-            <span className="ml-1 text-xs font-medium text-neutral-400">kcal</span>
-          </p>
-          <p className="text-xs text-neutral-400 tabular-nums">
-            P {totals.protein.toFixed(1)}g · C {totals.carbs.toFixed(1)}g · F{' '}
-            {totals.fat.toFixed(1)}g
-          </p>
+        <div className="mt-3 grid grid-cols-2 gap-3">
+          <BigStat label="kcal" value={Math.round(totals.kcal).toString()} />
+          <BigStat label="protein" value={`${totals.protein.toFixed(1)}g`} />
         </div>
+        <p className="mt-2 text-xs text-neutral-400 tabular-nums">
+          Carbs {totals.carbs.toFixed(1)}g · Fat {totals.fat.toFixed(1)}g
+        </p>
 
         <ul className="mt-4 space-y-1.5">
           {meal.entries.map((e) => {
@@ -112,7 +112,7 @@ export function MealCard({
               >
                 <span className="min-w-0 flex-1 truncate text-neutral-300">{e.name}</span>
                 <span className="shrink-0 text-neutral-500">
-                  {e.grams.toFixed(0)}g · {Math.round(m.kcal)} kcal
+                  {e.grams.toFixed(0)}g · {Math.round(m.kcal)} kcal · {m.protein.toFixed(1)}g P
                 </span>
               </li>
             );
@@ -120,6 +120,15 @@ export function MealCard({
         </ul>
       </div>
     </GlassCard>
+  );
+}
+
+function BigStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p className="text-2xl font-bold text-white tabular-nums">{value}</p>
+      <p className="mt-0.5 text-[10px] tracking-wider text-neutral-500 uppercase">{label}</p>
+    </div>
   );
 }
 
