@@ -14,22 +14,22 @@ patterns, and PRs ship clean.
 The optional scope captures **which phase** the change belongs to, so the
 git history and PR list double as a portfolio narrative:
 
-| Scope | When |
-|-------|------|
-| `phase-N` | Anything that ships as part of an implementation-plan phase (`feat(phase-4): ...`) |
-| (no scope) | One-off fixes or chores between phases (`fix: ...`, `chore: ...`) |
+| Scope      | When                                                                               |
+| ---------- | ---------------------------------------------------------------------------------- |
+| `phase-N`  | Anything that ships as part of an implementation-plan phase (`feat(phase-4): ...`) |
+| (no scope) | One-off fixes or chores between phases (`fix: ...`, `chore: ...`)                  |
 
-| Type | When |
-|------|------|
-| `feat` | New user-visible feature |
-| `fix` | Bug fix |
-| `refactor` | Code change without altering behaviour |
-| `chore` | Tooling, deps, config, scripts |
-| `docs` | Documentation only |
-| `test` | Tests only |
-| `style` | Formatting (Prettier, whitespace) — no logic |
-| `perf` | Performance improvement |
-| `ci` | CI / GitHub Actions changes |
+| Type       | When                                         |
+| ---------- | -------------------------------------------- |
+| `feat`     | New user-visible feature                     |
+| `fix`      | Bug fix                                      |
+| `refactor` | Code change without altering behaviour       |
+| `chore`    | Tooling, deps, config, scripts               |
+| `docs`     | Documentation only                           |
+| `test`     | Tests only                                   |
+| `style`    | Formatting (Prettier, whitespace) — no logic |
+| `perf`     | Performance improvement                      |
+| `ci`       | CI / GitHub Actions changes                  |
 
 Rules:
 
@@ -53,11 +53,11 @@ Bad: `WIP`, `update files`, `bug fix`, `arreglo`.
 Name: `<type>/<scope-or-slug>` — lowercase with dashes. Phase-scoped
 branches mirror the commits.
 
-| Example | Type |
-|---------|------|
+| Example                     | Type          |
+| --------------------------- | ------------- |
 | `feat/phase-4-meal-logging` | phase feature |
-| `fix/dropdown-overflow` | bug fix |
-| `chore/upgrade-next` | maintenance |
+| `fix/dropdown-overflow`     | bug fix       |
+| `chore/upgrade-next`        | maintenance   |
 
 Branches are deleted automatically on merge (configured at the repo
 level). No need to delete by hand.
@@ -70,18 +70,22 @@ Body — four short sections:
 
 ```markdown
 ## What
+
 1–3 lines describing what the PR resolves.
 
 ## Changes
+
 - Main change bullet
 - Another bullet
 - ... (5–8 max)
 
 ## Test plan
+
 - [ ] CI green
 - [ ] Manual steps to verify
 
 ## Notes (optional)
+
 Trade-offs, follow-ups, deferred work.
 ```
 

@@ -65,7 +65,7 @@ export default async function TodayPage() {
         <p className="text-xs font-medium tracking-wider text-neutral-400 uppercase">
           Today so far
         </p>
-        <p className="mt-3 whitespace-nowrap text-3xl font-bold tabular-nums text-white">
+        <p className="mt-3 text-3xl font-bold whitespace-nowrap text-white tabular-nums">
           {dayTotals.protein.toFixed(1)}
           <span className="text-base font-medium text-neutral-400">g P</span>
           <span className="mx-2 text-neutral-500">·</span>
