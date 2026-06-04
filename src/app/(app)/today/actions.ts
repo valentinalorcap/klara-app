@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
-import { mealEntryInputSchema, mealInputSchema, type MealEntryInput, MealType } from '@/lib/meals';
+import { mealInputSchema, type MealEntryInput } from '@/lib/meals';
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
 
@@ -138,6 +138,3 @@ export async function deleteEntry(entryId: string): Promise<ActionResult> {
   return { ok: true };
 }
 
-// Surfaced for the tests + UI; keeping the MealType re-exported makes imports
-// short across the app.
-export { MealType };
