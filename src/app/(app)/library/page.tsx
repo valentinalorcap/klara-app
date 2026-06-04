@@ -119,6 +119,7 @@ export default async function LibraryPage() {
               <MealCard
                 key={f.id}
                 returnTo="/library"
+                showDelete={false}
                 meal={{
                   id: f.id,
                   type: f.type,

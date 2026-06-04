@@ -21,6 +21,7 @@ export type MealCardEntry = {
 export function MealCard({
   meal,
   returnTo = '/today',
+  showDelete = true,
 }: {
   meal: {
     id: string;
@@ -31,6 +32,9 @@ export function MealCard({
   };
   /** Where the edit page should send the user after saving. */
   returnTo?: string;
+  /** Render the trash button. Off in contexts (like the Library favorites)
+   *  where star already covers the only meaningful removal action. */
+  showDelete?: boolean;
 }) {
   const [pendingStar, startStar] = useTransition();
   const [pendingDelete, startDelete] = useTransition();
@@ -83,22 +87,27 @@ export function MealCard({
             >
               <Star size={16} fill={meal.isFavorite ? 'currentColor' : 'transparent'} />
             </IconButton>
-            <IconButton
-              label="Delete"
-              onClick={onDelete}
-              disabled={pendingDelete}
-              className="text-neutral-400 hover:text-[var(--danger)]"
-            >
-              <Trash2 size={16} />
-            </IconButton>
+            {showDelete ? (
+              <IconButton
+                label="Delete"
+                onClick={onDelete}
+                disabled={pendingDelete}
+                className="text-neutral-400 hover:text-[var(--danger)]"
+              >
+                <Trash2 size={16} />
+              </IconButton>
+            ) : null}
           </div>
         </div>
 
-        <div className="mt-3 grid grid-cols-2 gap-3">
-          <BigStat label="kcal" value={Math.round(totals.kcal).toString()} />
-          <BigStat label="protein" value={`${totals.protein.toFixed(1)}g`} />
-        </div>
-        <p className="mt-2 text-xs text-neutral-400 tabular-nums">
+        <p className="mt-3 text-2xl font-bold text-white tabular-nums">
+          {totals.protein.toFixed(1)}
+          <span className="text-base font-medium text-neutral-400">g protein</span>
+          <span className="mx-2 text-neutral-500">·</span>
+          {Math.round(totals.kcal)}
+          <span className="text-base font-medium text-neutral-400"> kcal</span>
+        </p>
+        <p className="mt-1 text-xs text-neutral-400 tabular-nums">
           Carbs {totals.carbs.toFixed(1)}g · Fat {totals.fat.toFixed(1)}g
         </p>
 
