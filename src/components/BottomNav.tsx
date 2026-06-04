@@ -2,14 +2,14 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, BarChart3, MessageCircle, Package, ChefHat } from 'lucide-react';
+import { Home, BarChart3, MessageCircle, Package, BookMarked } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const sideTabs = [
   { href: '/today', label: 'Today', icon: Home },
   { href: '/history', label: 'History', icon: BarChart3 },
   { href: '/products', label: 'Products', icon: Package },
-  { href: '/recipes', label: 'Recipes', icon: ChefHat },
+  { href: '/library', label: 'Library', icon: BookMarked },
 ] as const;
 
 const chatTab = { href: '/chat', label: 'Chat', icon: MessageCircle } as const;

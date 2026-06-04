@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect, useRef, useTransition } from 'react';
-import { Sparkles, Package, Loader2 } from 'lucide-react';
+import { Sparkles, Package, ChefHat, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { suggestIngredientMacros } from '@/app/(app)/recipes/lookup-actions';
+import { suggestIngredientMacros } from '@/app/(app)/library/recipes/lookup-actions';
 
 export type ProductOption = {
   id: string;
@@ -15,11 +15,26 @@ export type ProductOption = {
   fatPer100g: number;
 };
 
+export type RecipeOption = {
+  id: string;
+  name: string;
+  kcalPer100g: number;
+  proteinPer100g: number;
+  carbsPer100g: number;
+  fatPer100g: number;
+};
+
+export type LibraryItem =
+  | ({ kind: 'product' } & ProductOption)
+  | ({ kind: 'recipe' } & RecipeOption);
+
 type IngredientPickerProps = {
   value: string;
-  products: ProductOption[];
+  /** Library items shown in the dropdown. Pass an empty array if nothing
+   *  applies (e.g. inside the recipe form, recipes shouldn't be selectable). */
+  items: LibraryItem[];
   onNameChange: (name: string) => void;
-  onSelectProduct: (product: ProductOption) => void;
+  onSelectItem: (item: LibraryItem) => void;
   onAiResolved: (data: {
     canonicalName: string;
     kcalPer100g: number;
@@ -31,11 +46,15 @@ type IngredientPickerProps = {
   onError?: (msg: string) => void;
 };
 
+function matchKey(item: LibraryItem): string {
+  return item.kind === 'product' ? `${item.name} ${item.brand ?? ''}` : item.name;
+}
+
 export function IngredientPicker({
   value,
-  products,
+  items,
   onNameChange,
-  onSelectProduct,
+  onSelectItem,
   onAiResolved,
   onError,
 }: IngredientPickerProps) {
@@ -53,13 +72,11 @@ export function IngredientPicker({
   }, [open]);
 
   const query = value.trim().toLowerCase();
-  const matches = query
-    ? products.filter((p) => `${p.name} ${p.brand ?? ''}`.toLowerCase().includes(query))
-    : products;
+  const matches = query ? items.filter((i) => matchKey(i).toLowerCase().includes(query)) : items;
   const showAiOption = query.length >= 2;
 
-  function pickProduct(p: ProductOption) {
-    onSelectProduct(p);
+  function pickItem(item: LibraryItem) {
+    onSelectItem(item);
     setOpen(false);
   }
 
@@ -102,23 +119,32 @@ export function IngredientPicker({
 
       {open ? (
         <div className="absolute top-full left-0 z-20 mt-1 max-h-72 w-[min(25.5rem,calc(100vw-5.5rem))] overflow-y-auto rounded-2xl border border-white/10 bg-[#1a1633]/95 p-2 shadow-2xl backdrop-blur-xl">
-          {matches.slice(0, 6).map((p) => (
-            <button
-              key={p.id}
-              type="button"
-              onMouseDown={(e) => {
-                e.preventDefault(); // keep focus on input
-                pickProduct(p);
-              }}
-              className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left transition hover:bg-white/5"
-            >
-              <Package size={14} className="shrink-0 text-neutral-400" />
-              <p className="min-w-0 flex-1 truncate text-sm text-white">
-                {p.name}
-                {p.brand ? <span className="text-neutral-500"> · {p.brand}</span> : null}
-              </p>
-            </button>
-          ))}
+          {matches.slice(0, 6).map((item) => {
+            const Icon = item.kind === 'product' ? Package : ChefHat;
+            const subtitle =
+              item.kind === 'product' && item.brand
+                ? ` · ${item.brand}`
+                : item.kind === 'recipe'
+                  ? ' · recipe'
+                  : null;
+            return (
+              <button
+                key={`${item.kind}-${item.id}`}
+                type="button"
+                onMouseDown={(e) => {
+                  e.preventDefault(); // keep focus on input
+                  pickItem(item);
+                }}
+                className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left transition hover:bg-white/5"
+              >
+                <Icon size={14} className="shrink-0 text-neutral-400" />
+                <p className="min-w-0 flex-1 truncate text-sm text-white">
+                  {item.name}
+                  {subtitle ? <span className="text-neutral-500">{subtitle}</span> : null}
+                </p>
+              </button>
+            );
+          })}
 
           {matches.length > 0 && showAiOption ? <Divider /> : null}
 

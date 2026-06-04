@@ -20,10 +20,12 @@ model User {
   emailVerified DateTime?
   image         String?
 
-  accounts Account[]
-  sessions Session[]
-  products Product[]
-  recipes  Recipe[]
+  accounts      Account[]
+  sessions      Session[]
+  products      Product[]
+  recipes       Recipe[]
+  meals         Meal[]
+  mealTemplates MealTemplate[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -89,7 +91,9 @@ model Product {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  recipeIngredients RecipeIngredient[]
+  recipeIngredients   RecipeIngredient[]
+  mealEntries         MealEntry[]
+  mealTemplateEntries MealTemplateEntry[]
 
   @@index([userId])
 }
@@ -110,7 +114,18 @@ model Recipe {
   totalCarbs   Float
   totalFat     Float
 
-  ingredients RecipeIngredient[]
+  /// Optional final cooked weight. If set, per-100g macros for logging
+  /// are computed from this, not the raw ingredient grams sum. Reflects
+  /// what the food actually weighs after baking / cooking down.
+  totalGrams Float?
+
+  /// Optional default portion size in grams. When the recipe is added
+  /// to a meal, the entry's grams field auto-fills with this value.
+  suggestedPortionGrams Float?
+
+  ingredients         RecipeIngredient[]
+  mealEntries         MealEntry[]
+  mealTemplateEntries MealTemplateEntry[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -140,4 +155,116 @@ model RecipeIngredient {
 
   @@index([recipeId])
   @@index([productId])
+}
+
+enum MealType {
+  BREAKFAST
+  LUNCH
+  DINNER
+  SNACK
+  PREWORKOUT
+  OTHER
+}
+
+/// One meal logged on a specific day — breakfast, lunch, etc. Holds one
+/// or more entries (each entry is a food + grams).
+model Meal {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  date  DateTime @db.Date
+  type  MealType
+
+  /// User-chosen label for this meal. Most days will leave it blank; the
+  /// UI falls back to the type label.
+  name String?
+
+  /// Optional link to the favorite template this meal was either logged
+  /// from or that was created by starring it. Null means "no longer a
+  /// favorite" — the template was removed without touching this row.
+  templateId String?
+  template   MealTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+
+  notes String?
+
+  entries MealEntry[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, date])
+  @@index([templateId])
+}
+
+/// A saved favorite — a snapshot of a meal's ingredients the user can
+/// reuse to seed a future log. Independent from Meal rows, so deleting a
+/// past meal doesn't disturb the favorite.
+model MealTemplate {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type MealType
+  name String?
+
+  entries MealTemplateEntry[]
+  meals   Meal[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model MealTemplateEntry {
+  id         String       @id @default(cuid())
+  templateId String
+  template   MealTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  productId String?
+  product   Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  recipeId  String?
+  recipe    Recipe?  @relation(fields: [recipeId], references: [id], onDelete: SetNull)
+
+  name  String
+  grams Float
+
+  kcalPer100g    Float
+  proteinPer100g Float
+  carbsPer100g   Float
+  fatPer100g     Float
+
+  @@index([templateId])
+  @@index([productId])
+  @@index([recipeId])
+}
+
+/// A single food line logged inside a meal. Per-100g macros are stored
+/// as a snapshot so editing or deleting the source product/recipe later
+/// doesn't silently change the user's history. The optional FKs are
+/// traceability hints only — they go to NULL on source delete.
+model MealEntry {
+  id     String @id @default(cuid())
+  mealId String
+  meal   Meal   @relation(fields: [mealId], references: [id], onDelete: Cascade)
+
+  productId String?
+  product   Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  recipeId  String?
+  recipe    Recipe?  @relation(fields: [recipeId], references: [id], onDelete: SetNull)
+
+  name  String
+  grams Float
+
+  kcalPer100g    Float
+  proteinPer100g Float
+  carbsPer100g   Float
+  fatPer100g     Float
+
+  createdAt DateTime @default(now())
+
+  @@index([mealId])
+  @@index([productId])
+  @@index([recipeId])
 }

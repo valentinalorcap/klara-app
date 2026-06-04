@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { computeRecipeTotals, perPortion, recipeInputSchema } from './recipes';
+import {
+  computeRecipeTotals,
+  perPortion,
+  recipeInputSchema,
+  effectiveTotalGrams,
+  defaultPortionGrams,
+} from './recipes';
 
 const oats = {
   name: 'Oats',
@@ -129,5 +135,39 @@ describe('recipeInputSchema', () => {
     });
     expect(result.success).toBe(true);
     if (result.success) expect(result.data.ingredients[0].productId).toBeUndefined();
+  });
+});
+
+describe('effectiveTotalGrams', () => {
+  it('returns the user-set totalGrams when present', () => {
+    expect(effectiveTotalGrams({ totalGrams: 1100, ingredientSumGrams: 1200 })).toBe(1100);
+  });
+
+  it('falls back to the ingredient sum when totalGrams is null', () => {
+    expect(effectiveTotalGrams({ totalGrams: null, ingredientSumGrams: 950 })).toBe(950);
+  });
+});
+
+describe('defaultPortionGrams', () => {
+  const base = {
+    portions: 8,
+    ingredientSumGrams: 1200,
+    totalGrams: null,
+  };
+
+  it('returns suggestedPortionGrams when the user set it', () => {
+    expect(defaultPortionGrams({ ...base, suggestedPortionGrams: 137 })).toBe(137);
+  });
+
+  it('falls back to effectiveTotalGrams / portions', () => {
+    expect(defaultPortionGrams({ ...base, totalGrams: 1100 })).toBe(137.5);
+  });
+
+  it('uses the ingredient sum when neither portion nor total weight is set', () => {
+    expect(defaultPortionGrams(base)).toBe(150);
+  });
+
+  it('falls back to the full weight when portions is zero', () => {
+    expect(defaultPortionGrams({ ...base, portions: 0 })).toBe(1200);
   });
 });

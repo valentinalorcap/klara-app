@@ -1,0 +1,229 @@
+'use server';
+
+import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
+import { z } from 'zod';
+import { auth } from '@/auth';
+import { prisma } from '@/lib/prisma';
+import { createMealInputSchema, type CreateMealInput } from '@/lib/meals';
+
+export type ActionResult = { ok: true; mealId?: string } | { ok: false; error: string };
+
+async function requireUserId(): Promise<string> {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error('Unauthorized');
+  return session.user.id;
+}
+
+function flatFirstError(error: z.ZodError): string {
+  return error.issues[0]?.message ?? 'Invalid input.';
+}
+
+const ALLOWED_REDIRECTS = ['/today', '/library'] as const;
+
+function safeReturnTo(returnTo: unknown): string {
+  return typeof returnTo === 'string' && (ALLOWED_REDIRECTS as readonly string[]).includes(returnTo)
+    ? returnTo
+    : '/today';
+}
+
+/** Verify every productId/recipeId referenced in the entries belongs to the user. */
+async function assertOwnership(userId: string, entries: CreateMealInput['entries']) {
+  const productIds = Array.from(
+    new Set(entries.map((e) => e.productId).filter((id): id is string => Boolean(id))),
+  );
+  const recipeIds = Array.from(
+    new Set(entries.map((e) => e.recipeId).filter((id): id is string => Boolean(id))),
+  );
+  if (productIds.length > 0) {
+    const owned = await prisma.product.count({
+      where: { id: { in: productIds }, userId },
+    });
+    if (owned !== productIds.length) {
+      throw new Error('One of the products is not yours.');
+    }
+  }
+  if (recipeIds.length > 0) {
+    const owned = await prisma.recipe.count({
+      where: { id: { in: recipeIds }, userId },
+    });
+    if (owned !== recipeIds.length) {
+      throw new Error('One of the recipes is not yours.');
+    }
+  }
+}
+
+const createMealWithSourceSchema = createMealInputSchema.extend({
+  /** If the meal was seeded from a favorite template. */
+  templateId: z.string().min(1).optional(),
+});
+
+/** Create a full meal — type + optional name + entries — in one shot. */
+export async function createMeal(input: unknown): Promise<ActionResult> {
+  const userId = await requireUserId();
+  const parsed = createMealWithSourceSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: flatFirstError(parsed.error) };
+
+  try {
+    await assertOwnership(userId, parsed.data.entries);
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'Could not save.' };
+  }
+
+  if (parsed.data.templateId) {
+    const t = await prisma.mealTemplate.findFirst({
+      where: { id: parsed.data.templateId, userId },
+      select: { id: true },
+    });
+    if (!t) return { ok: false, error: 'Favorite not found.' };
+  }
+
+  const dayDate = new Date(parsed.data.date + 'T00:00:00Z');
+  await prisma.meal.create({
+    data: {
+      userId,
+      date: dayDate,
+      type: parsed.data.type,
+      name: parsed.data.name ?? null,
+      templateId: parsed.data.templateId ?? null,
+      entries: {
+        create: parsed.data.entries.map((e) => ({
+          name: e.name,
+          grams: e.grams,
+          kcalPer100g: e.kcalPer100g,
+          proteinPer100g: e.proteinPer100g,
+          carbsPer100g: e.carbsPer100g,
+          fatPer100g: e.fatPer100g,
+          productId: e.productId ?? null,
+          recipeId: e.recipeId ?? null,
+        })),
+      },
+    },
+  });
+  revalidatePath('/today');
+  redirect('/today');
+}
+
+/** Replace a meal's metadata + entries atomically. */
+export async function updateMeal(
+  mealId: string,
+  input: unknown,
+  returnTo?: string,
+): Promise<ActionResult> {
+  const userId = await requireUserId();
+  const parsed = createMealInputSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: flatFirstError(parsed.error) };
+
+  const existing = await prisma.meal.findFirst({
+    where: { id: mealId, userId },
+    select: { id: true },
+  });
+  if (!existing) return { ok: false, error: 'Meal not found.' };
+
+  try {
+    await assertOwnership(userId, parsed.data.entries);
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'Could not save.' };
+  }
+
+  const dayDate = new Date(parsed.data.date + 'T00:00:00Z');
+  await prisma.$transaction([
+    prisma.mealEntry.deleteMany({ where: { mealId } }),
+    prisma.meal.update({
+      where: { id: mealId },
+      data: {
+        date: dayDate,
+        type: parsed.data.type,
+        name: parsed.data.name ?? null,
+        entries: {
+          create: parsed.data.entries.map((e) => ({
+            name: e.name,
+            grams: e.grams,
+            kcalPer100g: e.kcalPer100g,
+            proteinPer100g: e.proteinPer100g,
+            carbsPer100g: e.carbsPer100g,
+            fatPer100g: e.fatPer100g,
+            productId: e.productId ?? null,
+            recipeId: e.recipeId ?? null,
+          })),
+        },
+      },
+    }),
+  ]);
+  revalidatePath('/today');
+  revalidatePath('/library');
+  redirect(safeReturnTo(returnTo));
+}
+
+/**
+ * Star or unstar a meal. Stars are independent `MealTemplate` rows, so
+ * trashing the meal later doesn't touch the saved favorite.
+ */
+export async function toggleFavorite(mealId: string): Promise<ActionResult> {
+  const userId = await requireUserId();
+  const meal = await prisma.meal.findFirst({
+    where: { id: mealId, userId },
+    include: { entries: true },
+  });
+  if (!meal) return { ok: false, error: 'Meal not found.' };
+
+  if (meal.templateId) {
+    // Unstar — delete the template. The FK on Meal.templateId is SetNull.
+    await prisma.mealTemplate.delete({ where: { id: meal.templateId } });
+  } else {
+    // Star — clone the entries into a new template and link the meal to it.
+    const template = await prisma.mealTemplate.create({
+      data: {
+        userId,
+        type: meal.type,
+        name: meal.name,
+        entries: {
+          create: meal.entries.map((e) => ({
+            name: e.name,
+            grams: e.grams,
+            kcalPer100g: e.kcalPer100g,
+            proteinPer100g: e.proteinPer100g,
+            carbsPer100g: e.carbsPer100g,
+            fatPer100g: e.fatPer100g,
+            productId: e.productId,
+            recipeId: e.recipeId,
+          })),
+        },
+      },
+    });
+    await prisma.meal.update({
+      where: { id: mealId },
+      data: { templateId: template.id },
+    });
+  }
+  revalidatePath('/today');
+  revalidatePath('/library');
+  return { ok: true };
+}
+
+/** Remove a favorite template directly (used from the Library). */
+export async function removeFavorite(templateId: string): Promise<ActionResult> {
+  const userId = await requireUserId();
+  const template = await prisma.mealTemplate.findFirst({
+    where: { id: templateId, userId },
+    select: { id: true },
+  });
+  if (!template) return { ok: false, error: 'Favorite not found.' };
+  await prisma.mealTemplate.delete({ where: { id: templateId } });
+  revalidatePath('/today');
+  revalidatePath('/library');
+  return { ok: true };
+}
+
+/** Trash the meal log only — favorites (`MealTemplate`) are not touched. */
+export async function deleteMeal(mealId: string): Promise<ActionResult> {
+  const userId = await requireUserId();
+  const meal = await prisma.meal.findFirst({
+    where: { id: mealId, userId },
+    select: { id: true },
+  });
+  if (!meal) return { ok: false, error: 'Meal not found.' };
+  await prisma.meal.delete({ where: { id: mealId } });
+  revalidatePath('/today');
+  return { ok: true };
+}
