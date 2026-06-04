@@ -65,15 +65,15 @@ export default async function TodayPage() {
         <p className="text-xs font-medium tracking-wider text-neutral-400 uppercase">
           Today so far
         </p>
-        <p className="mt-3 text-3xl font-bold text-white tabular-nums">
+        <p className="mt-3 whitespace-nowrap text-3xl font-bold tabular-nums text-white">
           {dayTotals.protein.toFixed(1)}
-          <span className="text-lg font-medium text-neutral-400">g protein</span>
+          <span className="text-base font-medium text-neutral-400">g P</span>
           <span className="mx-2 text-neutral-500">·</span>
           {Math.round(dayTotals.kcal)}
-          <span className="text-lg font-medium text-neutral-400"> kcal</span>
+          <span className="text-base font-medium text-neutral-400"> kcal</span>
         </p>
         <p className="mt-2 text-xs text-neutral-400 tabular-nums">
-          Carbs {dayTotals.carbs.toFixed(1)}g · Fat {dayTotals.fat.toFixed(1)}g
+          C {dayTotals.carbs.toFixed(1)}g · F {dayTotals.fat.toFixed(1)}g
         </p>
       </GlassCard>
 
