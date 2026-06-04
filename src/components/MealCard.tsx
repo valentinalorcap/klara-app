@@ -132,15 +132,6 @@ export function MealCard({
   );
 }
 
-function BigStat({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <p className="text-2xl font-bold text-white tabular-nums">{value}</p>
-      <p className="mt-0.5 text-[10px] tracking-wider text-neutral-500 uppercase">{label}</p>
-    </div>
-  );
-}
-
 function IconButton({
   label,
   onClick,

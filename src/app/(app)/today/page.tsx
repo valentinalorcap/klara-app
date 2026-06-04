@@ -65,22 +65,14 @@ export default async function TodayPage() {
         <p className="text-xs font-medium tracking-wider text-neutral-400 uppercase">
           Today so far
         </p>
-        <div className="mt-3 grid grid-cols-2 gap-4">
-          <div>
-            <p className="text-4xl font-bold text-white tabular-nums">
-              {Math.round(dayTotals.kcal)}
-            </p>
-            <p className="mt-1 text-[10px] tracking-wider text-neutral-500 uppercase">kcal</p>
-          </div>
-          <div>
-            <p className="text-4xl font-bold text-white tabular-nums">
-              {dayTotals.protein.toFixed(1)}
-              <span className="ml-0.5 text-2xl font-medium text-neutral-400">g</span>
-            </p>
-            <p className="mt-1 text-[10px] tracking-wider text-neutral-500 uppercase">protein</p>
-          </div>
-        </div>
-        <p className="mt-4 text-xs text-neutral-400 tabular-nums">
+        <p className="mt-3 text-3xl font-bold tabular-nums text-white">
+          {dayTotals.protein.toFixed(1)}
+          <span className="text-lg font-medium text-neutral-400">g protein</span>
+          <span className="mx-2 text-neutral-500">·</span>
+          {Math.round(dayTotals.kcal)}
+          <span className="text-lg font-medium text-neutral-400"> kcal</span>
+        </p>
+        <p className="mt-2 text-xs text-neutral-400 tabular-nums">
           Carbs {dayTotals.carbs.toFixed(1)}g · Fat {dayTotals.fat.toFixed(1)}g
         </p>
       </GlassCard>
