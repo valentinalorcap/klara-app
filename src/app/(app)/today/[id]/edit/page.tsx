@@ -35,8 +35,8 @@ export default async function EditMealPage({ params }: { params: Promise<{ id: s
       orderBy: { name: 'asc' },
       include: { ingredients: { select: { grams: true } } },
     }),
-    prisma.meal.findMany({
-      where: { userId, isFavorite: true },
+    prisma.mealTemplate.findMany({
+      where: { userId },
       orderBy: { updatedAt: 'desc' },
       include: { entries: true },
     }),

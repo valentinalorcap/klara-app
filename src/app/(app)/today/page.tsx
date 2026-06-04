@@ -65,7 +65,7 @@ export default async function TodayPage() {
         <p className="text-xs font-medium tracking-wider text-neutral-400 uppercase">
           Today so far
         </p>
-        <p className="mt-3 text-3xl font-bold tabular-nums text-white">
+        <p className="mt-3 text-3xl font-bold text-white tabular-nums">
           {dayTotals.protein.toFixed(1)}
           <span className="text-lg font-medium text-neutral-400">g protein</span>
           <span className="mx-2 text-neutral-500">·</span>
@@ -91,7 +91,7 @@ export default async function TodayPage() {
                 id: m.id,
                 type: m.type,
                 name: m.name,
-                isFavorite: m.isFavorite,
+                isFavorite: m.templateId !== null,
                 entries: m.entries.map((e) => ({
                   id: e.id,
                   name: e.name,

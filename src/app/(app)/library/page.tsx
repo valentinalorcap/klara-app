@@ -3,7 +3,7 @@ import { Plus, ChefHat, Star } from 'lucide-react';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { GlassCard } from '@/components/GlassCard';
-import { MealCard } from '@/components/MealCard';
+import { FavoriteTemplateCard } from '@/components/FavoriteTemplateCard';
 import { perPortion } from '@/lib/recipes';
 
 export default async function LibraryPage() {
@@ -15,10 +15,10 @@ export default async function LibraryPage() {
       where: { userId },
       orderBy: { updatedAt: 'desc' },
     }),
-    prisma.meal.findMany({
-      where: { userId, isFavorite: true },
+    prisma.mealTemplate.findMany({
+      where: { userId },
       orderBy: { updatedAt: 'desc' },
-      include: { entries: { orderBy: { createdAt: 'asc' } } },
+      include: { entries: { orderBy: { id: 'asc' } } },
     }),
   ]);
 
@@ -115,17 +115,14 @@ export default async function LibraryPage() {
           </GlassCard>
         ) : (
           <div className="space-y-3">
-            {favorites.map((f) => (
-              <MealCard
-                key={f.id}
-                returnTo="/library"
-                showDelete={false}
-                meal={{
-                  id: f.id,
-                  type: f.type,
-                  name: f.name,
-                  isFavorite: f.isFavorite,
-                  entries: f.entries.map((e) => ({
+            {favorites.map((t) => (
+              <FavoriteTemplateCard
+                key={t.id}
+                template={{
+                  id: t.id,
+                  type: t.type,
+                  name: t.name,
+                  entries: t.entries.map((e) => ({
                     id: e.id,
                     name: e.name,
                     grams: e.grams,
