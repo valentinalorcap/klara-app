@@ -6,10 +6,18 @@ patterns, and PRs ship clean.
 ## Commits — Conventional Commits
 
 ```
-<type>: <short imperative description>
+<type>(<scope>): <short imperative description>
 
 <optional body explaining the why — the code already shows the what>
 ```
+
+The optional scope captures **which phase** the change belongs to, so the
+git history and PR list double as a portfolio narrative:
+
+| Scope | When |
+|-------|------|
+| `phase-N` | Anything that ships as part of an implementation-plan phase (`feat(phase-4): ...`) |
+| (no scope) | One-off fixes or chores between phases (`fix: ...`, `chore: ...`) |
 
 | Type | When |
 |------|------|
@@ -32,7 +40,7 @@ Rules:
 Good:
 
 ```
-feat: log meals from saved favorites
+feat(phase-5): add daily goals and macro rings
 fix: prevent meal delete from removing the favorite
 refactor: extract macros calc into a pure helper
 chore: bump prisma to 6.20.0
@@ -42,11 +50,12 @@ Bad: `WIP`, `update files`, `bug fix`, `arreglo`.
 
 ## Branches
 
-Name: `<type>/<short-slug>` — lowercase with dashes.
+Name: `<type>/<scope-or-slug>` — lowercase with dashes. Phase-scoped
+branches mirror the commits.
 
 | Example | Type |
 |---------|------|
-| `feat/meal-favorites` | feature |
+| `feat/phase-4-meal-logging` | phase feature |
 | `fix/dropdown-overflow` | bug fix |
 | `chore/upgrade-next` | maintenance |
 
