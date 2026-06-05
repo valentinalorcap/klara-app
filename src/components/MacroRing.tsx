@@ -94,7 +94,7 @@ export function MacroRing({
               size === 'lg' ? 'text-[11px]' : 'text-[9px]',
             )}
           >
-            / {Math.round(isOverflow ? (target as number) * 2 : (target as number))}
+            / {Math.round(target as number)}
           </p>
         ) : null}
       </div>
