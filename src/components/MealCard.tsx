@@ -1,8 +1,9 @@
 'use client';
 
-import { useTransition, type MouseEvent } from 'react';
+import { useState, useTransition, useRef, useEffect, type MouseEvent } from 'react';
 import Link from 'next/link';
-import { Star, Trash2 } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Star, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
 import { GlassCard } from './GlassCard';
 import { toggleFavorite, deleteMeal } from '@/app/(app)/today/actions';
 import { MEAL_TYPE_LABELS, type MealType, entryMacros, sumEntries } from '@/lib/meals';
@@ -30,27 +31,40 @@ export function MealCard({
     isFavorite: boolean;
     entries: MealCardEntry[];
   };
-  /** Where the edit page should send the user after saving. */
   returnTo?: string;
-  /** Render the trash button. Off in contexts (like the Library favorites)
-   *  where star already covers the only meaningful removal action. */
   showDelete?: boolean;
 }) {
+  const [expanded, setExpanded] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [pendingStar, startStar] = useTransition();
   const [pendingDelete, startDelete] = useTransition();
+  const menuRef = useRef<HTMLDivElement>(null);
   const totals = sumEntries(meal.entries);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    function onDocClick(e: globalThis.MouseEvent) {
+      if (!menuRef.current?.contains(e.target as Node)) setMenuOpen(false);
+    }
+    document.addEventListener('mousedown', onDocClick);
+    return () => document.removeEventListener('mousedown', onDocClick);
+  }, [menuOpen]);
 
   function onStar(e: MouseEvent) {
     e.stopPropagation();
-    e.preventDefault();
     startStar(async () => {
       await toggleFavorite(meal.id);
     });
   }
 
+  function onMenuToggle(e: MouseEvent) {
+    e.stopPropagation();
+    setMenuOpen((v) => !v);
+  }
+
   function onDelete(e: MouseEvent) {
     e.stopPropagation();
-    e.preventDefault();
+    setMenuOpen(false);
     const label = meal.name ?? MEAL_TYPE_LABELS[meal.type];
     if (!confirm(`Delete "${label}"?`)) return;
     startDelete(async () => {
@@ -59,75 +73,103 @@ export function MealCard({
   }
 
   return (
-    <GlassCard className="relative p-5 transition hover:border-white/20">
-      <Link
-        href={`/today/${meal.id}/edit?from=${encodeURIComponent(returnTo)}`}
-        aria-label={`Edit ${meal.name ?? MEAL_TYPE_LABELS[meal.type]}`}
-        className="absolute inset-0 rounded-3xl"
-      />
-
-      <div className="pointer-events-none relative">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            <p className="text-[10px] font-medium tracking-wider text-[var(--accent)] uppercase">
-              {MEAL_TYPE_LABELS[meal.type]}
-            </p>
-            {meal.name ? (
-              <h3 className="mt-0.5 truncate text-sm font-semibold text-white">{meal.name}</h3>
-            ) : null}
-          </div>
-          <div className="pointer-events-auto flex shrink-0 items-center gap-1">
-            <IconButton
-              label={meal.isFavorite ? 'Unstar' : 'Star'}
-              onClick={onStar}
-              disabled={pendingStar}
-              className={
-                meal.isFavorite ? 'text-yellow-400' : 'text-neutral-400 hover:text-yellow-400'
-              }
-            >
-              <Star size={16} fill={meal.isFavorite ? 'currentColor' : 'transparent'} />
-            </IconButton>
-            {showDelete ? (
-              <IconButton
-                label="Delete"
-                onClick={onDelete}
-                disabled={pendingDelete}
-                className="text-neutral-400 hover:text-[var(--danger)]"
-              >
-                <Trash2 size={16} />
-              </IconButton>
-            ) : null}
-          </div>
+    <GlassCard
+      className="cursor-pointer p-5 transition hover:border-white/20"
+      onClick={() => setExpanded((v) => !v)}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="text-[10px] font-medium tracking-wider text-[var(--accent)] uppercase">
+            {MEAL_TYPE_LABELS[meal.type]}
+          </p>
+          {meal.name ? (
+            <h3 className="mt-0.5 truncate text-sm font-semibold text-white">{meal.name}</h3>
+          ) : null}
         </div>
-
-        <p className="mt-3 text-2xl font-bold whitespace-nowrap text-white tabular-nums">
-          {totals.protein.toFixed(1)}
-          <span className="text-sm font-medium text-neutral-400">g P</span>
-          <span className="mx-2 text-neutral-500">·</span>
-          {Math.round(totals.kcal)}
-          <span className="text-sm font-medium text-neutral-400"> kcal</span>
-        </p>
-        <p className="mt-1 text-xs text-neutral-400 tabular-nums">
-          C {totals.carbs.toFixed(1)}g · F {totals.fat.toFixed(1)}g
-        </p>
-
-        <ul className="mt-4 space-y-1.5">
-          {meal.entries.map((e) => {
-            const m = entryMacros(e);
-            return (
-              <li
-                key={e.id}
-                className="flex items-baseline justify-between gap-3 text-xs text-neutral-400 tabular-nums"
+        <div className="flex shrink-0 items-center gap-1">
+          <IconButton
+            label={meal.isFavorite ? 'Unstar' : 'Star'}
+            onClick={onStar}
+            disabled={pendingStar}
+            className={
+              meal.isFavorite ? 'text-yellow-400' : 'text-neutral-400 hover:text-yellow-400'
+            }
+          >
+            <Star size={16} fill={meal.isFavorite ? 'currentColor' : 'transparent'} />
+          </IconButton>
+          {showDelete ? (
+            <div ref={menuRef} className="relative">
+              <IconButton
+                label="More actions"
+                onClick={onMenuToggle}
+                disabled={pendingDelete}
+                className="text-neutral-400 hover:text-white"
               >
-                <span className="min-w-0 flex-1 truncate text-neutral-300">{e.name}</span>
-                <span className="shrink-0 text-neutral-500">
-                  {e.grams.toFixed(0)}g · {Math.round(m.kcal)} kcal · {m.protein.toFixed(1)}g P
-                </span>
-              </li>
-            );
-          })}
-        </ul>
+                <MoreHorizontal size={18} />
+              </IconButton>
+              {menuOpen ? (
+                <div className="absolute top-full right-0 z-20 mt-1 w-36 overflow-hidden rounded-2xl border border-white/10 bg-[#1a1633]/95 p-1 shadow-2xl backdrop-blur-xl">
+                  <Link
+                    href={`/today/${meal.id}/edit?from=${encodeURIComponent(returnTo)}`}
+                    onClick={(e) => e.stopPropagation()}
+                    className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-white transition hover:bg-white/5"
+                  >
+                    <Pencil size={14} className="text-neutral-400" />
+                    Edit
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={onDelete}
+                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-[var(--danger)] transition hover:bg-[var(--danger)]/10"
+                  >
+                    <Trash2 size={14} />
+                    Delete
+                  </button>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
       </div>
+
+      <p className="mt-3 text-2xl font-bold whitespace-nowrap text-white tabular-nums">
+        {totals.protein.toFixed(1)}
+        <span className="text-sm font-medium text-neutral-400">g P</span>
+        <span className="mx-2 text-neutral-500">·</span>
+        {Math.round(totals.kcal)}
+        <span className="text-sm font-medium text-neutral-400"> kcal</span>
+      </p>
+      <p className="mt-1 text-xs text-neutral-400 tabular-nums">
+        C {totals.carbs.toFixed(1)}g · F {totals.fat.toFixed(1)}g
+      </p>
+
+      <AnimatePresence initial={false}>
+        {expanded ? (
+          <motion.ul
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 220, damping: 28 }}
+            className="overflow-hidden"
+          >
+            <li aria-hidden className="mt-4 h-px bg-white/5" />
+            {meal.entries.map((e) => {
+              const m = entryMacros(e);
+              return (
+                <li
+                  key={e.id}
+                  className="flex items-baseline justify-between gap-3 pt-2 text-xs text-neutral-400 tabular-nums"
+                >
+                  <span className="min-w-0 flex-1 truncate text-neutral-300">{e.name}</span>
+                  <span className="shrink-0 text-neutral-500">
+                    {e.grams.toFixed(0)}g · {Math.round(m.kcal)} kcal · {m.protein.toFixed(1)}g P
+                  </span>
+                </li>
+              );
+            })}
+          </motion.ul>
+        ) : null}
+      </AnimatePresence>
     </GlassCard>
   );
 }
