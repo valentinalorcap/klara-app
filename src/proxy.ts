@@ -12,5 +12,6 @@ export const config = {
     '/library/:path*',
     '/chat/:path*',
     '/history/:path*',
+    '/settings/:path*',
   ],
 };
