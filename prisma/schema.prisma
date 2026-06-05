@@ -20,6 +20,13 @@ model User {
   emailVerified DateTime?
   image         String?
 
+  /// Daily nutrition goals — null until the user sets them in Settings.
+  /// The Today summary renders progress rings against these values.
+  dailyKcalGoal    Float?
+  dailyProteinGoal Float?
+  dailyCarbsGoal   Float?
+  dailyFatGoal     Float?
+
   accounts      Account[]
   sessions      Session[]
   products      Product[]
