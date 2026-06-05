@@ -1,0 +1,102 @@
+'use client';
+
+import { useActionState } from 'react';
+import { GlassCard } from './GlassCard';
+import { updateGoals, type GoalsFormState } from '@/app/(app)/settings/actions';
+
+type Initial = {
+  dailyKcalGoal: number | null;
+  dailyProteinGoal: number | null;
+  dailyCarbsGoal: number | null;
+  dailyFatGoal: number | null;
+};
+
+export function GoalsForm({ initial }: { initial: Initial }) {
+  const [state, formAction, pending] = useActionState<GoalsFormState, FormData>(updateGoals, {});
+
+  return (
+    <form action={formAction} className="space-y-5">
+      <GlassCard className="space-y-3 p-5">
+        <p className="text-xs font-medium tracking-wider text-neutral-400 uppercase">Daily goals</p>
+        <p className="-mt-1 text-[11px] text-neutral-500">
+          Leave a field blank to skip its progress ring on Today.
+        </p>
+        <Field
+          label="Calories (kcal)"
+          name="dailyKcalGoal"
+          initial={initial.dailyKcalGoal}
+          placeholder="1800"
+          error={state.fieldErrors?.dailyKcalGoal}
+        />
+        <Field
+          label="Protein (g)"
+          name="dailyProteinGoal"
+          initial={initial.dailyProteinGoal}
+          placeholder="120"
+          error={state.fieldErrors?.dailyProteinGoal}
+        />
+        <Field
+          label="Carbs (g)"
+          name="dailyCarbsGoal"
+          initial={initial.dailyCarbsGoal}
+          placeholder="180"
+          error={state.fieldErrors?.dailyCarbsGoal}
+        />
+        <Field
+          label="Fat (g)"
+          name="dailyFatGoal"
+          initial={initial.dailyFatGoal}
+          placeholder="60"
+          error={state.fieldErrors?.dailyFatGoal}
+        />
+      </GlassCard>
+
+      {state.formError ? (
+        <p className="text-sm text-[var(--danger)]" role="alert">
+          {state.formError}
+        </p>
+      ) : null}
+
+      <button
+        type="submit"
+        disabled={pending}
+        className="w-full rounded-2xl bg-[var(--accent)] px-4 py-3.5 text-sm font-semibold text-white shadow-[0_8px_24px_-8px_var(--accent-glow)] transition hover:bg-[var(--accent-hover)] active:scale-[0.98] disabled:opacity-50"
+      >
+        {pending ? 'Saving…' : 'Save goals'}
+      </button>
+    </form>
+  );
+}
+
+function Field({
+  label,
+  name,
+  initial,
+  placeholder,
+  error,
+}: {
+  label: string;
+  name: string;
+  initial: number | null;
+  placeholder: string;
+  error?: string;
+}) {
+  return (
+    <label className="block">
+      <span className="text-xs text-neutral-300">{label}</span>
+      <input
+        name={name}
+        type="number"
+        step="1"
+        inputMode="decimal"
+        defaultValue={initial ?? ''}
+        placeholder={placeholder}
+        className={`mt-1 block w-full rounded-2xl border bg-white/[0.04] px-4 py-3 text-sm text-white tabular-nums transition placeholder:text-neutral-500 focus:bg-white/[0.08] focus:ring-2 focus:ring-[var(--accent)]/60 focus:outline-none ${
+          error ? 'border-[var(--danger)]/60' : 'border-white/10'
+        }`}
+        aria-invalid={Boolean(error)}
+      />
+      {error ? <p className="mt-1.5 text-xs text-[var(--danger)]">{error}</p> : null}
+    </label>
+  );
+}

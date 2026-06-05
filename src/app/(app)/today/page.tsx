@@ -1,10 +1,12 @@
 import Link from 'next/link';
-import { LogOut, Plus } from 'lucide-react';
-import { auth, signOut } from '@/auth';
+import { Plus, Settings } from 'lucide-react';
+import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { GlassCard } from '@/components/GlassCard';
 import { MealCard } from '@/components/MealCard';
+import { MacroRing, MACRO_COLORS } from '@/components/MacroRing';
 import { isoDate, sumEntries } from '@/lib/meals';
+import { hasAnyGoal } from '@/lib/goals';
 
 export default async function TodayPage() {
   const session = await auth();
@@ -14,11 +16,30 @@ export default async function TodayPage() {
   const dayKey = isoDate(new Date());
   const dayDate = new Date(dayKey + 'T00:00:00Z');
 
-  const meals = await prisma.meal.findMany({
-    where: { userId, date: dayDate },
-    orderBy: { createdAt: 'asc' },
-    include: { entries: { orderBy: { createdAt: 'asc' } } },
-  });
+  const [user, meals] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        dailyKcalGoal: true,
+        dailyProteinGoal: true,
+        dailyCarbsGoal: true,
+        dailyFatGoal: true,
+      },
+    }),
+    prisma.meal.findMany({
+      where: { userId, date: dayDate },
+      orderBy: { createdAt: 'asc' },
+      include: { entries: { orderBy: { createdAt: 'asc' } } },
+    }),
+  ]);
+
+  const goals = {
+    dailyKcalGoal: user?.dailyKcalGoal ?? null,
+    dailyProteinGoal: user?.dailyProteinGoal ?? null,
+    dailyCarbsGoal: user?.dailyCarbsGoal ?? null,
+    dailyFatGoal: user?.dailyFatGoal ?? null,
+  };
+  const goalsSet = hasAnyGoal(goals);
 
   const allEntries = meals.flatMap((m) => m.entries);
   const dayTotals = sumEntries(allEntries);
@@ -44,20 +65,13 @@ export default async function TodayPage() {
           >
             <Plus size={20} />
           </Link>
-          <form
-            action={async () => {
-              'use server';
-              await signOut({ redirectTo: '/login' });
-            }}
+          <Link
+            href="/settings"
+            aria-label="Settings"
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.06] text-neutral-300 backdrop-blur-xl transition hover:bg-white/10"
           >
-            <button
-              type="submit"
-              aria-label="Sign out"
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.06] text-neutral-300 backdrop-blur-xl transition hover:bg-white/10"
-            >
-              <LogOut size={16} />
-            </button>
-          </form>
+            <Settings size={16} />
+          </Link>
         </div>
       </header>
 
@@ -65,16 +79,55 @@ export default async function TodayPage() {
         <p className="text-xs font-medium tracking-wider text-neutral-400 uppercase">
           Today so far
         </p>
-        <p className="mt-3 text-3xl font-bold whitespace-nowrap text-white tabular-nums">
-          {dayTotals.protein.toFixed(1)}
-          <span className="text-base font-medium text-neutral-400">g P</span>
-          <span className="mx-2 text-neutral-500">·</span>
-          {Math.round(dayTotals.kcal)}
-          <span className="text-base font-medium text-neutral-400"> kcal</span>
-        </p>
-        <p className="mt-2 text-xs text-neutral-400 tabular-nums">
-          C {dayTotals.carbs.toFixed(1)}g · F {dayTotals.fat.toFixed(1)}g
-        </p>
+
+        <div className="mt-4 grid grid-cols-2 gap-4">
+          <MacroRing
+            size="lg"
+            current={dayTotals.protein}
+            target={goals.dailyProteinGoal}
+            color={MACRO_COLORS.protein}
+            label="g protein"
+            valueText={dayTotals.protein.toFixed(1)}
+          />
+          <MacroRing
+            size="lg"
+            current={dayTotals.kcal}
+            target={goals.dailyKcalGoal}
+            color={MACRO_COLORS.kcal}
+            label="kcal"
+            valueText={Math.round(dayTotals.kcal).toString()}
+          />
+        </div>
+
+        <div className="mt-3 grid grid-cols-2 gap-4">
+          <MacroRing
+            size="sm"
+            current={dayTotals.carbs}
+            target={goals.dailyCarbsGoal}
+            color={MACRO_COLORS.carbs}
+            label="g carbs"
+            valueText={dayTotals.carbs.toFixed(0)}
+            className="mx-auto max-w-[7rem]"
+          />
+          <MacroRing
+            size="sm"
+            current={dayTotals.fat}
+            target={goals.dailyFatGoal}
+            color={MACRO_COLORS.fat}
+            label="g fat"
+            valueText={dayTotals.fat.toFixed(0)}
+            className="mx-auto max-w-[7rem]"
+          />
+        </div>
+
+        {!goalsSet ? (
+          <Link
+            href="/settings"
+            className="mt-4 block rounded-2xl border border-dashed border-white/15 px-4 py-3 text-center text-xs text-[var(--accent)] transition hover:border-[var(--accent)]/60 hover:bg-[var(--accent)]/5"
+          >
+            Set your daily goals to see progress →
+          </Link>
+        ) : null}
       </GlassCard>
 
       {meals.length === 0 ? (

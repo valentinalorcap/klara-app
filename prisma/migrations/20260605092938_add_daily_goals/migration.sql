@@ -1,0 +1,5 @@
+-- AlterTable
+ALTER TABLE "User" ADD COLUMN     "dailyCarbsGoal" DOUBLE PRECISION,
+ADD COLUMN     "dailyFatGoal" DOUBLE PRECISION,
+ADD COLUMN     "dailyKcalGoal" DOUBLE PRECISION,
+ADD COLUMN     "dailyProteinGoal" DOUBLE PRECISION;
