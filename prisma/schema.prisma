@@ -27,12 +27,17 @@ model User {
   dailyCarbsGoal   Float?
   dailyFatGoal     Float?
 
-  accounts      Account[]
-  sessions      Session[]
-  products      Product[]
-  recipes       Recipe[]
-  meals         Meal[]
-  mealTemplates MealTemplate[]
+  /// Tone Klara uses when evaluating each meal. Settings page lets the
+  /// user switch between direct, motivational, or neutral.
+  defaultEvalTone EvalTone @default(MOTIVATIONAL)
+
+  accounts       Account[]
+  sessions       Session[]
+  products       Product[]
+  recipes        Recipe[]
+  meals          Meal[]
+  mealTemplates  MealTemplate[]
+  aiEvaluations  AIEvaluation[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -173,6 +178,18 @@ enum MealType {
   OTHER
 }
 
+enum EvalTone {
+  DIRECT
+  MOTIVATIONAL
+  NEUTRAL
+}
+
+enum EvalStatus {
+  PENDING
+  DONE
+  ERROR
+}
+
 /// One meal logged on a specific day — breakfast, lunch, etc. Holds one
 /// or more entries (each entry is a food + grams).
 model Meal {
@@ -195,7 +212,8 @@ model Meal {
 
   notes String?
 
-  entries MealEntry[]
+  entries    MealEntry[]
+  evaluation AIEvaluation?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -245,6 +263,37 @@ model MealTemplateEntry {
   @@index([templateId])
   @@index([productId])
   @@index([recipeId])
+}
+
+/// Klara's per-meal evaluation. One row per meal — re-running the eval
+/// (e.g. after the user edits the meal) overwrites this row. Status moves
+/// PENDING → DONE on success, or PENDING → ERROR if Anthropic fails; the
+/// UI shows a skeleton for PENDING and a retry button for ERROR.
+model AIEvaluation {
+  id     String @id @default(cuid())
+  mealId String @unique
+  meal   Meal   @relation(fields: [mealId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  tone   EvalTone
+  status EvalStatus @default(PENDING)
+
+  /// Final markdown shown in the card. Null until status = DONE.
+  markdown String?
+
+  /// Surfaced under the retry button when status = ERROR.
+  errorMessage String?
+
+  model     String?
+  tokensIn  Int?
+  tokensOut Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
 }
 
 /// A single food line logged inside a meal. Per-100g macros are stored

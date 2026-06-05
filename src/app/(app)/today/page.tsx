@@ -5,6 +5,8 @@ import { prisma } from '@/lib/prisma';
 import { GlassCard } from '@/components/GlassCard';
 import { MealCard } from '@/components/MealCard';
 import { MacroRing, MACRO_COLORS } from '@/components/MacroRing';
+import { EvalPoller } from '@/components/EvalPoller';
+import { EvalStatus } from '@prisma/client';
 import { isoDate, sumEntries } from '@/lib/meals';
 import { hasAnyGoal } from '@/lib/goals';
 
@@ -29,7 +31,7 @@ export default async function TodayPage() {
     prisma.meal.findMany({
       where: { userId, date: dayDate },
       orderBy: { createdAt: 'asc' },
-      include: { entries: { orderBy: { createdAt: 'asc' } } },
+      include: { entries: { orderBy: { createdAt: 'asc' } }, evaluation: true },
     }),
   ]);
 
@@ -43,6 +45,7 @@ export default async function TodayPage() {
 
   const allEntries = meals.flatMap((m) => m.entries);
   const dayTotals = sumEntries(allEntries);
+  const hasPendingEvals = meals.some((m) => m.evaluation?.status === EvalStatus.PENDING);
 
   const today = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
@@ -130,6 +133,8 @@ export default async function TodayPage() {
         ) : null}
       </GlassCard>
 
+      <EvalPoller hasPending={hasPendingEvals} />
+
       {meals.length === 0 ? (
         <GlassCard className="p-8 text-center">
           <p className="text-sm text-neutral-300">No meals logged yet.</p>
@@ -154,6 +159,14 @@ export default async function TodayPage() {
                   carbsPer100g: e.carbsPer100g,
                   fatPer100g: e.fatPer100g,
                 })),
+                evaluation: m.evaluation
+                  ? {
+                      status: m.evaluation.status,
+                      tone: m.evaluation.tone,
+                      markdown: m.evaluation.markdown,
+                      errorMessage: m.evaluation.errorMessage,
+                    }
+                  : null,
               }}
             />
           ))}

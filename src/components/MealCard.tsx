@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Star, MoreVertical, Pencil, Trash2 } from 'lucide-react';
 import { GlassCard } from './GlassCard';
+import { EvaluationBanner, type EvaluationView } from './EvaluationBanner';
 import { toggleFavorite, deleteMeal } from '@/app/(app)/today/actions';
 import { MEAL_TYPE_LABELS, type MealType, entryMacros, sumEntries } from '@/lib/meals';
 import { cn } from '@/lib/utils';
@@ -30,6 +31,7 @@ export function MealCard({
     name: string | null;
     isFavorite: boolean;
     entries: MealCardEntry[];
+    evaluation: EvaluationView | null;
   };
   returnTo?: string;
   showDelete?: boolean;
@@ -178,6 +180,9 @@ export function MealCard({
                 );
               })}
             </ul>
+            {meal.evaluation ? (
+              <EvaluationBanner mealId={meal.id} evaluation={meal.evaluation} />
+            ) : null}
           </motion.div>
         ) : null}
       </AnimatePresence>

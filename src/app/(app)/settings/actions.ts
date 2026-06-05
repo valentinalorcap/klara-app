@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
+import { EvalTone } from '@prisma/client';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { goalsInputSchema } from '@/lib/goals';
@@ -54,4 +55,21 @@ export async function updateGoals(
   revalidatePath('/today');
   revalidatePath('/settings');
   redirect('/today');
+}
+
+const toneSchema = z.nativeEnum(EvalTone);
+
+/** Save the tone Klara uses when evaluating future meals. */
+export async function updateTone(
+  tone: unknown,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const userId = await requireUserId();
+  const parsed = toneSchema.safeParse(tone);
+  if (!parsed.success) return { ok: false, error: 'Invalid tone.' };
+  await prisma.user.update({
+    where: { id: userId },
+    data: { defaultEvalTone: parsed.data },
+  });
+  revalidatePath('/settings');
+  return { ok: true };
 }
