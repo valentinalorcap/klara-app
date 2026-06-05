@@ -165,12 +165,12 @@ export function MealCard({
                     key={e.id}
                     className="flex items-baseline justify-between gap-3 pt-2 text-xs text-neutral-400"
                   >
-                    <span className="min-w-0 flex-1 truncate">
-                      <span className="text-neutral-300">{e.name}</span>
-                      <span className="ml-1.5 text-neutral-500 tabular-nums">
+                    <div className="flex min-w-0 flex-1 items-baseline gap-1.5">
+                      <span className="min-w-0 truncate text-neutral-300">{e.name}</span>
+                      <span className="shrink-0 text-neutral-500 tabular-nums">
                         {e.grams.toFixed(0)}g
                       </span>
-                    </span>
+                    </div>
                     <span className="shrink-0 text-neutral-500 tabular-nums">
                       P {m.protein.toFixed(1)}g · {Math.round(m.kcal)} kcal
                     </span>
