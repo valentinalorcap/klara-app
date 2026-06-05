@@ -77,6 +77,16 @@ export function MacroRing({
         >
           {label}
         </p>
+        {hasGoal ? (
+          <p
+            className={cn(
+              'mt-0.5 tabular-nums text-neutral-500',
+              size === 'lg' ? 'text-[11px]' : 'text-[9px]',
+            )}
+          >
+            / {Math.round(target as number)}
+          </p>
+        ) : null}
       </div>
     </div>
   );
