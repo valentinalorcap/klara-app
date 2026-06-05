@@ -144,37 +144,54 @@ export function MealCard({
         {Math.round(totals.kcal)}
         <span className="text-sm font-medium text-neutral-400"> kcal</span>
       </p>
-      <p className="mt-1 text-xs text-neutral-400 tabular-nums">
-        C {totals.carbs.toFixed(1)}g · F {totals.fat.toFixed(1)}g
-      </p>
 
       <AnimatePresence initial={false}>
         {expanded ? (
-          <motion.ul
+          <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ type: 'spring', stiffness: 220, damping: 28 }}
             className="overflow-hidden"
           >
-            <li aria-hidden className="mt-4 h-px bg-white/5" />
-            {meal.entries.map((e) => {
-              const m = entryMacros(e);
-              return (
-                <li
-                  key={e.id}
-                  className="flex items-baseline justify-between gap-3 pt-2 text-xs text-neutral-400 tabular-nums"
-                >
-                  <span className="min-w-0 flex-1 truncate text-neutral-300">{e.name}</span>
-                  <span className="shrink-0 text-neutral-500">
-                    {e.grams.toFixed(0)}g · {Math.round(m.kcal)} kcal · {m.protein.toFixed(1)}g P
-                  </span>
-                </li>
-              );
-            })}
-          </motion.ul>
+            <p className="mt-1 text-xs text-neutral-400 tabular-nums">
+              C {totals.carbs.toFixed(1)}g · F {totals.fat.toFixed(1)}g
+            </p>
+            <ul className="mt-4 border-t border-white/5 pt-2">
+              {meal.entries.map((e) => {
+                const m = entryMacros(e);
+                return (
+                  <li
+                    key={e.id}
+                    className="flex items-baseline justify-between gap-3 pt-2 text-xs text-neutral-400"
+                  >
+                    <span className="min-w-0 flex-1 truncate">
+                      <span className="text-neutral-300">{e.name}</span>
+                      <span className="ml-1.5 text-neutral-500 tabular-nums">
+                        {e.grams.toFixed(0)}g
+                      </span>
+                    </span>
+                    <span className="shrink-0 text-neutral-500 tabular-nums">
+                      P {m.protein.toFixed(1)}g · {Math.round(m.kcal)} kcal
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          </motion.div>
         ) : null}
       </AnimatePresence>
+
+      <div className="mt-3 flex justify-center">
+        <ChevronDown
+          size={16}
+          className={cn(
+            'text-neutral-500 transition-transform duration-300',
+            expanded ? 'rotate-180' : 'rotate-0',
+          )}
+          aria-hidden
+        />
+      </div>
     </GlassCard>
   );
 }
