@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 690 300" width="690" height="300">
+  <rect width="690" height="300" fill="#0a0814"/>
+
+  <!-- card -->
+  <rect x="15" y="15" width="660" height="270" rx="24" fill="#15102b"/>
+  <rect x="15" y="15" width="660" height="270" rx="24" fill="none" stroke="rgba(255,255,255,0.10)"/>
+  <line x1="35" y1="16.5" x2="655" y2="16.5" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+
+  <!-- BREAKFAST label -->
+  <text x="40" y="55" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" font-weight="700" fill="#a78bfa" letter-spacing="2">BREAKFAST</text>
+
+  <!-- title -->
+  <text x="40" y="82" font-family="ui-sans-serif, system-ui, sans-serif" font-size="15" font-weight="700" fill="white">Desayuno: pan + bananabread</text>
+
+  <!-- star -->
+  <g transform="translate(595, 55)">
+    <path d="M0,-9 L2.6,-3.2 L9,-2.8 L4,1.5 L6,8.5 L0,4.5 L-6,8.5 L-4,1.5 L-9,-2.8 L-2.6,-3.2 Z" fill="#facc15"/>
+  </g>
+
+  <!-- vertical 3 dots -->
+  <g transform="translate(635, 55)" fill="#9ca3af">
+    <circle cy="-7" r="1.8"/>
+    <circle cy="0" r="1.8"/>
+    <circle cy="7" r="1.8"/>
+  </g>
+
+  <!-- macros -->
+  <g font-family="ui-sans-serif, system-ui, sans-serif">
+    <text x="40" y="165" font-size="40" font-weight="800" fill="white">55.5</text>
+    <text x="142" y="165" font-size="15" font-weight="500" fill="#9ca3af">g P</text>
+    <text x="185" y="158" font-size="22" font-weight="800" fill="#6b7280">·</text>
+    <text x="215" y="165" font-size="40" font-weight="800" fill="white">661</text>
+    <text x="315" y="165" font-size="15" font-weight="500" fill="#9ca3af">kcal</text>
+  </g>
+
+  <!-- AFFORDANCE: bottom-sheet handle bar -->
+  <rect x="315" y="248" width="60" height="5" rx="2.5" fill="rgba(255,255,255,0.22)"/>
+
+  <!-- label tag -->
+  <text x="345" y="290" font-family="ui-sans-serif, system-ui, sans-serif" font-size="10" font-weight="500" fill="#525252" text-anchor="middle" letter-spacing="1">OPTION 2 — SHEET HANDLE</text>
+</svg>

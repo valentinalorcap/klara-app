@@ -3,7 +3,7 @@
 import { useState, useTransition, useRef, useEffect, type MouseEvent } from 'react';
 import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Star, MoreVertical, Pencil, Trash2, ChevronDown } from 'lucide-react';
+import { Star, MoreVertical, Pencil, Trash2 } from 'lucide-react';
 import { GlassCard } from './GlassCard';
 import { toggleFavorite, deleteMeal } from '@/app/(app)/today/actions';
 import { MEAL_TYPE_LABELS, type MealType, entryMacros, sumEntries } from '@/lib/meals';
@@ -182,14 +182,12 @@ export function MealCard({
         ) : null}
       </AnimatePresence>
 
-      <div className="mt-3 flex justify-center">
-        <ChevronDown
-          size={16}
+      <div className="mt-4 flex justify-center" aria-hidden>
+        <span
           className={cn(
-            'text-neutral-500 transition-transform duration-300',
-            expanded ? 'rotate-180' : 'rotate-0',
+            'h-[5px] w-12 rounded-full transition-colors',
+            expanded ? 'bg-white/15' : 'bg-white/25',
           )}
-          aria-hidden
         />
       </div>
     </GlassCard>
