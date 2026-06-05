@@ -3,7 +3,7 @@
 import { useState, useTransition, useRef, useEffect, type MouseEvent } from 'react';
 import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Star, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
+import { Star, MoreVertical, Pencil, Trash2, ChevronDown } from 'lucide-react';
 import { GlassCard } from './GlassCard';
 import { toggleFavorite, deleteMeal } from '@/app/(app)/today/actions';
 import { MEAL_TYPE_LABELS, type MealType, entryMacros, sumEntries } from '@/lib/meals';
@@ -74,7 +74,12 @@ export function MealCard({
 
   return (
     <GlassCard
-      className="cursor-pointer p-5 transition hover:border-white/20"
+      className={cn(
+        'cursor-pointer p-5 transition active:scale-[0.995]',
+        expanded
+          ? 'border-white/15'
+          : 'border-white/10 shadow-[0_1px_0_rgba(255,255,255,0.06)_inset,0_8px_32px_-12px_rgba(0,0,0,0.4)] hover:border-white/20',
+      )}
       onClick={() => setExpanded((v) => !v)}
     >
       <div className="flex items-start justify-between gap-3">
@@ -105,7 +110,7 @@ export function MealCard({
                 disabled={pendingDelete}
                 className="text-neutral-400 hover:text-white"
               >
-                <MoreHorizontal size={18} />
+                <MoreVertical size={18} />
               </IconButton>
               {menuOpen ? (
                 <div className="absolute top-full right-0 z-20 mt-1 w-36 overflow-hidden rounded-2xl border border-white/10 bg-[#1a1633]/95 p-1 shadow-2xl backdrop-blur-xl">
