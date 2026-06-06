@@ -393,15 +393,11 @@ export function MealForm({
         <p className="text-xs font-medium tracking-wider text-neutral-400 uppercase">
           Total (live)
         </p>
-        <div className="flex items-baseline gap-3">
-          <p className="text-2xl font-bold text-white tabular-nums">
-            {Math.round(totals.kcal)}
-            <span className="ml-1 text-xs font-medium text-neutral-400">kcal</span>
-          </p>
-          <p className="text-xs text-neutral-400 tabular-nums">
-            P {totals.protein.toFixed(1)}g · C {totals.carbs.toFixed(1)}g · F{' '}
-            {totals.fat.toFixed(1)}g
-          </p>
+        <div className="grid grid-cols-4 gap-3 text-center">
+          <Stat label="kcal" value={Math.round(totals.kcal)} />
+          <Stat label="P" value={totals.protein.toFixed(1) + 'g'} />
+          <Stat label="C" value={totals.carbs.toFixed(1) + 'g'} />
+          <Stat label="F" value={totals.fat.toFixed(1) + 'g'} />
         </div>
       </GlassCard>
 
@@ -430,6 +426,15 @@ export function MealForm({
           Cancel
         </Link>
       </div>
+    </div>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div>
+      <p className="text-base font-semibold text-white tabular-nums">{value}</p>
+      <p className="mt-0.5 text-[10px] tracking-wider text-neutral-500 uppercase">{label}</p>
     </div>
   );
 }
