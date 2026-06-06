@@ -108,7 +108,7 @@ export function FavoriteTemplateCard({
                       </span>
                     </div>
                     <span className="shrink-0 text-neutral-500 tabular-nums">
-                      P {m.protein.toFixed(1)}g · {Math.round(m.kcal)} kcal
+                      {Math.round(m.kcal)} kcal · P {m.protein.toFixed(1)}g
                     </span>
                   </li>
                 );
