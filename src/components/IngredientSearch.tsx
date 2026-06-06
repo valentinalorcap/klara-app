@@ -51,6 +51,9 @@ export function IngredientSearch({
     });
   }
 
+  const showKlaraOption = trimmed.length >= 3;
+  const showDropdown = filtered.length > 0 || showKlaraOption;
+
   return (
     <div className="space-y-2">
       <div className="relative">
@@ -67,7 +70,7 @@ export function IngredientSearch({
         />
       </div>
 
-      {filtered.length > 0 ? (
+      {showDropdown ? (
         <ul className="space-y-1 rounded-2xl border border-white/10 bg-white/[0.04] p-1">
           {filtered.map((item) => (
             <li key={`${item.kind}-${item.id}`}>
@@ -90,21 +93,22 @@ export function IngredientSearch({
               </button>
             </li>
           ))}
+          {showKlaraOption ? (
+            <li>
+              <button
+                type="button"
+                onClick={askKlara}
+                disabled={estimating}
+                className={cn(
+                  'flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-medium text-[var(--accent)] transition hover:bg-[var(--accent)]/10 disabled:cursor-not-allowed disabled:opacity-50',
+                )}
+              >
+                <Sparkles size={12} className={cn(estimating && 'animate-pulse')} />
+                {estimating ? 'Klara is thinking…' : 'Ask Klara to add these'}
+              </button>
+            </li>
+          ) : null}
         </ul>
-      ) : null}
-
-      {trimmed.length >= 3 ? (
-        <button
-          type="button"
-          onClick={askKlara}
-          disabled={estimating}
-          className={cn(
-            'flex w-full items-center justify-center gap-2 rounded-2xl border border-[var(--accent)]/30 bg-[var(--accent)]/10 px-3 py-2.5 text-xs font-medium text-[var(--accent)] transition hover:bg-[var(--accent)]/15 disabled:cursor-not-allowed disabled:opacity-50',
-          )}
-        >
-          <Sparkles size={12} className={cn(estimating && 'animate-pulse')} />
-          {estimating ? 'Klara is thinking…' : 'Ask Klara to add these'}
-        </button>
       ) : null}
     </div>
   );
