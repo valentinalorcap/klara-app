@@ -10,9 +10,9 @@
   --border-glass: rgba(255, 255, 255, 0.1);
 
   /* Accent (violet) */
-  --accent: #8b5cf6;
+  --accent: #9963f6;
   --accent-hover: #7c3aed;
-  --accent-glow: rgba(139, 92, 246, 0.4);
+  --accent-glow: rgba(153, 99, 246, 0.4);
 
   /* Text */
   --text-primary: #ffffff;
@@ -22,6 +22,17 @@
   /* Semantic */
   --danger: #f87171;
   --success: #34d399;
+
+  /* Macro coding — same hues as the MacroRing dashboard so the same color
+     means the same macro everywhere (rings, meal totals, favorites). Only
+     protein and kcal are tinted on the cards; carbs and fat stay neutral
+     to keep the totals lines from feeling busy. Coral kcal + aqua carbs
+     pull the palette closer to the soft pastel dashboard direction
+     (vs. the older amber/blue). Mirrors MACRO_COLORS in MacroRing.tsx. */
+  --macro-protein: #fa5c63;
+  --macro-kcal: #a78bfa;
+  --macro-carbs: #4eddf1;
+  --macro-fat: #ff5db1;
 }
 
 @theme inline {

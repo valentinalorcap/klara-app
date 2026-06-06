@@ -43,7 +43,7 @@ export function MacroRing({
   const dash = CIRCUMFERENCE * pct;
   const trackColor = isOverflow ? 'rgba(248, 113, 113, 0.25)' : 'rgba(255,255,255,0.08)';
   const strokeColor = isOverflow ? '#dc2626' : color;
-  const strokeWidth = size === 'lg' ? 9 : 11;
+  const strokeWidth = 9;
 
   return (
     <div className={cn('relative aspect-square w-full', className)}>
@@ -102,10 +102,11 @@ export function MacroRing({
   );
 }
 
-/** Canonical colors per macro — picked to read on the dark background. */
+/** Canonical colors per macro — picked to read on the dark background.
+ *  Mirrors the `--macro-*` CSS variables in globals.css. */
 export const MACRO_COLORS = {
-  protein: '#a78bfa',
-  kcal: '#f59e0b',
-  carbs: '#60a5fa',
-  fat: '#f472b6',
+  protein: '#fa5c63',
+  kcal: '#a78bfa',
+  carbs: '#4eddf1',
+  fat: '#ff5db1',
 } as const;

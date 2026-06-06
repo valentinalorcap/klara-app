@@ -72,12 +72,16 @@ export function FavoriteTemplateCard({
         </button>
       </div>
 
-      <p className="mt-3 text-2xl font-bold whitespace-nowrap text-white tabular-nums">
-        {totals.protein.toFixed(1)}
-        <span className="text-sm font-medium text-neutral-400">g P</span>
-        <span className="mx-2 text-neutral-500">·</span>
+      <p className="mt-2 text-sm font-medium whitespace-nowrap text-white tabular-nums">
         {Math.round(totals.kcal)}
-        <span className="text-sm font-medium text-neutral-400"> kcal</span>
+        <span className="text-neutral-400"> kcal</span>
+        <span className="mx-2 text-neutral-500">·</span>
+        <span className="text-neutral-400">P </span>
+        {totals.protein.toFixed(0)}g<span className="mx-1.5 text-neutral-500">·</span>
+        <span className="text-neutral-400">C </span>
+        {totals.carbs.toFixed(0)}g<span className="mx-1.5 text-neutral-500">·</span>
+        <span className="text-neutral-400">F </span>
+        {totals.fat.toFixed(0)}g
       </p>
 
       <AnimatePresence initial={false}>
@@ -89,10 +93,7 @@ export function FavoriteTemplateCard({
             transition={{ type: 'spring', stiffness: 220, damping: 28 }}
             className="overflow-hidden"
           >
-            <p className="mt-1 text-xs text-neutral-400 tabular-nums">
-              C {totals.carbs.toFixed(1)}g · F {totals.fat.toFixed(1)}g
-            </p>
-            <ul className="mt-4 border-t border-white/5 pt-2">
+            <ul className="mt-2 border-t border-white/5 pt-2">
               {template.entries.map((e) => {
                 const m = entryMacros(e);
                 return (
@@ -107,7 +108,7 @@ export function FavoriteTemplateCard({
                       </span>
                     </div>
                     <span className="shrink-0 text-neutral-500 tabular-nums">
-                      P {m.protein.toFixed(1)}g · {Math.round(m.kcal)} kcal
+                      {Math.round(m.kcal)} kcal · P {m.protein.toFixed(1)}g
                     </span>
                   </li>
                 );
