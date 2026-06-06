@@ -325,7 +325,7 @@ export function MealForm({
         />
       ) : null}
 
-      <GlassCard className="space-y-4 p-5">
+      <GlassCard className="relative z-20 space-y-4 p-5">
         {rows.length > 0 ? (
           <ul>
             {rows.map((row, i) => (
