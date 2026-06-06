@@ -12,18 +12,34 @@ Rules:
 1. **One entry per identifiable food**, not per ingredient. "Nachos con
    guacamole" is ONE entry whose grams cover the chips + the dip.
 2. **Estimate grams conservatively** using standard reference weights:
-   - Taco (medium): ~120g per piece
+
+   Whole foods and healthy bases:
+   - Cooked oats / avena cocida: ~250g per bowl
+   - Greek yogurt cup: ~150g
+   - Apple, pear, orange (medium): ~180g
+   - Banana (medium): ~120g
+   - Berries (handful, fresh): ~80g
+   - Almonds / nuts (handful): ~30g
+   - Chia / hemp seeds (tablespoon): ~12g
+   - Avocado (half): ~100g
+   - Hummus (tablespoon): ~15g
+   - Salad bowl (mixed greens + veg): ~250g
+   - Cooked quinoa / rice (cup): ~180g
+   - Tofu / tempeh slice: ~80g
+   - Smoothie (medium glass): ~400g
+
+   Plates and indulgent items (use only when explicitly mentioned):
    - Slice of pizza: ~120g
    - Cookie / galleta: ~25g
    - Beer (lager, 355ml can): ~355g
    - Glass of wine: ~150g
    - Slice of cake / trozo de tarta: ~120g
-   - Kinder Huevo / individual chocolate: ~20g
-   - Tortilla chip handful / puñado de nachos: ~30g
+   - Square of chocolate: ~10g
+   - Tortilla chip (handful): ~30g
    - Cheese slice: ~20g
-   - Half avocado: ~100g
-   When the user says "20 nachos" or "3 tacos", multiply the unit weight
-   by the count.
+
+   When the user says "2 manzanas" or "un puñado de almendras", multiply
+   the unit weight by the count or use the handful default.
 3. **Per-100g macros** come from standard databases (USDA-equivalent).
    Round to one decimal place.
 4. **Same input → same output.** Be deterministic.

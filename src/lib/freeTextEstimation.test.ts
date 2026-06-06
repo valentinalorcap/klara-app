@@ -15,8 +15,9 @@ describe('FREE_TEXT_ESTIMATION_SYSTEM', () => {
   });
 
   it('embeds reference weights so estimates stay deterministic', () => {
-    expect(FREE_TEXT_ESTIMATION_SYSTEM).toMatch(/Taco/);
-    expect(FREE_TEXT_ESTIMATION_SYSTEM).toMatch(/Beer/);
+    expect(FREE_TEXT_ESTIMATION_SYSTEM).toMatch(/avena/i);
+    expect(FREE_TEXT_ESTIMATION_SYSTEM).toMatch(/Greek yogurt/);
+    expect(FREE_TEXT_ESTIMATION_SYSTEM).toMatch(/Almonds/);
     expect(FREE_TEXT_ESTIMATION_SYSTEM).toMatch(/Slice of cake/);
   });
 });

@@ -143,6 +143,7 @@ export function MealForm({
   const [pending, startTransition] = useTransition();
   const [description, setDescription] = useState('');
   const [estimating, startEstimate] = useTransition();
+  const [favoritesOpen, setFavoritesOpen] = useState(false);
 
   const totals = useMemo(
     () =>
@@ -171,21 +172,22 @@ export function MealForm({
   }
 
   function importFavorite(fav: FavoriteMeal) {
-    setType(fav.type);
-    if (fav.name) setName(fav.name);
-    setRows(
-      fav.entries.map((e) => ({
-        name: e.name,
-        grams: String(e.grams),
-        resolved: true,
-        productId: e.productId ?? undefined,
-        recipeId: e.recipeId ?? undefined,
-        kcalPer100g: e.kcalPer100g,
-        proteinPer100g: e.proteinPer100g,
-        carbsPer100g: e.carbsPer100g,
-        fatPer100g: e.fatPer100g,
-      })),
-    );
+    const newRows: IngredientRow[] = fav.entries.map((e) => ({
+      name: e.name,
+      grams: String(e.grams),
+      resolved: true,
+      productId: e.productId ?? undefined,
+      recipeId: e.recipeId ?? undefined,
+      kcalPer100g: e.kcalPer100g,
+      proteinPer100g: e.proteinPer100g,
+      carbsPer100g: e.carbsPer100g,
+      fatPer100g: e.fatPer100g,
+    }));
+    setRows((prev) => {
+      const trimmed = prev.filter((r) => r.resolved || r.name.trim() || r.grams.trim());
+      return [...trimmed, ...newRows];
+    });
+    if (fav.name && !name.trim()) setName(fav.name);
   }
 
   function appendEstimatedEntries() {
@@ -273,7 +275,6 @@ export function MealForm({
   return (
     <div className="space-y-5">
       <GlassCard className="space-y-3 p-5">
-        <p className="text-xs font-medium tracking-wider text-neutral-400 uppercase">Type</p>
         <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
           {MEAL_TYPE_OPTIONS.map((opt) => (
             <button
@@ -291,37 +292,38 @@ export function MealForm({
             </button>
           ))}
         </div>
-        <label className="block">
-          <span className="text-xs text-neutral-400">Name (optional)</span>
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder={MEAL_TYPE_LABELS[type]}
-            className="mt-1 block w-full rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm text-white placeholder:text-neutral-500 focus:bg-white/[0.08] focus:ring-2 focus:ring-[var(--accent)]/60 focus:outline-none"
-          />
-        </label>
+        <input
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Name (optional)"
+          className="block w-full rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm text-white placeholder:text-neutral-500 focus:bg-white/[0.08] focus:ring-2 focus:ring-[var(--accent)]/60 focus:outline-none"
+        />
       </GlassCard>
 
       {favorites.length > 0 ? (
-        <GlassCard className="space-y-3 p-5">
-          <p className="text-xs font-medium tracking-wider text-neutral-400 uppercase">
-            Import from favorites
-          </p>
-          <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
-            {favorites.map((f) => (
-              <button
-                key={f.id}
-                type="button"
-                onClick={() => importFavorite(f)}
-                className="flex shrink-0 items-center gap-1.5 rounded-full border border-yellow-400/30 bg-yellow-400/5 px-3 py-1.5 text-xs font-medium text-yellow-200 transition hover:bg-yellow-400/10"
-              >
-                <Star size={12} fill="currentColor" />
-                {f.name ?? MEAL_TYPE_LABELS[f.type]}
-              </button>
-            ))}
-          </div>
-        </GlassCard>
+        <button
+          type="button"
+          onClick={() => setFavoritesOpen(true)}
+          className="flex w-full items-center justify-between gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-left text-sm font-medium text-neutral-200 transition hover:bg-white/[0.08]"
+        >
+          <span className="flex items-center gap-2">
+            <Star size={14} className="text-yellow-400" fill="currentColor" />
+            Favorites
+          </span>
+          <span className="text-xs text-neutral-500">{favorites.length} saved</span>
+        </button>
+      ) : null}
+
+      {favoritesOpen ? (
+        <FavoritesPicker
+          favorites={favorites}
+          onClose={() => setFavoritesOpen(false)}
+          onPick={(fav) => {
+            importFavorite(fav);
+            setFavoritesOpen(false);
+          }}
+        />
       ) : null}
 
       <GlassCard className="space-y-3 p-5">
@@ -334,7 +336,7 @@ export function MealForm({
             onChange={(e) => setDescription(e.target.value)}
             rows={3}
             maxLength={800}
-            placeholder="e.g. 3 tacos al pastor, una cerveza y dos trozos de pastel"
+            placeholder="e.g. avena con frutos rojos, semillas de chía y un yogur griego"
             className="mt-2 block w-full resize-none rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm text-white placeholder:text-neutral-500 focus:bg-white/[0.08] focus:ring-2 focus:ring-[var(--accent)]/60 focus:outline-none"
           />
         </label>
@@ -494,6 +496,79 @@ function Stat({ label, value }: { label: string; value: string | number }) {
     <div>
       <p className="text-base font-semibold text-white tabular-nums">{value}</p>
       <p className="mt-0.5 text-[10px] tracking-wider text-neutral-500 uppercase">{label}</p>
+    </div>
+  );
+}
+
+function FavoritesPicker({
+  favorites,
+  onClose,
+  onPick,
+}: {
+  favorites: FavoriteMeal[];
+  onClose: () => void;
+  onPick: (fav: FavoriteMeal) => void;
+}) {
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Pick a favorite meal"
+      className="fixed inset-0 z-50 flex flex-col bg-[var(--background-bottom)]/95 backdrop-blur-xl"
+    >
+      <header className="flex items-center justify-between border-b border-white/10 px-6 py-4">
+        <h2 className="text-base font-semibold text-white">Favorites</h2>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close favorites"
+          className="text-sm text-neutral-400 transition hover:text-white"
+        >
+          Cancel
+        </button>
+      </header>
+      <ul className="flex-1 space-y-2 overflow-y-auto px-6 py-4">
+        {favorites.map((f) => {
+          const totals = f.entries.reduce(
+            (acc, e) => {
+              const factor = e.grams / 100;
+              acc.kcal += e.kcalPer100g * factor;
+              acc.protein += e.proteinPer100g * factor;
+              acc.carbs += e.carbsPer100g * factor;
+              acc.fat += e.fatPer100g * factor;
+              return acc;
+            },
+            { kcal: 0, protein: 0, carbs: 0, fat: 0 },
+          );
+          return (
+            <li key={f.id}>
+              <button
+                type="button"
+                onClick={() => onPick(f)}
+                className="flex w-full flex-col gap-1 rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-left transition hover:border-white/20 hover:bg-white/[0.08] active:scale-[0.99]"
+              >
+                <span className="text-[10px] font-medium tracking-wider text-[var(--accent)] uppercase">
+                  {MEAL_TYPE_LABELS[f.type]}
+                </span>
+                {f.name ? (
+                  <span className="truncate text-sm font-semibold text-white">{f.name}</span>
+                ) : null}
+                <span className="text-xs text-white tabular-nums">
+                  {Math.round(totals.kcal)}
+                  <span className="text-neutral-400"> kcal</span>
+                  <span className="mx-1.5 text-neutral-500">·</span>
+                  <span className="text-neutral-400">P </span>
+                  {totals.protein.toFixed(0)}g<span className="mx-1.5 text-neutral-500">·</span>
+                  <span className="text-neutral-400">C </span>
+                  {totals.carbs.toFixed(0)}g<span className="mx-1.5 text-neutral-500">·</span>
+                  <span className="text-neutral-400">F </span>
+                  {totals.fat.toFixed(0)}g
+                </span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }
