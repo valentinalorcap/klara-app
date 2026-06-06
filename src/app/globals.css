@@ -10,9 +10,9 @@
   --border-glass: rgba(255, 255, 255, 0.1);
 
   /* Accent (violet) */
-  --accent: #8b5cf6;
+  --accent: #9963f6;
   --accent-hover: #7c3aed;
-  --accent-glow: rgba(139, 92, 246, 0.4);
+  --accent-glow: rgba(153, 99, 246, 0.4);
 
   /* Text */
   --text-primary: #ffffff;
@@ -29,10 +29,10 @@
      to keep the totals lines from feeling busy. Coral kcal + aqua carbs
      pull the palette closer to the soft pastel dashboard direction
      (vs. the older amber/blue). Mirrors MACRO_COLORS in MacroRing.tsx. */
-  --macro-protein: #fb923c;
+  --macro-protein: #fa5c63;
   --macro-kcal: #a78bfa;
-  --macro-carbs: #67e8f9;
-  --macro-fat: #f472b6;
+  --macro-carbs: #4eddf1;
+  --macro-fat: #ff5db1;
 }
 
 @theme inline {
