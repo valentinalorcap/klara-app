@@ -66,6 +66,35 @@ level). No need to delete by hand.
 
 Title: same Conventional-Commit shape as the commit.
 
+### Labels and milestones
+
+Before opening a PR (or right after, before merge), set the metadata.
+This is what makes the PR list double as a portfolio: anyone landing
+on `/pulls` or `/milestones` can read the progress at a glance.
+
+**Labels** — pick exactly one type label per PR:
+
+| Label     | When                                                              |
+| --------- | ----------------------------------------------------------------- |
+| `feature` | New user-visible functionality                                    |
+| `polish`  | UX/UI refinement of something that already ships                  |
+| `fix`     | Bug fix                                                           |
+| `chore`   | Tooling, deps, internal cleanup                                   |
+| `docs`    | Documentation only                                                |
+
+**Milestone** — the phase this PR ships under (`Phase 4`, `Phase 5`, …).
+Sub-phase PRs (`Phase 3.5`, `Phase 2.1`, …) attach to the parent phase
+milestone, with the sub-phase reflected in the PR title and commit
+scope. Close the milestone right after the last PR for that phase
+merges.
+
+CLI shortcuts:
+
+```
+gh pr edit <num> --add-label feature --milestone "Phase 6"
+gh api repos/:owner/:repo/milestones -X POST -f title="Phase 7"
+```
+
 Body — four short sections:
 
 ```markdown
