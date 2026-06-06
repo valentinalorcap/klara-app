@@ -8,8 +8,38 @@ import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { createMealInputSchema, type CreateMealInput } from '@/lib/meals';
 import { evaluateMealById, markEvaluationPending } from '@/lib/evaluations.server';
+import { estimateMealFromText } from '@/lib/freeTextEstimation.server';
+import type { EstimationResult } from '@/lib/freeTextEstimation';
 
 export type ActionResult = { ok: true; mealId?: string } | { ok: false; error: string };
+
+const descriptionSchema = z
+  .string()
+  .trim()
+  .min(3, 'Describe what you ate in a bit more detail.')
+  .max(800, 'Keep the description under 800 characters.');
+
+/**
+ * Ask Klara to turn a free-text meal description into structured
+ * entries. Used by the inline "Describe to estimate" panel in MealForm.
+ */
+export async function estimateMealAction(description: unknown): Promise<EstimationResult> {
+  const session = await auth();
+  if (!session?.user?.id) return { ok: false, error: 'Unauthorized' };
+
+  const parsed = descriptionSchema.safeParse(description);
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? 'Invalid input.' };
+  }
+
+  try {
+    const data = await estimateMealFromText(parsed.data);
+    return { ok: true, data };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Klara could not estimate this meal.';
+    return { ok: false, error: message };
+  }
+}
 
 async function requireUserId(): Promise<string> {
   const session = await auth();

@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useTransition } from 'react';
 import Link from 'next/link';
-import { Plus, Trash2, Star } from 'lucide-react';
+import { Plus, Trash2, Star, Sparkles } from 'lucide-react';
 import { GlassCard } from './GlassCard';
 import { IngredientPicker, type LibraryItem } from './IngredientPicker';
 import {
@@ -12,7 +12,7 @@ import {
   sumEntries,
   isoDate,
 } from '@/lib/meals';
-import { createMeal, updateMeal } from '@/app/(app)/today/actions';
+import { createMeal, updateMeal, estimateMealAction } from '@/app/(app)/today/actions';
 import { cn } from '@/lib/utils';
 
 type IngredientRow = {
@@ -141,6 +141,8 @@ export function MealForm({
   );
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const [description, setDescription] = useState('');
+  const [estimating, startEstimate] = useTransition();
 
   const totals = useMemo(
     () =>
@@ -184,6 +186,40 @@ export function MealForm({
         fatPer100g: e.fatPer100g,
       })),
     );
+  }
+
+  function appendEstimatedEntries() {
+    if (description.trim().length < 3) return;
+    setError(null);
+    startEstimate(async () => {
+      const result = await estimateMealAction(description);
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+      const newRows: IngredientRow[] = result.data.entries.map((e) => ({
+        name: e.name,
+        grams: String(Math.round(e.grams)),
+        resolved: true,
+        kcalPer100g: e.kcalPer100g,
+        proteinPer100g: e.proteinPer100g,
+        carbsPer100g: e.carbsPer100g,
+        fatPer100g: e.fatPer100g,
+      }));
+      // Drop the leading empty placeholder row, if any, so the estimate
+      // doesn't have a blank row above it.
+      setRows((prev) => {
+        const trimmed = prev.filter((r) => r.resolved || r.name.trim() || r.grams.trim());
+        return [...trimmed, ...newRows];
+      });
+      if (result.data.suggestedType && !initial?.type) {
+        setType(result.data.suggestedType);
+      }
+      if (result.data.suggestedName && !name.trim()) {
+        setName(result.data.suggestedName);
+      }
+      setDescription('');
+    });
   }
 
   function resetForm() {
@@ -288,9 +324,34 @@ export function MealForm({
         </GlassCard>
       ) : null}
 
-      <GlassCard className="relative z-10 space-y-4 p-5">
-        <p className="text-xs font-medium tracking-wider text-neutral-400 uppercase">Ingredients</p>
+      <GlassCard className="space-y-3 p-5">
+        <label className="block">
+          <span className="text-xs font-medium tracking-wider text-neutral-400 uppercase">
+            Describe to estimate
+          </span>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={3}
+            maxLength={800}
+            placeholder="e.g. 3 tacos al pastor, una cerveza y dos trozos de pastel"
+            className="mt-2 block w-full resize-none rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm text-white placeholder:text-neutral-500 focus:bg-white/[0.08] focus:ring-2 focus:ring-[var(--accent)]/60 focus:outline-none"
+          />
+        </label>
+        <button
+          type="button"
+          onClick={appendEstimatedEntries}
+          disabled={estimating || description.trim().length < 3}
+          className={cn(
+            'flex w-full items-center justify-center gap-2 rounded-2xl border border-[var(--accent)]/30 bg-[var(--accent)]/10 px-3 py-2.5 text-xs font-medium text-[var(--accent)] transition hover:bg-[var(--accent)]/15 disabled:cursor-not-allowed disabled:opacity-50',
+          )}
+        >
+          <Sparkles size={12} className={cn(estimating && 'animate-pulse')} />
+          {estimating ? 'Klara is thinking…' : 'Ask Klara to add these'}
+        </button>
+      </GlassCard>
 
+      <GlassCard className="relative z-10 space-y-3 p-5">
         {rows.map((row, i) => (
           <div key={i} className="space-y-2">
             <div className="flex items-end gap-1.5">
@@ -356,33 +417,25 @@ export function MealForm({
                   onError={(msg) => setError(msg)}
                 />
               </div>
-              <label className="block w-16 shrink-0">
-                <span className="text-xs text-neutral-400">Grams</span>
-                <input
-                  type="number"
-                  inputMode="decimal"
-                  value={row.grams}
-                  onChange={(e) => updateRow(i, { grams: e.target.value })}
-                  placeholder="100"
-                  className="mt-1 block w-full rounded-2xl border border-white/10 bg-white/[0.04] px-2 py-2.5 text-center text-sm text-white tabular-nums placeholder:text-neutral-500 focus:bg-white/[0.08] focus:ring-2 focus:ring-[var(--accent)]/60 focus:outline-none"
-                />
-              </label>
+              <input
+                type="number"
+                inputMode="decimal"
+                value={row.grams}
+                onChange={(e) => updateRow(i, { grams: e.target.value })}
+                placeholder="100g"
+                aria-label="Grams"
+                className="w-16 shrink-0 rounded-2xl border border-white/10 bg-white/[0.04] px-2 py-2.5 text-center text-sm text-white tabular-nums placeholder:text-neutral-500 focus:bg-white/[0.08] focus:ring-2 focus:ring-[var(--accent)]/60 focus:outline-none"
+              />
               <button
                 type="button"
                 onClick={() => removeRow(i)}
                 aria-label="Remove ingredient"
                 disabled={rows.length === 1}
-                className="-mr-2 flex h-10 w-8 shrink-0 items-center justify-center self-end text-neutral-400 transition hover:text-[var(--danger)] disabled:opacity-30"
+                className="-mr-2 flex h-10 w-8 shrink-0 items-center justify-center text-neutral-400 transition hover:text-[var(--danger)] disabled:opacity-30"
               >
                 <Trash2 size={16} />
               </button>
             </div>
-            {row.resolved ? (
-              <p className="pl-1 text-[11px] text-neutral-500 tabular-nums">
-                {Math.round(row.kcalPer100g)} kcal · P {row.proteinPer100g.toFixed(1)}g · C{' '}
-                {row.carbsPer100g.toFixed(1)}g · F {row.fatPer100g.toFixed(1)}g · per 100g
-              </p>
-            ) : null}
           </div>
         ))}
 

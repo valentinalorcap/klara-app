@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ChevronLeft, Layers, Sparkles } from 'lucide-react';
+import { ChevronLeft, Layers } from 'lucide-react';
 import { auth } from '@/auth';
 import { MealForm } from '@/components/MealForm';
 import { loadMealFormData } from '@/app/(app)/today/_data';
@@ -24,22 +24,13 @@ export default async function NewMealPage() {
         Pick the type, give it a name if you want, and add what you ate.
       </p>
 
-      <div className="mt-4 flex flex-wrap gap-2">
-        <Link
-          href="/today/batch"
-          className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-medium text-[var(--accent)] transition hover:border-[var(--accent)]/40 hover:bg-[var(--accent)]/5"
-        >
-          <Layers size={12} />
-          Batch multiple meals →
-        </Link>
-        <Link
-          href="/today/describe"
-          className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-medium text-[var(--accent)] transition hover:border-[var(--accent)]/40 hover:bg-[var(--accent)]/5"
-        >
-          <Sparkles size={12} />
-          Describe in text →
-        </Link>
-      </div>
+      <Link
+        href="/today/batch"
+        className="mt-4 inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-medium text-[var(--accent)] transition hover:border-[var(--accent)]/40 hover:bg-[var(--accent)]/5"
+      >
+        <Layers size={12} />
+        Batch multiple meals →
+      </Link>
 
       <div className="mt-8">
         <MealForm items={items} favorites={favoriteMeals} />
