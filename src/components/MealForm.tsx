@@ -190,22 +190,21 @@ export function MealForm({
   }
 
   function importFavorite(fav: FavoriteMeal) {
-    const newRows: IngredientRow[] = fav.entries.map((e) => ({
-      name: e.name,
-      grams: String(e.grams),
-      resolved: true,
-      productId: e.productId ?? undefined,
-      recipeId: e.recipeId ?? undefined,
-      kcalPer100g: e.kcalPer100g,
-      proteinPer100g: e.proteinPer100g,
-      carbsPer100g: e.carbsPer100g,
-      fatPer100g: e.fatPer100g,
-    }));
-    setRows((prev) => {
-      const trimmed = prev.filter((r) => r.resolved || r.name.trim() || r.grams.trim());
-      return [...trimmed, ...newRows];
-    });
-    if (fav.name && !name.trim()) setName(fav.name);
+    setRows(
+      fav.entries.map((e) => ({
+        name: e.name,
+        grams: String(e.grams),
+        resolved: true,
+        productId: e.productId ?? undefined,
+        recipeId: e.recipeId ?? undefined,
+        kcalPer100g: e.kcalPer100g,
+        proteinPer100g: e.proteinPer100g,
+        carbsPer100g: e.carbsPer100g,
+        fatPer100g: e.fatPer100g,
+      })),
+    );
+    setType(fav.type);
+    setName(fav.name ?? '');
   }
 
   function appendEstimatedEntries() {
