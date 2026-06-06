@@ -3,7 +3,7 @@ import type Anthropic from '@anthropic-ai/sdk';
 import { EvalStatus, EvalTone } from '@prisma/client';
 import { getAnthropic, MODELS } from './anthropic';
 import { prisma } from './prisma';
-import { entryMacros, isoDate, MEAL_TYPE_LABELS, sumEntries } from './meals';
+import { entryMacros, MEAL_TYPE_LABELS, sumEntries } from './meals';
 import {
   buildSystemPrompt,
   buildUserMessage,
@@ -53,10 +53,12 @@ export async function evaluateMealById(mealId: string): Promise<void> {
     });
     if (!meal) return;
 
-    const dayKey = isoDate(meal.date);
-    const dayDate = new Date(dayKey + 'T00:00:00Z');
+    // meal.date is already stored as UTC midnight of the user's day, so
+    // use it directly — don't round-trip through isoDate(), which uses
+    // local-time getters and silently rolls back a day for users west of
+    // UTC.
     const dayMeals = await prisma.meal.findMany({
-      where: { userId: meal.userId, date: dayDate },
+      where: { userId: meal.userId, date: meal.date },
       include: { entries: true },
     });
     const dayTotals = sumEntries(dayMeals.flatMap((m) => m.entries));
@@ -107,8 +109,10 @@ export async function evaluateMealById(mealId: string): Promise<void> {
     };
 
     const client = getAnthropic();
+    const userMessage = buildUserMessage(input);
+
     const response = await client.messages.create({
-      model: MODELS.haiku,
+      model: MODELS.sonnet,
       max_tokens: 220,
       temperature: 0.2,
       system: [
@@ -118,7 +122,7 @@ export async function evaluateMealById(mealId: string): Promise<void> {
           cache_control: { type: 'ephemeral' },
         },
       ],
-      messages: [{ role: 'user', content: buildUserMessage(input) }],
+      messages: [{ role: 'user', content: userMessage }],
     });
 
     const markdown = response.content
@@ -136,7 +140,7 @@ export async function evaluateMealById(mealId: string): Promise<void> {
       data: {
         status: EvalStatus.DONE,
         markdown,
-        model: MODELS.haiku,
+        model: MODELS.sonnet,
         tokensIn: response.usage.input_tokens,
         tokensOut: response.usage.output_tokens,
         errorMessage: null,
