@@ -31,7 +31,9 @@ export default async function TodayPage() {
     }),
     prisma.meal.findMany({
       where: { userId, date: dayDate },
-      orderBy: { createdAt: 'desc' },
+      // Tiebreaker by id so meals saved in the same transaction (batch)
+      // always render in a stable order across refreshes.
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       include: { entries: { orderBy: { createdAt: 'asc' } }, evaluation: true },
     }),
   ]);
@@ -47,7 +49,10 @@ export default async function TodayPage() {
   const allEntries = meals.flatMap((m) => m.entries);
   const dayTotals = sumEntries(allEntries);
   const hasPendingEvals = meals.some((m) => m.evaluation?.status === EvalStatus.PENDING);
-  const latestEval = meals[0]?.evaluation ?? null;
+  // In a batch, all meals share the same createdAt; only the last one
+  // carries the evaluation. Find the first meal with an eval row instead
+  // of assuming meals[0] is the one.
+  const latestEval = meals.find((m) => m.evaluation)?.evaluation ?? null;
 
   const today = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
