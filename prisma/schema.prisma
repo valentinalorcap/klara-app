@@ -38,6 +38,7 @@ model User {
   meals         Meal[]
   mealTemplates MealTemplate[]
   aiEvaluations AIEvaluation[]
+  chatMessages  ChatMessage[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -188,6 +189,27 @@ enum EvalStatus {
   PENDING
   DONE
   ERROR
+}
+
+enum ChatRole {
+  USER
+  ASSISTANT
+}
+
+/// One turn in the user's conversation with Klara. Single continuous
+/// thread per user — older messages get capped at the API layer; the
+/// row itself is kept for history.
+model ChatMessage {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  role    ChatRole
+  content String   @db.Text
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
 }
 
 /// One meal logged on a specific day — breakfast, lunch, etc. Holds one
