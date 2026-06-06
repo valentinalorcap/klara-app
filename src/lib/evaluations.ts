@@ -40,13 +40,17 @@ export type EvalEntry = {
   fat: number;
 };
 
+export type EvalMealSummary = {
+  typeLabel: string;
+  name: string | null;
+  entries: EvalEntry[];
+  totals: MacroSum;
+};
+
 export type EvaluationInput = {
-  meal: {
-    typeLabel: string;
-    name: string | null;
-    entries: EvalEntry[];
-    totals: MacroSum;
-  };
+  meal: EvalMealSummary;
+  /** Other meals logged in the same batch session, in chronological order. */
+  batchSiblings?: EvalMealSummary[];
   dayTotals: MacroSum;
   targets: DailyTargets;
   tone: EvalTone;
@@ -101,42 +105,69 @@ function formatMacro(value: number): string {
   return value.toFixed(1);
 }
 
-/**
- * Build the user message — fully dynamic per meal, never cached.
- * Lists ingredients with macros, the meal totals, day-so-far totals,
- * and the (possibly partial) daily targets.
- */
-export function buildUserMessage(input: EvaluationInput): string {
-  const { meal, dayTotals, targets } = input;
+function describeMeal(meal: EvalMealSummary): string[] {
   const label = meal.name ? `${meal.typeLabel} — ${meal.name}` : meal.typeLabel;
-
   const entryLines = meal.entries.map((e) => {
     return `- ${e.name}: ${Math.round(e.grams)}g → P ${formatMacro(e.protein)}g, C ${formatMacro(
       e.carbs,
     )}g, F ${formatMacro(e.fat)}g, ${Math.round(e.kcal)} kcal`;
   });
-
-  const mealTotalsLine = `Meal totals: ${formatMacro(meal.totals.protein)}g P · ${formatMacro(
+  const totalsLine = `  Totals: ${formatMacro(meal.totals.protein)}g P · ${formatMacro(
     meal.totals.carbs,
   )}g C · ${formatMacro(meal.totals.fat)}g F · ${Math.round(meal.totals.kcal)} kcal`;
+  return [`${label}:`, ...entryLines, totalsLine];
+}
+
+/**
+ * Build the user message — fully dynamic per meal, never cached.
+ * Lists ingredients with macros, the meal totals, day-so-far totals,
+ * and the (possibly partial) daily targets. When `batchSiblings` is
+ * present, frames the message as "batch of N" so Claude can comment
+ * on the conjunto instead of one meal in isolation.
+ */
+export function buildUserMessage(input: EvaluationInput): string {
+  const { meal, batchSiblings, dayTotals, targets } = input;
+  const siblings = batchSiblings ?? [];
+  const isBatch = siblings.length > 0;
+  const batchTotal = siblings.length + 1;
 
   const targetsLine = `Daily targets: ${formatTarget(targets.kcal, ' kcal')} · ${formatTarget(
     targets.protein,
     'g protein',
   )} · ${formatTarget(targets.carbs, 'g carbs')} · ${formatTarget(targets.fat, 'g fat')}`;
 
-  const dayLine = `Day so far (incl. this meal): ${formatMacro(dayTotals.protein)}g P · ${formatMacro(
-    dayTotals.carbs,
-  )}g C · ${formatMacro(dayTotals.fat)}g F · ${Math.round(dayTotals.kcal)} kcal`;
+  const dayLine = `Day so far (incl. ${
+    isBatch ? 'the whole batch' : 'this meal'
+  }): ${formatMacro(dayTotals.protein)}g P · ${formatMacro(dayTotals.carbs)}g C · ${formatMacro(
+    dayTotals.fat,
+  )}g F · ${Math.round(dayTotals.kcal)} kcal`;
+
+  if (!isBatch) {
+    return [
+      `Meal logged:`,
+      ...describeMeal(meal),
+      '',
+      dayLine,
+      targetsLine,
+      '',
+      'Evaluate this meal.',
+    ].join('\n');
+  }
+
+  const orderedBatch = [...siblings, meal];
+  const sections = orderedBatch.flatMap((m, i) => [
+    `Meal ${i + 1} of ${batchTotal}:`,
+    ...describeMeal(m),
+    '',
+  ]);
 
   return [
-    `Meal logged (${label}):`,
-    ...entryLines,
+    `Batch logged in one session — ${batchTotal} meals to evaluate together:`,
     '',
-    mealTotalsLine,
+    ...sections,
     dayLine,
     targetsLine,
     '',
-    'Evaluate this meal.',
+    'Evaluate the batch as a whole — comment on the combination, not each meal in isolation.',
   ].join('\n');
 }

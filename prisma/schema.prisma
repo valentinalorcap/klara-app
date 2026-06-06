@@ -31,13 +31,13 @@ model User {
   /// user switch between direct, motivational, or neutral.
   defaultEvalTone EvalTone @default(MOTIVATIONAL)
 
-  accounts       Account[]
-  sessions       Session[]
-  products       Product[]
-  recipes        Recipe[]
-  meals          Meal[]
-  mealTemplates  MealTemplate[]
-  aiEvaluations  AIEvaluation[]
+  accounts      Account[]
+  sessions      Session[]
+  products      Product[]
+  recipes       Recipe[]
+  meals         Meal[]
+  mealTemplates MealTemplate[]
+  aiEvaluations AIEvaluation[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -197,8 +197,8 @@ model Meal {
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  date  DateTime @db.Date
-  type  MealType
+  date DateTime @db.Date
+  type MealType
 
   /// User-chosen label for this meal. Most days will leave it blank; the
   /// UI falls back to the type label.
@@ -210,6 +210,12 @@ model Meal {
   templateId String?
   template   MealTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
 
+  /// When the user logs several meals in one session (Phase 7 batch),
+  /// every meal in the batch shares the same opaque id. Only the last
+  /// meal of the batch carries the AIEvaluation row — its prompt sees
+  /// all siblings as context.
+  batchId String?
+
   notes String?
 
   entries    MealEntry[]
@@ -220,6 +226,7 @@ model Meal {
 
   @@index([userId, date])
   @@index([templateId])
+  @@index([batchId])
 }
 
 /// A saved favorite — a snapshot of a meal's ingredients the user can

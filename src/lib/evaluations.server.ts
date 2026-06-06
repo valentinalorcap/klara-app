@@ -9,6 +9,7 @@ import {
   buildUserMessage,
   type DailyTargets,
   type EvalEntry,
+  type EvalMealSummary,
   type EvaluationInput,
   type MacroSum,
 } from './evaluations';
@@ -74,6 +75,24 @@ export async function evaluateMealById(mealId: string): Promise<void> {
 
     const mealTotals: MacroSum = sumEntries(meal.entries);
 
+    let batchSiblings: EvalMealSummary[] | undefined;
+    if (meal.batchId) {
+      const siblings = await prisma.meal.findMany({
+        where: { batchId: meal.batchId, id: { not: meal.id } },
+        orderBy: { createdAt: 'asc' },
+        include: { entries: { orderBy: { createdAt: 'asc' } } },
+      });
+      batchSiblings = siblings.map((s) => ({
+        typeLabel: MEAL_TYPE_LABELS[s.type],
+        name: s.name,
+        entries: s.entries.map((e) => {
+          const m = entryMacros(e);
+          return { name: e.name, grams: e.grams, ...m };
+        }),
+        totals: sumEntries(s.entries),
+      }));
+    }
+
     const input: EvaluationInput = {
       meal: {
         typeLabel: MEAL_TYPE_LABELS[meal.type],
@@ -81,6 +100,7 @@ export async function evaluateMealById(mealId: string): Promise<void> {
         entries,
         totals: mealTotals,
       },
+      batchSiblings,
       dayTotals,
       targets,
       tone: meal.user.defaultEvalTone,

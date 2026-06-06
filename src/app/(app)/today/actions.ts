@@ -179,6 +179,73 @@ export async function updateMeal(
   redirect(safeReturnTo(returnTo));
 }
 
+const createMealBatchSchema = z.object({
+  meals: z.array(createMealInputSchema).min(1).max(8),
+});
+
+/**
+ * Create N meals logged in one session. Every meal in the batch shares
+ * the same opaque `batchId`; only the last meal carries the AIEvaluation,
+ * whose prompt sees the rest of the batch as context.
+ */
+export async function createMealBatch(input: unknown): Promise<ActionResult> {
+  const userId = await requireUserId();
+  const parsed = createMealBatchSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: flatFirstError(parsed.error) };
+
+  for (const meal of parsed.data.meals) {
+    try {
+      await assertOwnership(userId, meal.entries);
+    } catch (err) {
+      return { ok: false, error: err instanceof Error ? err.message : 'Could not save.' };
+    }
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { defaultEvalTone: true },
+  });
+
+  const batchId = crypto.randomUUID();
+  const created = await prisma.$transaction(
+    parsed.data.meals.map((m) =>
+      prisma.meal.create({
+        data: {
+          userId,
+          batchId,
+          date: new Date(m.date + 'T00:00:00Z'),
+          type: m.type,
+          name: m.name ?? null,
+          entries: {
+            create: m.entries.map((e) => ({
+              name: e.name,
+              grams: e.grams,
+              kcalPer100g: e.kcalPer100g,
+              proteinPer100g: e.proteinPer100g,
+              carbsPer100g: e.carbsPer100g,
+              fatPer100g: e.fatPer100g,
+              productId: e.productId ?? null,
+              recipeId: e.recipeId ?? null,
+            })),
+          },
+        },
+      }),
+    ),
+  );
+
+  const lastMeal = created[created.length - 1];
+  if (user && lastMeal) {
+    await markEvaluationPending(lastMeal.id, user.defaultEvalTone, userId);
+    after(async () => {
+      await evaluateMealById(lastMeal.id);
+      revalidatePath('/today');
+    });
+  }
+
+  revalidatePath('/today');
+  redirect('/today');
+}
+
 /** Re-trigger the evaluation for a meal — used by the UI retry button. */
 export async function retryEvaluation(mealId: string): Promise<ActionResult> {
   const userId = await requireUserId();

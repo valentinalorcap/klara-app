@@ -53,7 +53,7 @@ describe('buildUserMessage', () => {
 
   it('shows meal totals and day totals separately', () => {
     const out = buildUserMessage(input);
-    expect(out).toMatch(/Meal totals:.*22\.4g P.*388 kcal/);
+    expect(out).toMatch(/Totals:.*22\.4g P.*388 kcal/);
     expect(out).toContain('Day so far');
   });
 
@@ -70,8 +70,50 @@ describe('buildUserMessage', () => {
       ...input,
       meal: { ...input.meal, name: null },
     });
-    expect(out).toContain('Meal logged (Breakfast):');
-    expect(out).not.toContain('— Oats + eggs');
+    expect(out).toContain('Breakfast:');
+    expect(out).not.toContain('Breakfast — Oats + eggs');
+  });
+});
+
+describe('buildUserMessage — batch', () => {
+  const sibling: EvaluationInput['meal'] = {
+    typeLabel: 'Pre-workout',
+    name: null,
+    entries: [{ name: 'Banana', grams: 120, kcal: 107, protein: 1.3, carbs: 27, fat: 0.4 }],
+    totals: { kcal: 107, protein: 1.3, carbs: 27, fat: 0.4 },
+  };
+
+  it('frames the message as a batch when siblings are present', () => {
+    const out = buildUserMessage({
+      ...input,
+      batchSiblings: [sibling],
+      dayTotals: { kcal: 495, protein: 23.7, carbs: 68, fat: 15.4 },
+    });
+    expect(out).toContain('Batch logged in one session — 2 meals to evaluate together');
+    expect(out).toContain('Meal 1 of 2:');
+    expect(out).toContain('Meal 2 of 2:');
+    expect(out).toContain('Pre-workout:');
+    expect(out).toContain('Breakfast — Oats + eggs:');
+    expect(out).toContain('Evaluate the batch as a whole');
+  });
+
+  it('orders siblings before the focal meal', () => {
+    const out = buildUserMessage({
+      ...input,
+      batchSiblings: [sibling],
+    });
+    const preIdx = out.indexOf('Pre-workout');
+    const breakfastIdx = out.indexOf('Breakfast — Oats + eggs');
+    expect(preIdx).toBeGreaterThan(-1);
+    expect(breakfastIdx).toBeGreaterThan(preIdx);
+  });
+
+  it('changes the "day so far" copy in batch mode', () => {
+    const out = buildUserMessage({
+      ...input,
+      batchSiblings: [sibling],
+    });
+    expect(out).toContain('Day so far (incl. the whole batch)');
   });
 });
 
