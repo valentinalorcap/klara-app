@@ -51,12 +51,14 @@ function flatFirstError(error: z.ZodError): string {
   return error.issues[0]?.message ?? 'Invalid input.';
 }
 
-const ALLOWED_REDIRECTS = ['/today', '/library'] as const;
+const ALLOWED_REDIRECTS = ['/today', '/library', '/history'] as const;
+const HISTORY_DAY_PATTERN = /^\/history\/\d{4}-\d{2}-\d{2}$/;
 
 function safeReturnTo(returnTo: unknown): string {
-  return typeof returnTo === 'string' && (ALLOWED_REDIRECTS as readonly string[]).includes(returnTo)
-    ? returnTo
-    : '/today';
+  if (typeof returnTo !== 'string') return '/today';
+  if ((ALLOWED_REDIRECTS as readonly string[]).includes(returnTo)) return returnTo;
+  if (HISTORY_DAY_PATTERN.test(returnTo)) return returnTo;
+  return '/today';
 }
 
 /** Verify every productId/recipeId referenced in the entries belongs to the user. */

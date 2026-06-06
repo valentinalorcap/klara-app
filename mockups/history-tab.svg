@@ -1,0 +1,288 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 706 1210" width="706" height="1210">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1e1b4b"/>
+      <stop offset="100%" stop-color="#0a0814"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#9963f6" stop-opacity="1"/>
+      <stop offset="100%" stop-color="#9963f6" stop-opacity="0.7"/>
+    </radialGradient>
+  </defs>
+
+  <!-- background gradient -->
+  <rect width="706" height="1210" fill="url(#bg)"/>
+
+  <g font-family="ui-sans-serif, system-ui, sans-serif">
+
+    <!-- ============ Header ============ -->
+    <text x="24" y="50" fill="#a3a3a3" font-size="13" font-weight="500">‹ Today</text>
+    <text x="24" y="92" fill="white" font-size="26" font-weight="800" letter-spacing="-0.3">History</text>
+
+    <!-- Month picker (right side) -->
+    <g transform="translate(682, 92)" text-anchor="end">
+      <text x="-160" y="-2" fill="#a3a3a3" font-size="16" font-weight="500">‹</text>
+      <text x="-30" y="-2" fill="white" font-size="14" font-weight="600">October 2026</text>
+      <text x="0" y="-2" fill="#a3a3a3" font-size="16" font-weight="500">›</text>
+    </g>
+
+    <!-- ============ Hero stats card ============ -->
+    <g transform="translate(24, 118)">
+      <rect width="658" height="106" rx="24" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.10)"/>
+
+      <!-- col 1 -->
+      <text x="80" y="42" fill="#a3a3a3" font-size="10" font-weight="600" letter-spacing="1.5" text-anchor="middle">AVG KCAL/DAY</text>
+      <text x="80" y="78" fill="white" font-size="26" font-weight="800" text-anchor="middle">1,850</text>
+
+      <!-- divider -->
+      <line x1="219" y1="28" x2="219" y2="80" stroke="rgba(255,255,255,0.08)"/>
+
+      <!-- col 2 -->
+      <text x="329" y="42" fill="#a3a3a3" font-size="10" font-weight="600" letter-spacing="1.5" text-anchor="middle">DAYS IN TARGET</text>
+      <text x="329" y="78" fill="white" font-size="26" font-weight="800" text-anchor="middle">
+        15<tspan font-size="14" fill="#a3a3a3" font-weight="500"> /31</tspan>
+      </text>
+
+      <line x1="439" y1="28" x2="439" y2="80" stroke="rgba(255,255,255,0.08)"/>
+
+      <!-- col 3 -->
+      <text x="578" y="42" fill="#a3a3a3" font-size="10" font-weight="600" letter-spacing="1.5" text-anchor="middle">CURRENT STREAK</text>
+      <text x="578" y="78" fill="#9963f6" font-size="26" font-weight="800" text-anchor="middle">
+        7 days
+      </text>
+    </g>
+
+    <!-- ============ Calendar card ============ -->
+    <g transform="translate(24, 248)">
+      <rect width="658" height="450" rx="24" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.10)"/>
+
+      <!-- Color-by dropdown (right) -->
+      <g transform="translate(640, 36)" text-anchor="end">
+        <text x="0" y="0" fill="#a3a3a3" font-size="11" font-weight="500">COLOR BY:</text>
+        <text x="-90" y="0" fill="white" font-size="11" font-weight="600">CALORIES ▾</text>
+      </g>
+
+      <!-- Day headers -->
+      <g transform="translate(56, 80)" fill="#737373" font-size="10" font-weight="600" letter-spacing="1.5" text-anchor="middle">
+        <text x="0">S</text>
+        <text x="86">M</text>
+        <text x="172">T</text>
+        <text x="258">W</text>
+        <text x="344">T</text>
+        <text x="430">F</text>
+        <text x="516">S</text>
+      </g>
+
+      <!-- Calendar cells: October 2026, Oct 1 = Thursday -->
+      <!-- Layout: cols S(0) M(1) T(2) W(3) T(4) F(5) S(6) -->
+      <!-- Row 0: blanks 0-3, then days 1-3 in cols 4,5,6 -->
+      <!-- Row 1: days 4-10 -->
+      <!-- Row 2: days 11-17 -->
+      <!-- Row 3: days 18-24 -->
+      <!-- Row 4: days 25-31 -->
+
+      <!-- Each cell: cx = 56 + col*86, cy = 116 + row*62 -->
+      <!-- Circle radius 22; today gets a 2px ring -->
+
+      <!-- helper: under (0.2), mid (0.55), full (1.0 violet), over (coral), empty (border only), future (empty + faded) -->
+
+      <!-- Row 0 -->
+      <!-- col 4: day 1 (mid) -->
+      <circle cx="400" cy="116" r="22" fill="#9963f6" fill-opacity="0.55"/>
+      <text x="400" y="120" fill="white" font-size="13" font-weight="600" text-anchor="middle">1</text>
+      <!-- col 5: day 2 (full) -->
+      <circle cx="486" cy="116" r="22" fill="#9963f6"/>
+      <text x="486" y="120" fill="white" font-size="13" font-weight="700" text-anchor="middle">2</text>
+      <!-- col 6: day 3 (over → coral) -->
+      <circle cx="572" cy="116" r="22" fill="#fa5c63"/>
+      <text x="572" y="120" fill="white" font-size="13" font-weight="700" text-anchor="middle">3</text>
+
+      <!-- Row 1: days 4-10 -->
+      <!-- 4 mid -->
+      <circle cx="56" cy="178" r="22" fill="#9963f6" fill-opacity="0.55"/>
+      <text x="56" y="182" fill="white" font-size="13" font-weight="600" text-anchor="middle">4</text>
+      <!-- 5 under -->
+      <circle cx="142" cy="178" r="22" fill="#9963f6" fill-opacity="0.20"/>
+      <text x="142" y="182" fill="#d4d4d8" font-size="13" font-weight="500" text-anchor="middle">5</text>
+      <!-- 6 full -->
+      <circle cx="228" cy="178" r="22" fill="#9963f6"/>
+      <text x="228" y="182" fill="white" font-size="13" font-weight="700" text-anchor="middle">6</text>
+      <!-- 7 mid -->
+      <circle cx="314" cy="178" r="22" fill="#9963f6" fill-opacity="0.55"/>
+      <text x="314" y="182" fill="white" font-size="13" font-weight="600" text-anchor="middle">7</text>
+      <!-- 8 full -->
+      <circle cx="400" cy="178" r="22" fill="#9963f6"/>
+      <text x="400" y="182" fill="white" font-size="13" font-weight="700" text-anchor="middle">8</text>
+      <!-- 9 over -->
+      <circle cx="486" cy="178" r="22" fill="#fa5c63"/>
+      <text x="486" y="182" fill="white" font-size="13" font-weight="700" text-anchor="middle">9</text>
+      <!-- 10 mid -->
+      <circle cx="572" cy="178" r="22" fill="#9963f6" fill-opacity="0.55"/>
+      <text x="572" y="182" fill="white" font-size="13" font-weight="600" text-anchor="middle">10</text>
+
+      <!-- Row 2: days 11-17 -->
+      <!-- 11 full -->
+      <circle cx="56" cy="240" r="22" fill="#9963f6"/>
+      <text x="56" y="244" fill="white" font-size="13" font-weight="700" text-anchor="middle">11</text>
+      <!-- 12 full -->
+      <circle cx="142" cy="240" r="22" fill="#9963f6"/>
+      <text x="142" y="244" fill="white" font-size="13" font-weight="700" text-anchor="middle">12</text>
+      <!-- 13 empty -->
+      <circle cx="228" cy="240" r="22" fill="none" stroke="rgba(255,255,255,0.18)" stroke-dasharray="3 3"/>
+      <text x="228" y="244" fill="#737373" font-size="13" font-weight="500" text-anchor="middle">13</text>
+      <!-- 14 full -->
+      <circle cx="314" cy="240" r="22" fill="#9963f6"/>
+      <text x="314" y="244" fill="white" font-size="13" font-weight="700" text-anchor="middle">14</text>
+      <!-- 15 mid -->
+      <circle cx="400" cy="240" r="22" fill="#9963f6" fill-opacity="0.55"/>
+      <text x="400" y="244" fill="white" font-size="13" font-weight="600" text-anchor="middle">15</text>
+      <!-- 16 full -->
+      <circle cx="486" cy="240" r="22" fill="#9963f6"/>
+      <text x="486" y="244" fill="white" font-size="13" font-weight="700" text-anchor="middle">16</text>
+      <!-- 17 under -->
+      <circle cx="572" cy="240" r="22" fill="#9963f6" fill-opacity="0.20"/>
+      <text x="572" y="244" fill="#d4d4d8" font-size="13" font-weight="500" text-anchor="middle">17</text>
+
+      <!-- Row 3: days 18-24 -->
+      <!-- 18 full -->
+      <circle cx="56" cy="302" r="22" fill="#9963f6"/>
+      <text x="56" y="306" fill="white" font-size="13" font-weight="700" text-anchor="middle">18</text>
+      <!-- 19 full -->
+      <circle cx="142" cy="302" r="22" fill="#9963f6"/>
+      <text x="142" y="306" fill="white" font-size="13" font-weight="700" text-anchor="middle">19</text>
+      <!-- 20 mid -->
+      <circle cx="228" cy="302" r="22" fill="#9963f6" fill-opacity="0.55"/>
+      <text x="228" y="306" fill="white" font-size="13" font-weight="600" text-anchor="middle">20</text>
+      <!-- 21 full -->
+      <circle cx="314" cy="302" r="22" fill="#9963f6"/>
+      <text x="314" y="306" fill="white" font-size="13" font-weight="700" text-anchor="middle">21</text>
+      <!-- 22 over -->
+      <circle cx="400" cy="302" r="22" fill="#fa5c63"/>
+      <text x="400" y="306" fill="white" font-size="13" font-weight="700" text-anchor="middle">22</text>
+      <!-- 23 = TODAY (full with white ring) -->
+      <circle cx="486" cy="302" r="22" fill="#9963f6"/>
+      <circle cx="486" cy="302" r="26" fill="none" stroke="white" stroke-width="2"/>
+      <text x="486" y="306" fill="white" font-size="13" font-weight="800" text-anchor="middle">23</text>
+      <!-- 24 future (faded outline) -->
+      <circle cx="572" cy="302" r="22" fill="none" stroke="rgba(255,255,255,0.10)"/>
+      <text x="572" y="306" fill="#525252" font-size="13" font-weight="500" text-anchor="middle">24</text>
+
+      <!-- Row 4: days 25-31 (all future) -->
+      <g fill="#525252" font-size="13" font-weight="500" text-anchor="middle">
+        <circle cx="56" cy="364" r="22" fill="none" stroke="rgba(255,255,255,0.10)"/>
+        <text x="56" y="368">25</text>
+        <circle cx="142" cy="364" r="22" fill="none" stroke="rgba(255,255,255,0.10)"/>
+        <text x="142" y="368">26</text>
+        <circle cx="228" cy="364" r="22" fill="none" stroke="rgba(255,255,255,0.10)"/>
+        <text x="228" y="368">27</text>
+        <circle cx="314" cy="364" r="22" fill="none" stroke="rgba(255,255,255,0.10)"/>
+        <text x="314" y="368">28</text>
+        <circle cx="400" cy="364" r="22" fill="none" stroke="rgba(255,255,255,0.10)"/>
+        <text x="400" y="368">29</text>
+        <circle cx="486" cy="364" r="22" fill="none" stroke="rgba(255,255,255,0.10)"/>
+        <text x="486" y="368">30</text>
+        <circle cx="572" cy="364" r="22" fill="none" stroke="rgba(255,255,255,0.10)"/>
+        <text x="572" y="368">31</text>
+      </g>
+
+      <!-- Legend -->
+      <g transform="translate(56, 420)" font-size="10" font-weight="500" fill="#a3a3a3" letter-spacing="0.5">
+        <circle cx="6" cy="-4" r="6" fill="#9963f6" fill-opacity="0.20"/>
+        <text x="20" y="0">Under</text>
+
+        <circle cx="100" cy="-4" r="6" fill="#9963f6" fill-opacity="0.55"/>
+        <text x="114" y="0">Near</text>
+
+        <circle cx="190" cy="-4" r="6" fill="#9963f6"/>
+        <text x="204" y="0">On target</text>
+
+        <circle cx="310" cy="-4" r="6" fill="#fa5c63"/>
+        <text x="324" y="0">Over</text>
+
+        <circle cx="404" cy="-4" r="6" fill="none" stroke="rgba(255,255,255,0.18)" stroke-dasharray="2 2"/>
+        <text x="418" y="0">No data</text>
+      </g>
+    </g>
+
+    <!-- ============ Weekly trend chart card ============ -->
+    <g transform="translate(24, 722)">
+      <rect width="658" height="260" rx="24" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.10)"/>
+
+      <!-- Average label and value -->
+      <text x="24" y="36" fill="#a3a3a3" font-size="10" font-weight="600" letter-spacing="1.5">AVERAGE</text>
+      <text x="24" y="74" fill="white" font-size="32" font-weight="800">
+        1,850
+        <tspan font-size="14" fill="#a3a3a3" font-weight="500"> kcal/day</tspan>
+      </text>
+
+      <!-- Week navigator: ‹ Oct 19 — 25, 2026 › -->
+      <g transform="translate(24, 104)">
+        <text x="0" y="0" fill="#a3a3a3" font-size="16" font-weight="500">‹</text>
+        <text x="20" y="0" fill="#a3a3a3" font-size="13" font-weight="500">Oct 19 — 25, 2026</text>
+        <text x="170" y="0" fill="#a3a3a3" font-size="16" font-weight="500">›</text>
+      </g>
+
+      <!-- Chart area: 24 → 634, top 132, bottom 220 -->
+      <!-- Subtle target line at y = 176 (1700 kcal mid) -->
+      <line x1="24" y1="176" x2="634" y2="176" stroke="rgba(255,255,255,0.15)" stroke-dasharray="3 4"/>
+      <text x="630" y="170" text-anchor="end" fill="#525252" font-size="9" font-style="italic">target 1700</text>
+
+      <!-- 7-day line: Mon Tue Wed Thu Fri Sat Sun -->
+      <!-- y-axis: 1300→210, 2300→132 (110px for 1000 kcal) -->
+      <!-- Mon 1700→176, Tue 1900→154, Wed 1500→198, Thu 1850→160, Fri 2100→132, Sat 1950→148, Sun 1750→171 -->
+
+      <polyline
+        points="60,176 153,154 247,198 340,160 433,132 527,148 620,171"
+        fill="none"
+        stroke="#9963f6"
+        stroke-width="3"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+
+      <!-- Dots at each day -->
+      <g fill="#9963f6">
+        <circle cx="60" cy="176" r="4"/>
+        <circle cx="153" cy="154" r="4"/>
+        <circle cx="247" cy="198" r="4"/>
+        <circle cx="340" cy="160" r="4"/>
+        <circle cx="433" cy="132" r="4"/>
+        <circle cx="527" cy="148" r="4"/>
+        <circle cx="620" cy="171" r="4"/>
+      </g>
+
+      <!-- Glow on the most recent day (Today = Sat in this example) -->
+      <circle cx="620" cy="171" r="8" fill="#9963f6" fill-opacity="0.30"/>
+
+      <!-- Day labels at bottom -->
+      <g fill="#737373" font-size="11" font-weight="600" text-anchor="middle" letter-spacing="0.5">
+        <text x="60" y="240">Mon</text>
+        <text x="153" y="240">Tue</text>
+        <text x="247" y="240">Wed</text>
+        <text x="340" y="240">Thu</text>
+        <text x="433" y="240">Fri</text>
+        <text x="527" y="240">Sat</text>
+        <text x="620" y="240">Sun</text>
+      </g>
+    </g>
+
+    <!-- ============ Best day tile ============ -->
+    <g transform="translate(24, 1010)">
+      <rect width="658" height="120" rx="24" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.10)"/>
+
+      <!-- Star icon -->
+      <g transform="translate(48, 56)">
+        <path d="M0,-12 L3.5,-4.3 L12,-3.7 L5.3,2.0 L7.8,11.2 L0,6.0 L-7.8,11.2 L-5.3,2.0 L-12,-3.7 L-3.5,-4.3 Z" fill="#facc15"/>
+      </g>
+
+      <text x="84" y="44" fill="#a3a3a3" font-size="10" font-weight="600" letter-spacing="1.5">BEST DAY THIS WEEK</text>
+      <text x="84" y="68" fill="white" font-size="16" font-weight="700">Tuesday, Oct 21</text>
+      <text x="84" y="92" fill="#a3a3a3" font-size="12">
+        1,820 kcal · P 142g · all macros on target
+      </text>
+
+      <text x="634" y="68" text-anchor="end" fill="#9963f6" font-size="12" font-weight="600">View ›</text>
+    </g>
+
+  </g>
+</svg>
