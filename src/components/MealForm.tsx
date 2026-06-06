@@ -2,17 +2,20 @@
 
 import { useState, useMemo, useTransition } from 'react';
 import Link from 'next/link';
-import { Plus, Trash2, Star, Sparkles } from 'lucide-react';
+import { Trash2, Star } from 'lucide-react';
 import { GlassCard } from './GlassCard';
-import { IngredientPicker, type LibraryItem } from './IngredientPicker';
+import { type LibraryItem } from './IngredientPicker';
+import { IngredientSearch } from './IngredientSearch';
 import {
   MEAL_TYPE_OPTIONS,
   MEAL_TYPE_LABELS,
   type MealType,
   sumEntries,
+  entryMacros,
   isoDate,
 } from '@/lib/meals';
-import { createMeal, updateMeal, estimateMealAction } from '@/app/(app)/today/actions';
+import { createMeal, updateMeal } from '@/app/(app)/today/actions';
+import type { EstimationEntry } from '@/lib/freeTextEstimation';
 import { cn } from '@/lib/utils';
 
 type IngredientRow = {
@@ -27,20 +30,31 @@ type IngredientRow = {
   fatPer100g: number;
 };
 
-function emptyRow(): IngredientRow {
+function rowFromItem(item: LibraryItem, grams: number): IngredientRow {
   return {
-    name: '',
-    grams: '',
-    resolved: false,
-    kcalPer100g: 0,
-    proteinPer100g: 0,
-    carbsPer100g: 0,
-    fatPer100g: 0,
+    name: item.name,
+    grams: String(grams),
+    resolved: true,
+    productId: item.kind === 'product' ? item.id : undefined,
+    recipeId: item.kind === 'recipe' ? item.id : undefined,
+    kcalPer100g: item.kcalPer100g,
+    proteinPer100g: item.proteinPer100g,
+    carbsPer100g: item.carbsPer100g,
+    fatPer100g: item.fatPer100g,
   };
 }
 
-/** Each item in the recipe option also carries a default grams for one portion. */
-type RecipeWithDefaultGrams = LibraryItem & { kind: 'recipe'; defaultGrams: number };
+function rowFromEstimate(e: EstimationEntry): IngredientRow {
+  return {
+    name: e.name,
+    grams: String(Math.round(e.grams)),
+    resolved: true,
+    kcalPer100g: e.kcalPer100g,
+    proteinPer100g: e.proteinPer100g,
+    carbsPer100g: e.carbsPer100g,
+    fatPer100g: e.fatPer100g,
+  };
+}
 
 export type FavoriteMeal = {
   id: string;
@@ -149,12 +163,10 @@ export function MealForm({
           carbsPer100g: e.carbsPer100g,
           fatPer100g: e.fatPer100g,
         }))
-      : [emptyRow()],
+      : [],
   );
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
-  const [description, setDescription] = useState('');
-  const [estimating, startEstimate] = useTransition();
   const [internalFavoritesOpen, setInternalFavoritesOpen] = useState(false);
   const isFavoritesControlled = controlledFavoritesOpen !== undefined;
   const favoritesOpen = isFavoritesControlled ? controlledFavoritesOpen : internalFavoritesOpen;
@@ -179,14 +191,17 @@ export function MealForm({
     [rows],
   );
 
-  function updateRow(index: number, patch: Partial<IngredientRow>) {
-    setRows((prev) => prev.map((r, i) => (i === index ? { ...r, ...patch } : r)));
-  }
-  function addRow() {
-    setRows((prev) => [...prev, emptyRow()]);
+  function updateGrams(index: number, grams: string) {
+    setRows((prev) => prev.map((r, i) => (i === index ? { ...r, grams } : r)));
   }
   function removeRow(index: number) {
-    setRows((prev) => (prev.length > 1 ? prev.filter((_, i) => i !== index) : prev));
+    setRows((prev) => prev.filter((_, i) => i !== index));
+  }
+  function addRowFromItem(item: LibraryItem, grams: number) {
+    setRows((prev) => [...prev, rowFromItem(item, grams)]);
+  }
+  function addRowsFromEstimate(entries: EstimationEntry[]) {
+    setRows((prev) => [...prev, ...entries.map(rowFromEstimate)]);
   }
 
   function importFavorite(fav: FavoriteMeal) {
@@ -207,44 +222,10 @@ export function MealForm({
     setName(fav.name ?? '');
   }
 
-  function appendEstimatedEntries() {
-    if (description.trim().length < 3) return;
-    setError(null);
-    startEstimate(async () => {
-      const result = await estimateMealAction(description);
-      if (!result.ok) {
-        setError(result.error);
-        return;
-      }
-      const newRows: IngredientRow[] = result.data.entries.map((e) => ({
-        name: e.name,
-        grams: String(Math.round(e.grams)),
-        resolved: true,
-        kcalPer100g: e.kcalPer100g,
-        proteinPer100g: e.proteinPer100g,
-        carbsPer100g: e.carbsPer100g,
-        fatPer100g: e.fatPer100g,
-      }));
-      // Drop the leading empty placeholder row, if any, so the estimate
-      // doesn't have a blank row above it.
-      setRows((prev) => {
-        const trimmed = prev.filter((r) => r.resolved || r.name.trim() || r.grams.trim());
-        return [...trimmed, ...newRows];
-      });
-      if (result.data.suggestedType && !initial?.type) {
-        setType(result.data.suggestedType);
-      }
-      if (result.data.suggestedName && !name.trim()) {
-        setName(result.data.suggestedName);
-      }
-      setDescription('');
-    });
-  }
-
   function resetForm() {
     setType('BREAKFAST');
     setName('');
-    setRows([emptyRow()]);
+    setRows([]);
     setError(null);
   }
 
@@ -343,128 +324,56 @@ export function MealForm({
         />
       ) : null}
 
-      <GlassCard className="space-y-3 p-5">
-        <label className="block">
-          <span className="text-xs font-medium tracking-wider text-neutral-400 uppercase">
-            Describe to estimate
-          </span>
-          <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            rows={3}
-            maxLength={800}
-            placeholder="e.g. avena con frutos rojos, semillas de chía y un yogur griego"
-            className="mt-2 block w-full resize-none rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm text-white placeholder:text-neutral-500 focus:bg-white/[0.08] focus:ring-2 focus:ring-[var(--accent)]/60 focus:outline-none"
-          />
-        </label>
-        <button
-          type="button"
-          onClick={appendEstimatedEntries}
-          disabled={estimating || description.trim().length < 3}
-          className={cn(
-            'flex w-full items-center justify-center gap-2 rounded-2xl border border-[var(--accent)]/30 bg-[var(--accent)]/10 px-3 py-2.5 text-xs font-medium text-[var(--accent)] transition hover:bg-[var(--accent)]/15 disabled:cursor-not-allowed disabled:opacity-50',
-          )}
-        >
-          <Sparkles size={12} className={cn(estimating && 'animate-pulse')} />
-          {estimating ? 'Klara is thinking…' : 'Ask Klara to add these'}
-        </button>
-      </GlassCard>
+      <GlassCard className="space-y-4 p-5">
+        {rows.length > 0 ? (
+          <ul className="divide-y divide-white/5">
+            {rows.map((row, i) => {
+              const grams = Number(row.grams) || 0;
+              const m = entryMacros({
+                grams,
+                kcalPer100g: row.kcalPer100g,
+                proteinPer100g: row.proteinPer100g,
+                carbsPer100g: row.carbsPer100g,
+                fatPer100g: row.fatPer100g,
+              });
+              return (
+                <li key={i} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-white">{row.name}</p>
+                    <p className="mt-0.5 text-xs text-neutral-400 tabular-nums">
+                      {Math.round(m.kcal)} kcal · P {m.protein.toFixed(1)}g · C {m.carbs.toFixed(1)}
+                      g · F {m.fat.toFixed(1)}g
+                    </p>
+                  </div>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    value={row.grams}
+                    onChange={(e) => updateGrams(i, e.target.value)}
+                    placeholder="100"
+                    aria-label="Grams"
+                    className="w-14 shrink-0 rounded-xl border border-white/10 bg-white/[0.04] px-2 py-1.5 text-center text-sm text-white tabular-nums placeholder:text-neutral-500 focus:bg-white/[0.08] focus:ring-2 focus:ring-[var(--accent)]/60 focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeRow(i)}
+                    aria-label="Remove ingredient"
+                    className="flex h-8 w-8 shrink-0 items-center justify-center text-neutral-400 transition hover:text-[var(--danger)]"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        ) : null}
 
-      <GlassCard className="relative z-10 space-y-3 p-5">
-        {rows.map((row, i) => (
-          <div key={i} className="space-y-2">
-            <div className="flex items-end gap-1.5">
-              <div className="min-w-0 flex-1">
-                <IngredientPicker
-                  value={row.name}
-                  items={items}
-                  onNameChange={(value) =>
-                    updateRow(i, {
-                      name: value,
-                      resolved: row.resolved && row.name === value,
-                    })
-                  }
-                  onSelectItem={(item) => {
-                    if (item.kind === 'product') {
-                      updateRow(i, {
-                        name: item.name,
-                        productId: item.id,
-                        recipeId: undefined,
-                        resolved: true,
-                        kcalPer100g: item.kcalPer100g,
-                        proteinPer100g: item.proteinPer100g,
-                        carbsPer100g: item.carbsPer100g,
-                        fatPer100g: item.fatPer100g,
-                      });
-                    } else {
-                      // Recipe — auto-fill grams from its default portion size
-                      // when the user hasn't typed anything yet.
-                      const recipeWithGrams = item as RecipeWithDefaultGrams;
-                      const seedGrams =
-                        row.grams.trim() === '' && recipeWithGrams.defaultGrams
-                          ? String(Math.round(recipeWithGrams.defaultGrams))
-                          : row.grams;
-                      updateRow(i, {
-                        name: item.name,
-                        productId: undefined,
-                        recipeId: item.id,
-                        resolved: true,
-                        kcalPer100g: item.kcalPer100g,
-                        proteinPer100g: item.proteinPer100g,
-                        carbsPer100g: item.carbsPer100g,
-                        fatPer100g: item.fatPer100g,
-                        grams: seedGrams,
-                      });
-                    }
-                  }}
-                  onAiResolved={(data) =>
-                    updateRow(i, {
-                      name: data.canonicalName,
-                      productId: undefined,
-                      recipeId: undefined,
-                      resolved: true,
-                      kcalPer100g: data.kcalPer100g,
-                      proteinPer100g: data.proteinPer100g,
-                      carbsPer100g: data.carbsPer100g,
-                      fatPer100g: data.fatPer100g,
-                      grams:
-                        data.estimatedGrams && row.grams.trim() === ''
-                          ? String(data.estimatedGrams)
-                          : row.grams,
-                    })
-                  }
-                  onError={(msg) => setError(msg)}
-                />
-              </div>
-              <input
-                type="number"
-                inputMode="decimal"
-                value={row.grams}
-                onChange={(e) => updateRow(i, { grams: e.target.value })}
-                placeholder="100g"
-                aria-label="Grams"
-                className="w-16 shrink-0 rounded-2xl border border-white/10 bg-white/[0.04] px-2 py-2.5 text-center text-sm text-white tabular-nums placeholder:text-neutral-500 focus:bg-white/[0.08] focus:ring-2 focus:ring-[var(--accent)]/60 focus:outline-none"
-              />
-              <button
-                type="button"
-                onClick={() => removeRow(i)}
-                aria-label="Remove ingredient"
-                disabled={rows.length === 1}
-                className="-mr-2 flex h-10 w-8 shrink-0 items-center justify-center text-neutral-400 transition hover:text-[var(--danger)] disabled:opacity-30"
-              >
-                <Trash2 size={16} />
-              </button>
-            </div>
-          </div>
-        ))}
-
-        <button
-          type="button"
-          onClick={addRow}
-          className="flex w-full items-center justify-center gap-1.5 rounded-2xl border border-dashed border-white/15 px-4 py-3 text-xs font-medium text-[var(--accent)] transition hover:border-[var(--accent)]/60 hover:bg-[var(--accent)]/5"
-        >
-          <Plus size={14} /> Add ingredient
-        </button>
+        <IngredientSearch
+          items={items}
+          onAddItem={addRowFromItem}
+          onAddEstimate={addRowsFromEstimate}
+          onError={setError}
+        />
       </GlassCard>
 
       <GlassCard className="space-y-3 p-5">
