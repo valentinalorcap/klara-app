@@ -95,8 +95,8 @@ export default async function TodayPage() {
           Today so far
         </p>
 
-        <div className="mt-5 flex justify-center">
-          <div className="w-44">
+        <div className="mt-2 flex justify-center">
+          <div className="w-36">
             <MacroRing
               size="lg"
               current={dayTotals.kcal}
