@@ -31,7 +31,9 @@ export default async function TodayPage() {
     }),
     prisma.meal.findMany({
       where: { userId, date: dayDate },
-      orderBy: { createdAt: 'desc' },
+      // Tiebreaker by id so meals saved in the same transaction (batch)
+      // always render in a stable order across refreshes.
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       include: { entries: { orderBy: { createdAt: 'asc' } }, evaluation: true },
     }),
   ]);
@@ -47,7 +49,15 @@ export default async function TodayPage() {
   const allEntries = meals.flatMap((m) => m.entries);
   const dayTotals = sumEntries(allEntries);
   const hasPendingEvals = meals.some((m) => m.evaluation?.status === EvalStatus.PENDING);
-  const latestEval = meals[0]?.evaluation ?? null;
+  // Pick the evaluation that was most recently touched, not the eval of
+  // the most recent meal. Editing an older meal bumps its eval back to
+  // PENDING with a fresh updatedAt — that's the take the user should see
+  // (skeleton → new take), not the stale DONE take of the newest meal.
+  const latestEval =
+    meals
+      .map((m) => m.evaluation)
+      .filter((e): e is NonNullable<typeof e> => e !== null)
+      .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime())[0] ?? null;
 
   const today = new Date().toLocaleDateString('en-US', {
     weekday: 'long',

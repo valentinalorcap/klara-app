@@ -73,7 +73,14 @@ export function sumEntries(entries: ReadonlyArray<IngredientMacros & { grams: nu
   );
 }
 
-/** Format a Date as `YYYY-MM-DD` in the user's local time. */
+/**
+ * Format a Date as `YYYY-MM-DD` in **local** time. Used to derive the
+ * "today" key for a meal log from `new Date()`, where the user's local
+ * day matters. Do NOT pass a `meal.date` field through this — those are
+ * stored as UTC midnight of the user's day, and reading them with local
+ * getters silently rolls back to the previous day for any user west of
+ * UTC. Query meal rows by `meal.date` directly instead.
+ */
 export function isoDate(date: Date): string {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, '0');

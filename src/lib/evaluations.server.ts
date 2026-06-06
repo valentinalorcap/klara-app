@@ -3,12 +3,13 @@ import type Anthropic from '@anthropic-ai/sdk';
 import { EvalStatus, EvalTone } from '@prisma/client';
 import { getAnthropic, MODELS } from './anthropic';
 import { prisma } from './prisma';
-import { entryMacros, isoDate, MEAL_TYPE_LABELS, sumEntries } from './meals';
+import { entryMacros, MEAL_TYPE_LABELS, sumEntries } from './meals';
 import {
   buildSystemPrompt,
   buildUserMessage,
   type DailyTargets,
   type EvalEntry,
+  type EvalMealSummary,
   type EvaluationInput,
   type MacroSum,
 } from './evaluations';
@@ -52,10 +53,12 @@ export async function evaluateMealById(mealId: string): Promise<void> {
     });
     if (!meal) return;
 
-    const dayKey = isoDate(meal.date);
-    const dayDate = new Date(dayKey + 'T00:00:00Z');
+    // meal.date is already stored as UTC midnight of the user's day, so
+    // use it directly — don't round-trip through isoDate(), which uses
+    // local-time getters and silently rolls back a day for users west of
+    // UTC.
     const dayMeals = await prisma.meal.findMany({
-      where: { userId: meal.userId, date: dayDate },
+      where: { userId: meal.userId, date: meal.date },
       include: { entries: true },
     });
     const dayTotals = sumEntries(dayMeals.flatMap((m) => m.entries));
@@ -74,6 +77,24 @@ export async function evaluateMealById(mealId: string): Promise<void> {
 
     const mealTotals: MacroSum = sumEntries(meal.entries);
 
+    let batchSiblings: EvalMealSummary[] | undefined;
+    if (meal.batchId) {
+      const siblings = await prisma.meal.findMany({
+        where: { batchId: meal.batchId, id: { not: meal.id } },
+        orderBy: { createdAt: 'asc' },
+        include: { entries: { orderBy: { createdAt: 'asc' } } },
+      });
+      batchSiblings = siblings.map((s) => ({
+        typeLabel: MEAL_TYPE_LABELS[s.type],
+        name: s.name,
+        entries: s.entries.map((e) => {
+          const m = entryMacros(e);
+          return { name: e.name, grams: e.grams, ...m };
+        }),
+        totals: sumEntries(s.entries),
+      }));
+    }
+
     const input: EvaluationInput = {
       meal: {
         typeLabel: MEAL_TYPE_LABELS[meal.type],
@@ -81,16 +102,19 @@ export async function evaluateMealById(mealId: string): Promise<void> {
         entries,
         totals: mealTotals,
       },
+      batchSiblings,
       dayTotals,
       targets,
       tone: meal.user.defaultEvalTone,
     };
 
     const client = getAnthropic();
+    const userMessage = buildUserMessage(input);
+
     const response = await client.messages.create({
       model: MODELS.haiku,
       max_tokens: 220,
-      temperature: 0.4,
+      temperature: 0.2,
       system: [
         {
           type: 'text',
@@ -98,7 +122,7 @@ export async function evaluateMealById(mealId: string): Promise<void> {
           cache_control: { type: 'ephemeral' },
         },
       ],
-      messages: [{ role: 'user', content: buildUserMessage(input) }],
+      messages: [{ role: 'user', content: userMessage }],
     });
 
     const markdown = response.content

@@ -74,19 +74,49 @@ export type MealInitialValues = {
   }[];
 };
 
+export type MealFormPayload = {
+  date: string;
+  type: MealType;
+  name?: string;
+  entries: {
+    name: string;
+    grams: number;
+    productId?: string;
+    recipeId?: string;
+    kcalPer100g: number;
+    proteinPer100g: number;
+    carbsPer100g: number;
+    fatPer100g: number;
+  }[];
+};
+
 export function MealForm({
   items,
   favorites,
   initial,
   returnTo,
+  onAddToBatch,
+  submitLabel,
+  cancelHref,
 }: {
   items: LibraryItem[];
   favorites: FavoriteMeal[];
   initial?: MealInitialValues;
   /** Where the form should redirect after a successful save (edit mode only). */
   returnTo?: string;
+  /**
+   * When set, the submit button stages this meal into a local batch
+   * instead of calling createMeal — used by /today/batch. The form
+   * clears itself after each successful add.
+   */
+  onAddToBatch?: (payload: MealFormPayload) => void;
+  /** Custom submit label override (defaults to "Save meal" / "Save changes"). */
+  submitLabel?: string;
+  /** Where the cancel link should go (default /today). */
+  cancelHref?: string;
 }) {
   const editMode = Boolean(initial);
+  const batchMode = Boolean(onAddToBatch);
   const [type, setType] = useState<MealType>(initial?.type ?? 'BREAKFAST');
   const [name, setName] = useState(initial?.name ?? '');
   const [rows, setRows] = useState<IngredientRow[]>(
@@ -151,6 +181,13 @@ export function MealForm({
     );
   }
 
+  function resetForm() {
+    setType('BREAKFAST');
+    setName('');
+    setRows([emptyRow()]);
+    setError(null);
+  }
+
   function handleSubmit() {
     setError(null);
     const entries = rows
@@ -169,13 +206,20 @@ export function MealForm({
       setError('Add at least one ingredient with grams.');
       return;
     }
+    const payload: MealFormPayload = {
+      date: isoDate(new Date()),
+      type,
+      name: name.trim() || undefined,
+      entries,
+    };
+
+    if (onAddToBatch) {
+      onAddToBatch(payload);
+      resetForm();
+      return;
+    }
+
     startTransition(async () => {
-      const payload = {
-        date: isoDate(new Date()),
-        type,
-        name: name.trim() || undefined,
-        entries,
-      };
       const result = editMode
         ? await updateMeal(initial!.mealId, payload, returnTo)
         : await createMeal(payload);
@@ -374,10 +418,13 @@ export function MealForm({
           disabled={pending}
           className="w-full rounded-2xl bg-[var(--accent)] px-4 py-3.5 text-sm font-semibold text-white shadow-[0_8px_24px_-8px_var(--accent-glow)] transition hover:bg-[var(--accent-hover)] active:scale-[0.98] disabled:opacity-50"
         >
-          {pending ? 'Saving…' : editMode ? 'Save changes' : 'Save meal'}
+          {pending
+            ? 'Saving…'
+            : (submitLabel ??
+              (batchMode ? 'Add to batch' : editMode ? 'Save changes' : 'Save meal'))}
         </button>
         <Link
-          href={returnTo ?? '/today'}
+          href={cancelHref ?? returnTo ?? '/today'}
           className="block w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-center text-sm font-medium text-neutral-300 transition hover:bg-white/[0.08]"
         >
           Cancel
