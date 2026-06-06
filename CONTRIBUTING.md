@@ -128,13 +128,13 @@ on `/pulls` or `/milestones` can read the progress at a glance.
 
 **Labels** — pick exactly one type label per PR:
 
-| Label     | When                                                              |
-| --------- | ----------------------------------------------------------------- |
-| `feature` | New user-visible functionality                                    |
-| `polish`  | UX/UI refinement of something that already ships                  |
-| `fix`     | Bug fix                                                           |
-| `chore`   | Tooling, deps, internal cleanup                                   |
-| `docs`    | Documentation only                                                |
+| Label     | When                                             |
+| --------- | ------------------------------------------------ |
+| `feature` | New user-visible functionality                   |
+| `polish`  | UX/UI refinement of something that already ships |
+| `fix`     | Bug fix                                          |
+| `chore`   | Tooling, deps, internal cleanup                  |
+| `docs`    | Documentation only                               |
 
 **Milestone** — the phase this PR ships under (`Phase 4`, `Phase 5`, …).
 Sub-phase PRs (`Phase 3.5`, `Phase 2.1`, …) attach to the parent phase
@@ -200,11 +200,11 @@ saves a round trip.
 
 ## Testing strategy
 
-| Layer            | Tool       | What lives here                                                   |
-| ---------------- | ---------- | ----------------------------------------------------------------- |
-| Pure helpers     | Vitest     | Macros math, goal helpers, prompt builders, schema validation     |
-| Component logic  | Vitest     | Added when a component grows non-trivial branching                |
-| Happy-path flows | Playwright | Login, log a meal, see today — the smoke surface (`e2e/`)         |
+| Layer            | Tool       | What lives here                                               |
+| ---------------- | ---------- | ------------------------------------------------------------- |
+| Pure helpers     | Vitest     | Macros math, goal helpers, prompt builders, schema validation |
+| Component logic  | Vitest     | Added when a component grows non-trivial branching            |
+| Happy-path flows | Playwright | Login, log a meal, see today — the smoke surface (`e2e/`)     |
 
 What we **don't** test:
 
