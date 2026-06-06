@@ -112,7 +112,7 @@ export async function evaluateMealById(mealId: string): Promise<void> {
     const userMessage = buildUserMessage(input);
 
     const response = await client.messages.create({
-      model: MODELS.sonnet,
+      model: MODELS.haiku,
       max_tokens: 220,
       temperature: 0.2,
       system: [
@@ -140,7 +140,7 @@ export async function evaluateMealById(mealId: string): Promise<void> {
       data: {
         status: EvalStatus.DONE,
         markdown,
-        model: MODELS.sonnet,
+        model: MODELS.haiku,
         tokensIn: response.usage.input_tokens,
         tokensOut: response.usage.output_tokens,
         errorMessage: null,
