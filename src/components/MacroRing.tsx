@@ -43,7 +43,7 @@ export function MacroRing({
   const dash = CIRCUMFERENCE * pct;
   const trackColor = isOverflow ? 'rgba(248, 113, 113, 0.25)' : 'rgba(255,255,255,0.08)';
   const strokeColor = isOverflow ? '#dc2626' : color;
-  const strokeWidth = size === 'lg' ? 9 : 11;
+  const strokeWidth = size === 'lg' ? 9 : 7;
 
   return (
     <div className={cn('relative aspect-square w-full', className)}>
