@@ -84,25 +84,72 @@ export function buildSystemPrompt(tone: EvalTone): string {
   return [
     "You are Klara, the user's personal nutrition coach. After each meal they",
     'log, write ONE short evaluation (1–3 sentences, plain text, no bullets',
-    'or headers) tailored to their daily goals.',
+    'or headers).',
+    '',
+    'How to write the evaluation — read carefully, this matters:',
+    '',
+    '1. THE DAY STATUS BLOCK IS THE PRIMARY SIGNAL. The user message starts',
+    '   with a Day status block showing actual vs target for each macro,',
+    '   tagged OVER / UNDER / ON-TRACK / UNSET. Anchor your evaluation to',
+    '   that block first — the meal/batch description is context, not the',
+    '   subject of your comment.',
+    '',
+    '2. If a macro is OVER target, acknowledge the overage. NEVER suggest',
+    '   the user needs more of an OVER macro. NEVER tell them to add carbs',
+    '   when carbs are OVER. Same for protein, fat, and calories.',
+    '',
+    '3. If a macro is UNDER target, you may point out the gap and suggest',
+    '   ways to close it in remaining meals.',
+    '',
+    '4. If a macro is UNSET, do not mention it.',
+    '',
+    '5. The recently logged meal/batch is the trigger for the evaluation,',
+    '   not the subject. Mention what was just logged briefly (one number),',
+    '   but focus the take on where the day stands.',
     '',
     TONE_GUIDANCE[tone],
     '',
-    'Rules:',
-    '- Always reference at least one specific number from the meal or day totals.',
-    '- Only comment on macros the user has a target set for (others may be unset).',
+    'Output rules:',
+    '- Plain text only, no markdown, no greeting, no sign-off.',
+    '- Reply in English. Keep meal/ingredient names as written.',
+    '- 1–3 sentences. Be specific with numbers.',
     '- Never recommend skipping meals or extreme restriction.',
-    '- Plain text only, no markdown formatting, no greeting, no sign-off.',
-    '- Reply in English. Keep the meal/ingredient names as written.',
   ].join('\n');
-}
-
-function formatTarget(value: number | null | undefined, unit: string): string {
-  return value == null ? '—' : `${Math.round(value)}${unit}`;
 }
 
 function formatMacro(value: number): string {
   return value.toFixed(1);
+}
+
+/**
+ * One line per macro showing actual vs target with an explicit tag so
+ * Claude can't miss whether the user is over/under. Macros without a
+ * target render as UNSET (and the system prompt tells the model to skip
+ * those).
+ */
+function buildDayStatusBlock(dayTotals: MacroSum, targets: DailyTargets): string[] {
+  const rows: Array<{
+    label: string;
+    actual: number;
+    target: number | null | undefined;
+    unit: string;
+  }> = [
+    { label: 'Calories', actual: dayTotals.kcal, target: targets.kcal, unit: ' kcal' },
+    { label: 'Protein', actual: dayTotals.protein, target: targets.protein, unit: 'g' },
+    { label: 'Carbs', actual: dayTotals.carbs, target: targets.carbs, unit: 'g' },
+    { label: 'Fat', actual: dayTotals.fat, target: targets.fat, unit: 'g' },
+  ];
+  return rows.map(({ label, actual, target, unit }) => {
+    if (target == null || target <= 0) {
+      return `- ${label}: ${formatMacro(actual)}${unit} consumed today (target UNSET — do not mention)`;
+    }
+    const pct = Math.round((actual / target) * 100);
+    let tag: string;
+    if (pct >= 110) tag = 'OVER';
+    else if (pct <= 90) tag = 'UNDER';
+    else tag = 'ON-TRACK';
+    return `- ${label}: ${formatMacro(actual)}${unit} / ${Math.round(target)}${unit} target (${pct}% — ${tag})`;
+  });
 }
 
 function describeMeal(meal: EvalMealSummary): string[] {
@@ -120,10 +167,10 @@ function describeMeal(meal: EvalMealSummary): string[] {
 
 /**
  * Build the user message — fully dynamic per meal, never cached.
- * Lists ingredients with macros, the meal totals, day-so-far totals,
- * and the (possibly partial) daily targets. When `batchSiblings` is
- * present, frames the message as "batch of N" so Claude can comment
- * on the conjunto instead of one meal in isolation.
+ * Leads with the Day status block (actual vs target + OVER/UNDER tags)
+ * so Claude anchors the take on the day, then describes what was just
+ * logged as context. When `batchSiblings` is present, frames the trigger
+ * as "batch of N" so the comment is about the conjunto.
  */
 export function buildUserMessage(input: EvaluationInput): string {
   const { meal, batchSiblings, dayTotals, targets } = input;
@@ -131,43 +178,31 @@ export function buildUserMessage(input: EvaluationInput): string {
   const isBatch = siblings.length > 0;
   const batchTotal = siblings.length + 1;
 
-  const targetsLine = `Daily targets: ${formatTarget(targets.kcal, ' kcal')} · ${formatTarget(
-    targets.protein,
-    'g protein',
-  )} · ${formatTarget(targets.carbs, 'g carbs')} · ${formatTarget(targets.fat, 'g fat')}`;
+  const statusBlock = buildDayStatusBlock(dayTotals, targets);
 
-  const dayLine = `Day so far (incl. ${
-    isBatch ? 'the whole batch' : 'this meal'
-  }): ${formatMacro(dayTotals.protein)}g P · ${formatMacro(dayTotals.carbs)}g C · ${formatMacro(
-    dayTotals.fat,
-  )}g F · ${Math.round(dayTotals.kcal)} kcal`;
+  const trigger = isBatch
+    ? `Just logged: a batch of ${batchTotal} meals in one session (included in the day totals above).`
+    : 'Just logged (already included in the day totals above):';
 
-  if (!isBatch) {
-    return [
-      `Meal logged:`,
-      ...describeMeal(meal),
-      '',
-      dayLine,
-      targetsLine,
-      '',
-      'Evaluate this meal.',
-    ].join('\n');
-  }
+  const triggerDetails: string[] = isBatch
+    ? [...siblings, meal].flatMap((m, i) => [
+        `Meal ${i + 1} of ${batchTotal}:`,
+        ...describeMeal(m),
+        '',
+      ])
+    : describeMeal(meal);
 
-  const orderedBatch = [...siblings, meal];
-  const sections = orderedBatch.flatMap((m, i) => [
-    `Meal ${i + 1} of ${batchTotal}:`,
-    ...describeMeal(m),
-    '',
-  ]);
+  const instruction = isBatch
+    ? 'Write the take based on the Day status block first; reference the batch only as context.'
+    : 'Write the take based on the Day status block first; reference the meal only as context.';
 
   return [
-    `Batch logged in one session — ${batchTotal} meals to evaluate together:`,
+    'Day status (this is what to anchor the evaluation on):',
+    ...statusBlock,
     '',
-    ...sections,
-    dayLine,
-    targetsLine,
+    trigger,
+    ...triggerDetails,
     '',
-    'Evaluate the batch as a whole — comment on the combination, not each meal in isolation.',
+    instruction,
   ].join('\n');
 }

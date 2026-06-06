@@ -110,7 +110,7 @@ export async function evaluateMealById(mealId: string): Promise<void> {
     const response = await client.messages.create({
       model: MODELS.haiku,
       max_tokens: 220,
-      temperature: 0.4,
+      temperature: 0.2,
       system: [
         {
           type: 'text',
