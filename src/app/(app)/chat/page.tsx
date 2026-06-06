@@ -7,6 +7,7 @@ const INITIAL_LOAD = 30;
 export default async function ChatPage() {
   const session = await auth();
   const userId = session!.user.id;
+  const firstName = session?.user?.name?.split(' ')[0] ?? 'friend';
 
   const recent = await prisma.chatMessage.findMany({
     where: { userId },
@@ -21,13 +22,7 @@ export default async function ChatPage() {
 
   return (
     <main className="flex h-[100dvh] flex-col px-4 pt-8 pb-24">
-      <header className="px-2 pb-3">
-        <h1 className="text-2xl font-bold tracking-tight text-white">Chat</h1>
-        <p className="mt-1 text-sm text-neutral-400">
-          Klara has your day so far and the past week — ask anything.
-        </p>
-      </header>
-      <ChatClient initialMessages={messages} />
+      <ChatClient initialMessages={messages} firstName={firstName} />
     </main>
   );
 }

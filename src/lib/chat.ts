@@ -70,6 +70,10 @@ export function buildChatSystemStable(ctx: ChatContext): string {
     '- Only mention macros the user has a target for; skip the rest.',
     '- Plain text only — no markdown headers, no code fences. Short paragraphs.',
     '- Reply in English unless the user writes to you in another language.',
+    '- This is a friendly chat, not a clinical readout. You may sprinkle one',
+    '  emoji per reply when it fits the moment (e.g. 🌱 for a vegetarian',
+    '  suggestion, 💪 when protein is on track, 🔥 for a calorie surplus).',
+    '  Never more than one, and never gratuitously.',
   ].join('\n');
 }
 

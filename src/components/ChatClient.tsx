@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Send, Sparkles } from 'lucide-react';
 import { ChatRole } from '@prisma/client';
-import { cn } from '@/lib/utils';
 
 export type ChatMessageView = {
   id: string;
@@ -11,24 +10,42 @@ export type ChatMessageView = {
   content: string;
 };
 
-export function ChatClient({ initialMessages }: { initialMessages: ChatMessageView[] }) {
+const SUGGESTIONS = [
+  'How am I doing today?',
+  'Vegetarian dinner ideas',
+  'Am I behind on protein?',
+  'Something light for a snack',
+];
+
+function greetingFor(name: string): string {
+  const hour = new Date().getHours();
+  if (hour < 6) return `Hey ${name} 🌙`;
+  if (hour < 12) return `Good morning, ${name} ☀️`;
+  if (hour < 18) return `Hey ${name} 👋`;
+  return `Good evening, ${name} 🌙`;
+}
+
+export function ChatClient({
+  initialMessages,
+  firstName,
+}: {
+  initialMessages: ChatMessageView[];
+  firstName: string;
+}) {
   const [messages, setMessages] = useState<ChatMessageView[]>(initialMessages);
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const scrollerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  // Auto-scroll to the bottom on new content.
   useEffect(() => {
     const el = scrollerRef.current;
     if (!el) return;
     el.scrollTop = el.scrollHeight;
   }, [messages]);
 
-  async function onSubmit(e: FormEvent) {
-    e.preventDefault();
-    const content = draft.trim();
-    if (!content || sending) return;
+  async function send(content: string) {
     setError(null);
     setSending(true);
 
@@ -71,12 +88,25 @@ export function ChatClient({ initialMessages }: { initialMessages: ChatMessageVi
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Chat failed.';
       setError(message);
-      // Drop the empty placeholder if the request blew up before any text arrived.
       setMessages((prev) => prev.filter((m) => m.id !== assistantId || m.content.length > 0));
     } finally {
       setSending(false);
     }
   }
+
+  function onSubmit(e: FormEvent) {
+    e.preventDefault();
+    const content = draft.trim();
+    if (!content || sending) return;
+    void send(content);
+  }
+
+  function onSuggestion(text: string) {
+    if (sending) return;
+    void send(text);
+  }
+
+  const isEmpty = messages.length === 0;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -85,14 +115,8 @@ export function ChatClient({ initialMessages }: { initialMessages: ChatMessageVi
         className="-mx-2 flex-1 space-y-3 overflow-y-auto px-2 py-2"
         aria-live="polite"
       >
-        {messages.length === 0 ? (
-          <div className="mt-6 flex flex-col items-center gap-2 px-6 text-center">
-            <Sparkles size={20} className="text-[var(--accent)]" />
-            <p className="text-sm text-neutral-300">
-              Klara knows your targets, today’s meals, and the last week. Try “How am I doing on
-              protein?” or “What should I aim for at dinner?”
-            </p>
-          </div>
+        {isEmpty ? (
+          <EmptyState firstName={firstName} onPick={onSuggestion} disabled={sending} />
         ) : (
           messages.map((m) => <Bubble key={m.id} message={m} />)
         )}
@@ -106,6 +130,7 @@ export function ChatClient({ initialMessages }: { initialMessages: ChatMessageVi
 
       <form onSubmit={onSubmit} className="mt-3 flex items-end gap-2">
         <textarea
+          ref={inputRef}
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => {
@@ -133,24 +158,76 @@ export function ChatClient({ initialMessages }: { initialMessages: ChatMessageVi
   );
 }
 
+function KlaraAvatar() {
+  return (
+    <div
+      aria-hidden
+      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[var(--accent)]/30 bg-[var(--accent)]/15 text-[var(--accent)]"
+    >
+      <Sparkles size={14} />
+    </div>
+  );
+}
+
 function Bubble({ message }: { message: ChatMessageView }) {
   const isUser = message.role === ChatRole.USER;
+  if (isUser) {
+    return (
+      <div className="flex w-full justify-end">
+        <div className="max-w-[85%] rounded-2xl bg-[var(--accent)]/15 px-3.5 py-2.5 text-sm leading-relaxed whitespace-pre-wrap text-white">
+          {message.content}
+        </div>
+      </div>
+    );
+  }
   return (
-    <div className={cn('flex w-full', isUser ? 'justify-end' : 'justify-start')}>
-      <div
-        className={cn(
-          'max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed whitespace-pre-wrap',
-          isUser
-            ? 'bg-[var(--accent)]/15 text-white'
-            : 'border border-white/10 bg-white/[0.04] text-neutral-100',
-        )}
-      >
+    <div className="flex w-full items-start justify-start gap-2">
+      <KlaraAvatar />
+      <div className="max-w-[85%] rounded-2xl rounded-tl-md border border-white/10 bg-white/[0.04] px-3.5 py-2.5 text-sm leading-relaxed whitespace-pre-wrap text-neutral-100">
         {message.content || (
           <span className="inline-flex items-center gap-1 text-neutral-400">
             <Sparkles size={12} className="animate-pulse text-[var(--accent)]" />
             Klara is thinking…
           </span>
         )}
+      </div>
+    </div>
+  );
+}
+
+function EmptyState({
+  firstName,
+  onPick,
+  disabled,
+}: {
+  firstName: string;
+  onPick: (text: string) => void;
+  disabled: boolean;
+}) {
+  return (
+    <div className="mt-4 space-y-5 px-2">
+      <div className="flex items-start gap-3">
+        <KlaraAvatar />
+        <div>
+          <p className="text-base font-semibold text-white">{greetingFor(firstName)}</p>
+          <p className="mt-1 text-sm text-neutral-300">
+            I have your targets, today’s meals, and your last week of logs. Ask me whatever you want
+            — or try one of these:
+          </p>
+        </div>
+      </div>
+      <div className="flex flex-wrap gap-2 pl-11">
+        {SUGGESTIONS.map((s) => (
+          <button
+            key={s}
+            type="button"
+            onClick={() => onPick(s)}
+            disabled={disabled}
+            className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs text-neutral-200 transition hover:border-[var(--accent)]/40 hover:bg-[var(--accent)]/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {s}
+          </button>
+        ))}
       </div>
     </div>
   );
