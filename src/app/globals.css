@@ -24,7 +24,9 @@
   --success: #34d399;
 
   /* Macro coding — same hues as the MacroRing dashboard so the same color
-     means the same macro everywhere (rings, meal totals, favorites). */
+     means the same macro everywhere (rings, meal totals, favorites). Only
+     protein and kcal are tinted on the cards; carbs and fat stay neutral
+     to keep the totals lines from feeling busy. */
   --macro-protein: #a78bfa;
   --macro-kcal: #f59e0b;
   --macro-carbs: #60a5fa;

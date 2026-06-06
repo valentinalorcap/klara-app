@@ -400,12 +400,10 @@ export function MealForm({
               <span className="ml-1 text-xs font-medium">kcal</span>
             </span>
           </p>
-          <p className="text-xs tabular-nums">
+          <p className="text-xs text-neutral-400 tabular-nums">
             <span className="text-[var(--macro-protein)]">P {totals.protein.toFixed(1)}g</span>
-            <span className="mx-1.5 text-neutral-500">·</span>
-            <span className="text-[var(--macro-carbs)]">C {totals.carbs.toFixed(1)}g</span>
-            <span className="mx-1.5 text-neutral-500">·</span>
-            <span className="text-[var(--macro-fat)]">F {totals.fat.toFixed(1)}g</span>
+            <span className="mx-1.5 text-neutral-500">·</span>C {totals.carbs.toFixed(1)}g
+            <span className="mx-1.5 text-neutral-500">·</span>F {totals.fat.toFixed(1)}g
           </p>
         </div>
       </GlassCard>
