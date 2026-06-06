@@ -103,6 +103,9 @@ export function MealForm({
   onAddToBatch,
   submitLabel,
   cancelHref,
+  hideFavoritesButton = false,
+  controlledFavoritesOpen,
+  onCloseFavorites,
 }: {
   items: LibraryItem[];
   favorites: FavoriteMeal[];
@@ -119,6 +122,15 @@ export function MealForm({
   submitLabel?: string;
   /** Where the cancel link should go (default /today). */
   cancelHref?: string;
+  /**
+   * Hide the in-form "Favorites · N saved" trigger. /today/new uses a
+   * page-level pill instead and controls the picker externally.
+   */
+  hideFavoritesButton?: boolean;
+  /** Controlled open state for the picker; pairs with `onCloseFavorites`. */
+  controlledFavoritesOpen?: boolean;
+  /** Called when the controlled picker should close. */
+  onCloseFavorites?: () => void;
 }) {
   const editMode = Boolean(initial?.mealId);
   const batchMode = Boolean(onAddToBatch);
@@ -143,7 +155,13 @@ export function MealForm({
   const [pending, startTransition] = useTransition();
   const [description, setDescription] = useState('');
   const [estimating, startEstimate] = useTransition();
-  const [favoritesOpen, setFavoritesOpen] = useState(false);
+  const [internalFavoritesOpen, setInternalFavoritesOpen] = useState(false);
+  const isFavoritesControlled = controlledFavoritesOpen !== undefined;
+  const favoritesOpen = isFavoritesControlled ? controlledFavoritesOpen : internalFavoritesOpen;
+  const closeFavorites = () => {
+    if (isFavoritesControlled) onCloseFavorites?.();
+    else setInternalFavoritesOpen(false);
+  };
 
   const totals = useMemo(
     () =>
@@ -301,10 +319,10 @@ export function MealForm({
         />
       </GlassCard>
 
-      {favorites.length > 0 ? (
+      {favorites.length > 0 && !hideFavoritesButton ? (
         <button
           type="button"
-          onClick={() => setFavoritesOpen(true)}
+          onClick={() => setInternalFavoritesOpen(true)}
           className="flex w-full items-center justify-between gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-left text-sm font-medium text-neutral-200 transition hover:bg-white/[0.08]"
         >
           <span className="flex items-center gap-2">
@@ -318,10 +336,10 @@ export function MealForm({
       {favoritesOpen ? (
         <FavoritesPicker
           favorites={favorites}
-          onClose={() => setFavoritesOpen(false)}
+          onClose={closeFavorites}
           onPick={(fav) => {
             importFavorite(fav);
-            setFavoritesOpen(false);
+            closeFavorites();
           }}
         />
       ) : null}
