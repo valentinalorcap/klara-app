@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Plus, ChefHat, Star } from 'lucide-react';
+import { Plus, ChefHat, Star, Pencil } from 'lucide-react';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { GlassCard } from '@/components/GlassCard';
@@ -67,31 +67,32 @@ export default async function LibraryPage() {
               );
               return (
                 <li key={r.id}>
-                  <Link href={`/library/recipes/${r.id}/edit`} className="block">
-                    <GlassCard
-                      noAnimate
-                      className="p-4 transition hover:border-white/20 active:scale-[0.99]"
-                    >
-                      <div className="flex items-baseline justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-semibold text-white">{r.name}</p>
-                          <p className="truncate text-xs text-neutral-400">
-                            {r.portions} portion{r.portions === 1 ? '' : 's'}
-                          </p>
-                        </div>
-                        <div className="shrink-0 text-right">
-                          <p className="text-sm font-semibold text-white tabular-nums">
-                            {Math.round(pp.kcal)} kcal
-                          </p>
-                          <p className="text-xs text-neutral-500">per portion</p>
-                        </div>
+                  <GlassCard noAnimate className="p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-semibold text-white">{r.name}</p>
+                        <p className="truncate text-xs text-neutral-400">
+                          {r.portions} portion{r.portions === 1 ? '' : 's'}
+                        </p>
                       </div>
-                      <p className="mt-3 text-xs text-neutral-400 tabular-nums">
+                      <Link
+                        href={`/library/recipes/${r.id}/edit`}
+                        aria-label={`Edit ${r.name}`}
+                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-neutral-400 transition hover:bg-white/5 hover:text-white"
+                      >
+                        <Pencil size={14} />
+                      </Link>
+                    </div>
+                    <p className="mt-3 flex items-baseline justify-between gap-3 text-xs tabular-nums">
+                      <span className="text-neutral-400">
                         P {pp.protein.toFixed(1)}g · C {pp.carbs.toFixed(1)}g · F{' '}
                         {pp.fat.toFixed(1)}g
-                      </p>
-                    </GlassCard>
-                  </Link>
+                      </span>
+                      <span className="shrink-0 text-neutral-500">
+                        {Math.round(pp.kcal)} kcal / portion
+                      </span>
+                    </p>
+                  </GlassCard>
                 </li>
               );
             })}
