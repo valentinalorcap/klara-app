@@ -2,17 +2,21 @@
 
 import { useState, useMemo, useTransition } from 'react';
 import Link from 'next/link';
-import { Plus, Trash2, Star } from 'lucide-react';
+import { motion, useMotionValue, useTransform, animate } from 'framer-motion';
+import { Trash2, Star } from 'lucide-react';
 import { GlassCard } from './GlassCard';
-import { IngredientPicker, type LibraryItem } from './IngredientPicker';
+import { type LibraryItem } from './IngredientPicker';
+import { IngredientSearch } from './IngredientSearch';
 import {
   MEAL_TYPE_OPTIONS,
   MEAL_TYPE_LABELS,
   type MealType,
   sumEntries,
+  entryMacros,
   isoDate,
 } from '@/lib/meals';
 import { createMeal, updateMeal } from '@/app/(app)/today/actions';
+import type { EstimationEntry } from '@/lib/freeTextEstimation';
 import { cn } from '@/lib/utils';
 
 type IngredientRow = {
@@ -27,20 +31,31 @@ type IngredientRow = {
   fatPer100g: number;
 };
 
-function emptyRow(): IngredientRow {
+function rowFromItem(item: LibraryItem, grams: number): IngredientRow {
   return {
-    name: '',
-    grams: '',
-    resolved: false,
-    kcalPer100g: 0,
-    proteinPer100g: 0,
-    carbsPer100g: 0,
-    fatPer100g: 0,
+    name: item.name,
+    grams: String(grams),
+    resolved: true,
+    productId: item.kind === 'product' ? item.id : undefined,
+    recipeId: item.kind === 'recipe' ? item.id : undefined,
+    kcalPer100g: item.kcalPer100g,
+    proteinPer100g: item.proteinPer100g,
+    carbsPer100g: item.carbsPer100g,
+    fatPer100g: item.fatPer100g,
   };
 }
 
-/** Each item in the recipe option also carries a default grams for one portion. */
-type RecipeWithDefaultGrams = LibraryItem & { kind: 'recipe'; defaultGrams: number };
+function rowFromEstimate(e: EstimationEntry): IngredientRow {
+  return {
+    name: e.name,
+    grams: String(Math.round(e.grams)),
+    resolved: true,
+    kcalPer100g: e.kcalPer100g,
+    proteinPer100g: e.proteinPer100g,
+    carbsPer100g: e.carbsPer100g,
+    fatPer100g: e.fatPer100g,
+  };
+}
 
 export type FavoriteMeal = {
   id: string;
@@ -59,7 +74,12 @@ export type FavoriteMeal = {
 };
 
 export type MealInitialValues = {
-  mealId: string;
+  /**
+   * When present the form is in **edit** mode and saves via updateMeal.
+   * When absent the form is in **create** mode seeded with these values —
+   * used by the describe-in-text flow to preload the AI estimate.
+   */
+  mealId?: string;
   type: MealType;
   name: string | null;
   entries: {
@@ -98,6 +118,9 @@ export function MealForm({
   onAddToBatch,
   submitLabel,
   cancelHref,
+  hideFavoritesButton = false,
+  controlledFavoritesOpen,
+  onCloseFavorites,
 }: {
   items: LibraryItem[];
   favorites: FavoriteMeal[];
@@ -114,8 +137,17 @@ export function MealForm({
   submitLabel?: string;
   /** Where the cancel link should go (default /today). */
   cancelHref?: string;
+  /**
+   * Hide the in-form "Favorites · N saved" trigger. /today/new uses a
+   * page-level pill instead and controls the picker externally.
+   */
+  hideFavoritesButton?: boolean;
+  /** Controlled open state for the picker; pairs with `onCloseFavorites`. */
+  controlledFavoritesOpen?: boolean;
+  /** Called when the controlled picker should close. */
+  onCloseFavorites?: () => void;
 }) {
-  const editMode = Boolean(initial);
+  const editMode = Boolean(initial?.mealId);
   const batchMode = Boolean(onAddToBatch);
   const [type, setType] = useState<MealType>(initial?.type ?? 'BREAKFAST');
   const [name, setName] = useState(initial?.name ?? '');
@@ -132,10 +164,17 @@ export function MealForm({
           carbsPer100g: e.carbsPer100g,
           fatPer100g: e.fatPer100g,
         }))
-      : [emptyRow()],
+      : [],
   );
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const [internalFavoritesOpen, setInternalFavoritesOpen] = useState(false);
+  const isFavoritesControlled = controlledFavoritesOpen !== undefined;
+  const favoritesOpen = isFavoritesControlled ? controlledFavoritesOpen : internalFavoritesOpen;
+  const closeFavorites = () => {
+    if (isFavoritesControlled) onCloseFavorites?.();
+    else setInternalFavoritesOpen(false);
+  };
 
   const totals = useMemo(
     () =>
@@ -153,19 +192,20 @@ export function MealForm({
     [rows],
   );
 
-  function updateRow(index: number, patch: Partial<IngredientRow>) {
-    setRows((prev) => prev.map((r, i) => (i === index ? { ...r, ...patch } : r)));
-  }
-  function addRow() {
-    setRows((prev) => [...prev, emptyRow()]);
+  function updateGrams(index: number, grams: string) {
+    setRows((prev) => prev.map((r, i) => (i === index ? { ...r, grams } : r)));
   }
   function removeRow(index: number) {
-    setRows((prev) => (prev.length > 1 ? prev.filter((_, i) => i !== index) : prev));
+    setRows((prev) => prev.filter((_, i) => i !== index));
+  }
+  function addRowFromItem(item: LibraryItem, grams: number) {
+    setRows((prev) => [...prev, rowFromItem(item, grams)]);
+  }
+  function addRowsFromEstimate(entries: EstimationEntry[]) {
+    setRows((prev) => [...prev, ...entries.map(rowFromEstimate)]);
   }
 
   function importFavorite(fav: FavoriteMeal) {
-    setType(fav.type);
-    if (fav.name) setName(fav.name);
     setRows(
       fav.entries.map((e) => ({
         name: e.name,
@@ -179,12 +219,14 @@ export function MealForm({
         fatPer100g: e.fatPer100g,
       })),
     );
+    setType(fav.type);
+    setName(fav.name ?? '');
   }
 
   function resetForm() {
     setType('BREAKFAST');
     setName('');
-    setRows([emptyRow()]);
+    setRows([]);
     setError(null);
   }
 
@@ -220,9 +262,10 @@ export function MealForm({
     }
 
     startTransition(async () => {
-      const result = editMode
-        ? await updateMeal(initial!.mealId, payload, returnTo)
-        : await createMeal(payload);
+      const result =
+        editMode && initial?.mealId
+          ? await updateMeal(initial.mealId, payload, returnTo)
+          : await createMeal(payload);
       // On success the action redirects to /today; we only get here on error.
       if (result && !result.ok) setError(result.error);
     });
@@ -231,7 +274,6 @@ export function MealForm({
   return (
     <div className="space-y-5">
       <GlassCard className="space-y-3 p-5">
-        <p className="text-xs font-medium tracking-wider text-neutral-400 uppercase">Type</p>
         <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
           {MEAL_TYPE_OPTIONS.map((opt) => (
             <button
@@ -249,144 +291,61 @@ export function MealForm({
             </button>
           ))}
         </div>
-        <label className="block">
-          <span className="text-xs text-neutral-400">Name (optional)</span>
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder={MEAL_TYPE_LABELS[type]}
-            className="mt-1 block w-full rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm text-white placeholder:text-neutral-500 focus:bg-white/[0.08] focus:ring-2 focus:ring-[var(--accent)]/60 focus:outline-none"
-          />
-        </label>
+        <input
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Name (optional)"
+          className="block w-full rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm text-white placeholder:text-neutral-500 focus:bg-white/[0.08] focus:ring-2 focus:ring-[var(--accent)]/60 focus:outline-none"
+        />
       </GlassCard>
 
-      {favorites.length > 0 ? (
-        <GlassCard className="space-y-3 p-5">
-          <p className="text-xs font-medium tracking-wider text-neutral-400 uppercase">
-            Import from favorites
-          </p>
-          <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
-            {favorites.map((f) => (
-              <button
-                key={f.id}
-                type="button"
-                onClick={() => importFavorite(f)}
-                className="flex shrink-0 items-center gap-1.5 rounded-full border border-yellow-400/30 bg-yellow-400/5 px-3 py-1.5 text-xs font-medium text-yellow-200 transition hover:bg-yellow-400/10"
-              >
-                <Star size={12} fill="currentColor" />
-                {f.name ?? MEAL_TYPE_LABELS[f.type]}
-              </button>
-            ))}
-          </div>
-        </GlassCard>
-      ) : null}
-
-      <GlassCard className="relative z-10 space-y-4 p-5">
-        <p className="text-xs font-medium tracking-wider text-neutral-400 uppercase">Ingredients</p>
-
-        {rows.map((row, i) => (
-          <div key={i} className="space-y-2">
-            <div className="flex items-end gap-1.5">
-              <div className="min-w-0 flex-1">
-                <IngredientPicker
-                  value={row.name}
-                  items={items}
-                  onNameChange={(value) =>
-                    updateRow(i, {
-                      name: value,
-                      resolved: row.resolved && row.name === value,
-                    })
-                  }
-                  onSelectItem={(item) => {
-                    if (item.kind === 'product') {
-                      updateRow(i, {
-                        name: item.name,
-                        productId: item.id,
-                        recipeId: undefined,
-                        resolved: true,
-                        kcalPer100g: item.kcalPer100g,
-                        proteinPer100g: item.proteinPer100g,
-                        carbsPer100g: item.carbsPer100g,
-                        fatPer100g: item.fatPer100g,
-                      });
-                    } else {
-                      // Recipe — auto-fill grams from its default portion size
-                      // when the user hasn't typed anything yet.
-                      const recipeWithGrams = item as RecipeWithDefaultGrams;
-                      const seedGrams =
-                        row.grams.trim() === '' && recipeWithGrams.defaultGrams
-                          ? String(Math.round(recipeWithGrams.defaultGrams))
-                          : row.grams;
-                      updateRow(i, {
-                        name: item.name,
-                        productId: undefined,
-                        recipeId: item.id,
-                        resolved: true,
-                        kcalPer100g: item.kcalPer100g,
-                        proteinPer100g: item.proteinPer100g,
-                        carbsPer100g: item.carbsPer100g,
-                        fatPer100g: item.fatPer100g,
-                        grams: seedGrams,
-                      });
-                    }
-                  }}
-                  onAiResolved={(data) =>
-                    updateRow(i, {
-                      name: data.canonicalName,
-                      productId: undefined,
-                      recipeId: undefined,
-                      resolved: true,
-                      kcalPer100g: data.kcalPer100g,
-                      proteinPer100g: data.proteinPer100g,
-                      carbsPer100g: data.carbsPer100g,
-                      fatPer100g: data.fatPer100g,
-                      grams:
-                        data.estimatedGrams && row.grams.trim() === ''
-                          ? String(data.estimatedGrams)
-                          : row.grams,
-                    })
-                  }
-                  onError={(msg) => setError(msg)}
-                />
-              </div>
-              <label className="block w-16 shrink-0">
-                <span className="text-xs text-neutral-400">Grams</span>
-                <input
-                  type="number"
-                  inputMode="decimal"
-                  value={row.grams}
-                  onChange={(e) => updateRow(i, { grams: e.target.value })}
-                  placeholder="100"
-                  className="mt-1 block w-full rounded-2xl border border-white/10 bg-white/[0.04] px-2 py-2.5 text-center text-sm text-white tabular-nums placeholder:text-neutral-500 focus:bg-white/[0.08] focus:ring-2 focus:ring-[var(--accent)]/60 focus:outline-none"
-                />
-              </label>
-              <button
-                type="button"
-                onClick={() => removeRow(i)}
-                aria-label="Remove ingredient"
-                disabled={rows.length === 1}
-                className="-mr-2 flex h-10 w-8 shrink-0 items-center justify-center self-end text-neutral-400 transition hover:text-[var(--danger)] disabled:opacity-30"
-              >
-                <Trash2 size={16} />
-              </button>
-            </div>
-            {row.resolved ? (
-              <p className="pl-1 text-[11px] text-neutral-500 tabular-nums">
-                {Math.round(row.kcalPer100g)} kcal · P {row.proteinPer100g.toFixed(1)}g · C{' '}
-                {row.carbsPer100g.toFixed(1)}g · F {row.fatPer100g.toFixed(1)}g · per 100g
-              </p>
-            ) : null}
-          </div>
-        ))}
-
+      {favorites.length > 0 && !hideFavoritesButton ? (
         <button
           type="button"
-          onClick={addRow}
-          className="flex w-full items-center justify-center gap-1.5 rounded-2xl border border-dashed border-white/15 px-4 py-3 text-xs font-medium text-[var(--accent)] transition hover:border-[var(--accent)]/60 hover:bg-[var(--accent)]/5"
+          onClick={() => setInternalFavoritesOpen(true)}
+          className="flex w-full items-center justify-between gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-left text-sm font-medium text-neutral-200 transition hover:bg-white/[0.08]"
         >
-          <Plus size={14} /> Add ingredient
+          <span className="flex items-center gap-2">
+            <Star size={14} className="text-yellow-400" fill="currentColor" />
+            Favorites
+          </span>
+          <span className="text-xs text-neutral-500">{favorites.length} saved</span>
         </button>
+      ) : null}
+
+      {favoritesOpen ? (
+        <FavoritesPicker
+          favorites={favorites}
+          onClose={closeFavorites}
+          onPick={(fav) => {
+            importFavorite(fav);
+            closeFavorites();
+          }}
+        />
+      ) : null}
+
+      <GlassCard className="relative z-20 space-y-4 p-5">
+        {rows.length > 0 ? (
+          <ul>
+            {rows.map((row, i) => (
+              <IngredientSwipeRow
+                key={i}
+                row={row}
+                isLast={i === rows.length - 1}
+                onGramsChange={(grams) => updateGrams(i, grams)}
+                onRemove={() => removeRow(i)}
+              />
+            ))}
+          </ul>
+        ) : null}
+
+        <IngredientSearch
+          items={items}
+          onAddItem={addRowFromItem}
+          onAddEstimate={addRowsFromEstimate}
+          onError={setError}
+        />
       </GlassCard>
 
       <GlassCard className="space-y-3 p-5">
@@ -436,5 +395,149 @@ function Stat({ label, value }: { label: string; value: string | number }) {
       <p className="text-base font-semibold text-white tabular-nums">{value}</p>
       <p className="mt-0.5 text-[10px] tracking-wider text-neutral-500 uppercase">{label}</p>
     </div>
+  );
+}
+
+function FavoritesPicker({
+  favorites,
+  onClose,
+  onPick,
+}: {
+  favorites: FavoriteMeal[];
+  onClose: () => void;
+  onPick: (fav: FavoriteMeal) => void;
+}) {
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Pick a favorite meal"
+      className="fixed inset-0 z-50 flex flex-col bg-[var(--background-bottom)]/95 backdrop-blur-xl"
+    >
+      <header className="flex items-center justify-between border-b border-white/10 px-6 py-4">
+        <h2 className="text-base font-semibold text-white">Favorites</h2>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close favorites"
+          className="text-sm text-neutral-400 transition hover:text-white"
+        >
+          Cancel
+        </button>
+      </header>
+      <ul className="flex-1 space-y-2 overflow-y-auto px-6 py-4">
+        {favorites.map((f) => {
+          const totals = f.entries.reduce(
+            (acc, e) => {
+              const factor = e.grams / 100;
+              acc.kcal += e.kcalPer100g * factor;
+              acc.protein += e.proteinPer100g * factor;
+              acc.carbs += e.carbsPer100g * factor;
+              acc.fat += e.fatPer100g * factor;
+              return acc;
+            },
+            { kcal: 0, protein: 0, carbs: 0, fat: 0 },
+          );
+          return (
+            <li key={f.id}>
+              <button
+                type="button"
+                onClick={() => onPick(f)}
+                className="flex w-full flex-col gap-1 rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-left transition hover:border-white/20 hover:bg-white/[0.08] active:scale-[0.99]"
+              >
+                <span className="text-[10px] font-medium tracking-wider text-[var(--accent)] uppercase">
+                  {MEAL_TYPE_LABELS[f.type]}
+                </span>
+                {f.name ? (
+                  <span className="truncate text-sm font-semibold text-white">{f.name}</span>
+                ) : null}
+                <span className="text-xs text-white tabular-nums">
+                  {Math.round(totals.kcal)}
+                  <span className="text-neutral-400"> kcal</span>
+                  <span className="mx-1.5 text-neutral-500">·</span>
+                  <span className="text-neutral-400">P </span>
+                  {totals.protein.toFixed(0)}g<span className="mx-1.5 text-neutral-500">·</span>
+                  <span className="text-neutral-400">C </span>
+                  {totals.carbs.toFixed(0)}g<span className="mx-1.5 text-neutral-500">·</span>
+                  <span className="text-neutral-400">F </span>
+                  {totals.fat.toFixed(0)}g
+                </span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
+function IngredientSwipeRow({
+  row,
+  isLast,
+  onGramsChange,
+  onRemove,
+}: {
+  row: IngredientRow;
+  isLast: boolean;
+  onGramsChange: (grams: string) => void;
+  onRemove: () => void;
+}) {
+  const x = useMotionValue(0);
+  // Trash fades in as the user drags past ~20px so the row at rest sits
+  // on the card's translucent surface — no fake solid background needed.
+  const trashOpacity = useTransform(x, [-56, -20, 0], [1, 0, 0]);
+
+  const grams = Number(row.grams) || 0;
+  const m = entryMacros({
+    grams,
+    kcalPer100g: row.kcalPer100g,
+    proteinPer100g: row.proteinPer100g,
+    carbsPer100g: row.carbsPer100g,
+    fatPer100g: row.fatPer100g,
+  });
+
+  return (
+    <li className={cn('relative overflow-hidden', !isLast && 'border-b border-white/5')}>
+      <motion.button
+        type="button"
+        style={{ opacity: trashOpacity }}
+        onClick={onRemove}
+        aria-label="Remove ingredient"
+        className="absolute top-0 right-0 bottom-0 flex w-14 items-center justify-center text-[var(--danger)]"
+      >
+        <Trash2 size={14} />
+      </motion.button>
+      <motion.div
+        style={{ x }}
+        drag="x"
+        dragConstraints={{ left: -56, right: 0 }}
+        dragElastic={0.15}
+        onDragEnd={(_, info) => {
+          const open = info.offset.x < -28 || info.velocity.x < -400;
+          animate(x, open ? -56 : 0, { type: 'spring', stiffness: 400, damping: 30 });
+        }}
+        className="relative flex cursor-grab items-center gap-3 py-3 active:cursor-grabbing"
+      >
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-medium text-white">{row.name}</p>
+          <p className="mt-0.5 text-xs text-neutral-400 tabular-nums">
+            {Math.round(m.kcal)} kcal · P {m.protein.toFixed(1)}g · C {m.carbs.toFixed(1)}g · F{' '}
+            {m.fat.toFixed(1)}g
+          </p>
+        </div>
+        <div className="flex shrink-0 items-baseline gap-1">
+          <input
+            type="number"
+            inputMode="decimal"
+            value={row.grams}
+            onChange={(e) => onGramsChange(e.target.value)}
+            placeholder="100"
+            aria-label="Grams"
+            className="w-11 rounded-xl border border-white/10 bg-white/[0.04] px-1.5 py-1 text-right text-sm text-white tabular-nums placeholder:text-neutral-500 focus:bg-white/[0.08] focus:ring-2 focus:ring-[var(--accent)]/60 focus:outline-none"
+          />
+          <span className="text-xs text-neutral-400">g</span>
+        </div>
+      </motion.div>
+    </li>
   );
 }
