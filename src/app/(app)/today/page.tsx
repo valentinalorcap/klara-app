@@ -5,6 +5,9 @@ import { prisma } from '@/lib/prisma';
 import { GlassCard } from '@/components/GlassCard';
 import { MealCard } from '@/components/MealCard';
 import { MacroRing, MACRO_COLORS } from '@/components/MacroRing';
+import { EvalPoller } from '@/components/EvalPoller';
+import { KlaraTakeCard } from '@/components/KlaraTakeCard';
+import { EvalStatus } from '@prisma/client';
 import { isoDate, sumEntries } from '@/lib/meals';
 import { hasAnyGoal } from '@/lib/goals';
 
@@ -28,8 +31,8 @@ export default async function TodayPage() {
     }),
     prisma.meal.findMany({
       where: { userId, date: dayDate },
-      orderBy: { createdAt: 'asc' },
-      include: { entries: { orderBy: { createdAt: 'asc' } } },
+      orderBy: { createdAt: 'desc' },
+      include: { entries: { orderBy: { createdAt: 'asc' } }, evaluation: true },
     }),
   ]);
 
@@ -43,6 +46,8 @@ export default async function TodayPage() {
 
   const allEntries = meals.flatMap((m) => m.entries);
   const dayTotals = sumEntries(allEntries);
+  const hasPendingEvals = meals.some((m) => m.evaluation?.status === EvalStatus.PENDING);
+  const latestEval = meals[0]?.evaluation ?? null;
 
   const today = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
@@ -129,6 +134,20 @@ export default async function TodayPage() {
           </Link>
         ) : null}
       </GlassCard>
+
+      <EvalPoller hasPending={hasPendingEvals} />
+
+      {latestEval ? (
+        <KlaraTakeCard
+          take={{
+            mealId: latestEval.mealId,
+            status: latestEval.status,
+            tone: latestEval.tone,
+            markdown: latestEval.markdown,
+            errorMessage: latestEval.errorMessage,
+          }}
+        />
+      ) : null}
 
       {meals.length === 0 ? (
         <GlassCard className="p-8 text-center">

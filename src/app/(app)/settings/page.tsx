@@ -4,6 +4,7 @@ import { auth, signOut } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { GlassCard } from '@/components/GlassCard';
 import { GoalsForm } from '@/components/GoalsForm';
+import { ToneSelector } from '@/components/ToneSelector';
 
 export default async function SettingsPage() {
   const session = await auth();
@@ -16,6 +17,7 @@ export default async function SettingsPage() {
       dailyProteinGoal: true,
       dailyCarbsGoal: true,
       dailyFatGoal: true,
+      defaultEvalTone: true,
     },
   });
 
@@ -30,6 +32,8 @@ export default async function SettingsPage() {
       </Link>
 
       <h1 className="text-2xl font-bold tracking-tight text-white">Settings</h1>
+
+      {user ? <ToneSelector initial={user.defaultEvalTone} /> : null}
 
       <GoalsForm
         initial={{

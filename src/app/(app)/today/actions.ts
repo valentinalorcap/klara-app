@@ -1,11 +1,13 @@
 'use server';
 
+import { after } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { createMealInputSchema, type CreateMealInput } from '@/lib/meals';
+import { evaluateMealById, markEvaluationPending } from '@/lib/evaluations.server';
 
 export type ActionResult = { ok: true; mealId?: string } | { ok: false; error: string };
 
@@ -79,7 +81,11 @@ export async function createMeal(input: unknown): Promise<ActionResult> {
   }
 
   const dayDate = new Date(parsed.data.date + 'T00:00:00Z');
-  await prisma.meal.create({
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { defaultEvalTone: true },
+  });
+  const meal = await prisma.meal.create({
     data: {
       userId,
       date: dayDate,
@@ -100,6 +106,13 @@ export async function createMeal(input: unknown): Promise<ActionResult> {
       },
     },
   });
+  if (user) {
+    await markEvaluationPending(meal.id, user.defaultEvalTone, userId);
+    after(async () => {
+      await evaluateMealById(meal.id);
+      revalidatePath('/today');
+    });
+  }
   revalidatePath('/today');
   redirect('/today');
 }
@@ -127,6 +140,10 @@ export async function updateMeal(
   }
 
   const dayDate = new Date(parsed.data.date + 'T00:00:00Z');
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { defaultEvalTone: true },
+  });
   await prisma.$transaction([
     prisma.mealEntry.deleteMany({ where: { mealId } }),
     prisma.meal.update({
@@ -150,9 +167,38 @@ export async function updateMeal(
       },
     }),
   ]);
+  if (user) {
+    await markEvaluationPending(mealId, user.defaultEvalTone, userId);
+    after(async () => {
+      await evaluateMealById(mealId);
+      revalidatePath('/today');
+    });
+  }
   revalidatePath('/today');
   revalidatePath('/library');
   redirect(safeReturnTo(returnTo));
+}
+
+/** Re-trigger the evaluation for a meal — used by the UI retry button. */
+export async function retryEvaluation(mealId: string): Promise<ActionResult> {
+  const userId = await requireUserId();
+  const meal = await prisma.meal.findFirst({
+    where: { id: mealId, userId },
+    select: { id: true, userId: true },
+  });
+  if (!meal) return { ok: false, error: 'Meal not found.' };
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { defaultEvalTone: true },
+  });
+  if (!user) return { ok: false, error: 'User not found.' };
+  await markEvaluationPending(mealId, user.defaultEvalTone, userId);
+  after(async () => {
+    await evaluateMealById(mealId);
+    revalidatePath('/today');
+  });
+  revalidatePath('/today');
+  return { ok: true };
 }
 
 /**
