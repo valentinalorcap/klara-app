@@ -86,14 +86,12 @@ export default async function LibraryPage() {
                           <p className="text-xs text-neutral-500">per portion</p>
                         </div>
                       </div>
-                      <p className="mt-3 text-xs tabular-nums">
+                      <p className="mt-3 text-xs text-neutral-400 tabular-nums">
                         <span className="text-[var(--macro-protein)]">
                           P {pp.protein.toFixed(1)}g
                         </span>
-                        <span className="mx-1.5 text-neutral-500">·</span>
-                        <span className="text-[var(--macro-carbs)]">C {pp.carbs.toFixed(1)}g</span>
-                        <span className="mx-1.5 text-neutral-500">·</span>
-                        <span className="text-[var(--macro-fat)]">F {pp.fat.toFixed(1)}g</span>
+                        <span className="mx-1.5 text-neutral-500">·</span>C {pp.carbs.toFixed(1)}g
+                        <span className="mx-1.5 text-neutral-500">·</span>F {pp.fat.toFixed(1)}g
                       </p>
                     </GlassCard>
                   </Link>

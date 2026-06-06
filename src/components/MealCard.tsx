@@ -159,10 +159,8 @@ export function MealCard({
             transition={{ type: 'spring', stiffness: 220, damping: 28 }}
             className="overflow-hidden"
           >
-            <p className="mt-1 text-xs tabular-nums">
-              <span className="text-[var(--macro-carbs)]">C {totals.carbs.toFixed(1)}g</span>
-              <span className="mx-2 text-neutral-500">·</span>
-              <span className="text-[var(--macro-fat)]">F {totals.fat.toFixed(1)}g</span>
+            <p className="mt-1 text-xs text-neutral-400 tabular-nums">
+              C {totals.carbs.toFixed(1)}g · F {totals.fat.toFixed(1)}g
             </p>
             <ul className="mt-4 border-t border-white/5 pt-2">
               {meal.entries.map((e) => {
