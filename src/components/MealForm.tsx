@@ -59,7 +59,12 @@ export type FavoriteMeal = {
 };
 
 export type MealInitialValues = {
-  mealId: string;
+  /**
+   * When present the form is in **edit** mode and saves via updateMeal.
+   * When absent the form is in **create** mode seeded with these values —
+   * used by the describe-in-text flow to preload the AI estimate.
+   */
+  mealId?: string;
   type: MealType;
   name: string | null;
   entries: {
@@ -115,7 +120,7 @@ export function MealForm({
   /** Where the cancel link should go (default /today). */
   cancelHref?: string;
 }) {
-  const editMode = Boolean(initial);
+  const editMode = Boolean(initial?.mealId);
   const batchMode = Boolean(onAddToBatch);
   const [type, setType] = useState<MealType>(initial?.type ?? 'BREAKFAST');
   const [name, setName] = useState(initial?.name ?? '');
@@ -220,9 +225,10 @@ export function MealForm({
     }
 
     startTransition(async () => {
-      const result = editMode
-        ? await updateMeal(initial!.mealId, payload, returnTo)
-        : await createMeal(payload);
+      const result =
+        editMode && initial?.mealId
+          ? await updateMeal(initial.mealId, payload, returnTo)
+          : await createMeal(payload);
       // On success the action redirects to /today; we only get here on error.
       if (result && !result.ok) setError(result.error);
     });
