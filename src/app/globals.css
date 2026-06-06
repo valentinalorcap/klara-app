@@ -29,9 +29,9 @@
      to keep the totals lines from feeling busy. Coral kcal + aqua carbs
      pull the palette closer to the soft pastel dashboard direction
      (vs. the older amber/blue). Mirrors MACRO_COLORS in MacroRing.tsx. */
-  --macro-protein: #fb923c;
+  --macro-protein: #67e8f9;
   --macro-kcal: #a78bfa;
-  --macro-carbs: #67e8f9;
+  --macro-carbs: #fb923c;
   --macro-fat: #f472b6;
 }
 
