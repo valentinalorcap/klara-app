@@ -21,12 +21,13 @@ export function IngredientSearch({
   onError: (message: string) => void;
 }) {
   const [value, setValue] = useState('');
+  const [focused, setFocused] = useState(false);
   const [estimating, startEstimate] = useTransition();
 
   const trimmed = value.trim();
   const filtered = trimmed
     ? items.filter((i) => i.name.toLowerCase().includes(trimmed.toLowerCase())).slice(0, 6)
-    : [];
+    : items.slice(0, 8);
 
   function pickItem(item: LibraryItem) {
     let grams = 100;
@@ -52,10 +53,10 @@ export function IngredientSearch({
   }
 
   const showKlaraOption = trimmed.length >= 3;
-  const showDropdown = filtered.length > 0 || showKlaraOption;
+  const showDropdown = focused && (filtered.length > 0 || showKlaraOption);
 
   return (
-    <div className="space-y-2">
+    <div className="relative">
       <div className="relative">
         <Search
           size={14}
@@ -65,17 +66,21 @@ export function IngredientSearch({
           type="text"
           value={value}
           onChange={(e) => setValue(e.target.value)}
+          onFocus={() => setFocused(true)}
+          // Small delay so a click on a dropdown item lands before we hide it.
+          onBlur={() => window.setTimeout(() => setFocused(false), 150)}
           placeholder="Add ingredient or describe…"
           className="block w-full rounded-2xl border border-white/10 bg-white/[0.04] py-2.5 pr-3 pl-9 text-sm text-white placeholder:text-neutral-500 focus:bg-white/[0.08] focus:ring-2 focus:ring-[var(--accent)]/60 focus:outline-none"
         />
       </div>
 
       {showDropdown ? (
-        <ul className="space-y-1 rounded-2xl border border-white/10 bg-white/[0.04] p-1">
+        <ul className="absolute top-full right-0 left-0 z-30 mt-2 max-h-72 space-y-1 overflow-y-auto rounded-2xl border border-white/10 bg-[var(--background-bottom)]/95 p-1 shadow-2xl backdrop-blur-xl">
           {filtered.map((item) => (
             <li key={`${item.kind}-${item.id}`}>
               <button
                 type="button"
+                onMouseDown={(e) => e.preventDefault()}
                 onClick={() => pickItem(item)}
                 className="flex w-full items-center justify-between gap-2 rounded-xl px-3 py-2 text-left text-sm text-white transition hover:bg-white/5"
               >
@@ -97,6 +102,7 @@ export function IngredientSearch({
             <li>
               <button
                 type="button"
+                onMouseDown={(e) => e.preventDefault()}
                 onClick={askKlara}
                 disabled={estimating}
                 className={cn(
