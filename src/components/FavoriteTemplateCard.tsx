@@ -72,17 +72,13 @@ export function FavoriteTemplateCard({
         </button>
       </div>
 
-      <p className="mt-3 text-2xl font-bold whitespace-nowrap tabular-nums">
-        <span className="text-[var(--macro-protein)]">
-          <span className="text-sm font-medium">P </span>
-          {totals.protein.toFixed(1)}
-          <span className="text-sm font-medium">g</span>
-        </span>
+      <p className="mt-3 text-2xl font-bold whitespace-nowrap text-white tabular-nums">
+        <span className="text-sm font-medium text-neutral-400">P </span>
+        {totals.protein.toFixed(1)}
+        <span className="text-sm font-medium text-neutral-400">g</span>
         <span className="mx-2 text-neutral-500">·</span>
-        <span className="text-[var(--macro-kcal)]">
-          {Math.round(totals.kcal)}
-          <span className="text-sm font-medium"> kcal</span>
-        </span>
+        {Math.round(totals.kcal)}
+        <span className="text-sm font-medium text-neutral-400"> kcal</span>
       </p>
 
       <AnimatePresence initial={false}>

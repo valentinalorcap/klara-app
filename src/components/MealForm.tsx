@@ -394,16 +394,13 @@ export function MealForm({
           Total (live)
         </p>
         <div className="flex items-baseline gap-3">
-          <p className="text-2xl font-bold tabular-nums">
-            <span className="text-[var(--macro-kcal)]">
-              {Math.round(totals.kcal)}
-              <span className="ml-1 text-xs font-medium">kcal</span>
-            </span>
+          <p className="text-2xl font-bold text-white tabular-nums">
+            {Math.round(totals.kcal)}
+            <span className="ml-1 text-xs font-medium text-neutral-400">kcal</span>
           </p>
           <p className="text-xs text-neutral-400 tabular-nums">
-            <span className="text-[var(--macro-protein)]">P {totals.protein.toFixed(1)}g</span>
-            <span className="mx-1.5 text-neutral-500">·</span>C {totals.carbs.toFixed(1)}g
-            <span className="mx-1.5 text-neutral-500">·</span>F {totals.fat.toFixed(1)}g
+            P {totals.protein.toFixed(1)}g · C {totals.carbs.toFixed(1)}g · F{' '}
+            {totals.fat.toFixed(1)}g
           </p>
         </div>
       </GlassCard>

@@ -95,26 +95,29 @@ export default async function TodayPage() {
           Today so far
         </p>
 
-        <div className="mt-4 grid grid-cols-2 gap-4">
+        <div className="mt-5 flex justify-center">
+          <div className="w-44">
+            <MacroRing
+              size="lg"
+              current={dayTotals.kcal}
+              target={goals.dailyKcalGoal}
+              color={MACRO_COLORS.kcal}
+              label="kcal"
+              valueText={Math.round(dayTotals.kcal).toString()}
+            />
+          </div>
+        </div>
+
+        <div className="mt-5 grid grid-cols-3 gap-3">
           <MacroRing
-            size="lg"
+            size="sm"
             current={dayTotals.protein}
             target={goals.dailyProteinGoal}
             color={MACRO_COLORS.protein}
             label="g protein"
-            valueText={dayTotals.protein.toFixed(1)}
+            valueText={dayTotals.protein.toFixed(0)}
+            className="mx-auto max-w-[6.5rem]"
           />
-          <MacroRing
-            size="lg"
-            current={dayTotals.kcal}
-            target={goals.dailyKcalGoal}
-            color={MACRO_COLORS.kcal}
-            label="kcal"
-            valueText={Math.round(dayTotals.kcal).toString()}
-          />
-        </div>
-
-        <div className="mt-3 grid grid-cols-2 gap-4">
           <MacroRing
             size="sm"
             current={dayTotals.carbs}
@@ -122,7 +125,7 @@ export default async function TodayPage() {
             color={MACRO_COLORS.carbs}
             label="g carbs"
             valueText={dayTotals.carbs.toFixed(0)}
-            className="mx-auto max-w-[7rem]"
+            className="mx-auto max-w-[6.5rem]"
           />
           <MacroRing
             size="sm"
@@ -131,7 +134,7 @@ export default async function TodayPage() {
             color={MACRO_COLORS.fat}
             label="g fat"
             valueText={dayTotals.fat.toFixed(0)}
-            className="mx-auto max-w-[7rem]"
+            className="mx-auto max-w-[6.5rem]"
           />
         </div>
 

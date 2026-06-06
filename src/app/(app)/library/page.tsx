@@ -80,18 +80,15 @@ export default async function LibraryPage() {
                           </p>
                         </div>
                         <div className="shrink-0 text-right">
-                          <p className="text-sm font-semibold text-[var(--macro-kcal)] tabular-nums">
+                          <p className="text-sm font-semibold text-white tabular-nums">
                             {Math.round(pp.kcal)} kcal
                           </p>
                           <p className="text-xs text-neutral-500">per portion</p>
                         </div>
                       </div>
                       <p className="mt-3 text-xs text-neutral-400 tabular-nums">
-                        <span className="text-[var(--macro-protein)]">
-                          P {pp.protein.toFixed(1)}g
-                        </span>
-                        <span className="mx-1.5 text-neutral-500">·</span>C {pp.carbs.toFixed(1)}g
-                        <span className="mx-1.5 text-neutral-500">·</span>F {pp.fat.toFixed(1)}g
+                        P {pp.protein.toFixed(1)}g · C {pp.carbs.toFixed(1)}g · F{' '}
+                        {pp.fat.toFixed(1)}g
                       </p>
                     </GlassCard>
                   </Link>
