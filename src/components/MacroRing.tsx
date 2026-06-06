@@ -102,10 +102,11 @@ export function MacroRing({
   );
 }
 
-/** Canonical colors per macro — picked to read on the dark background. */
+/** Canonical colors per macro — picked to read on the dark background.
+ *  Mirrors the `--macro-*` CSS variables in globals.css. */
 export const MACRO_COLORS = {
   protein: '#a78bfa',
-  kcal: '#f59e0b',
-  carbs: '#60a5fa',
+  kcal: '#fb923c',
+  carbs: '#67e8f9',
   fat: '#f472b6',
 } as const;
