@@ -60,9 +60,16 @@ export function MealBatchBuilder({
                     <p className="truncate text-sm font-semibold text-white">
                       {m.name ?? MEAL_TYPE_LABELS[m.type]}
                     </p>
-                    <p className="text-xs text-neutral-400 tabular-nums">
-                      P {totals.protein.toFixed(1)}g · {Math.round(totals.kcal)} kcal ·{' '}
-                      {m.entries.length} {m.entries.length === 1 ? 'ingredient' : 'ingredients'}
+                    <p className="text-xs text-white tabular-nums">
+                      {Math.round(totals.kcal)}
+                      <span className="text-neutral-400"> kcal</span>
+                      <span className="mx-1.5 text-neutral-500">·</span>
+                      <span className="text-neutral-400">P </span>
+                      {totals.protein.toFixed(0)}g<span className="mx-1.5 text-neutral-500">·</span>
+                      <span className="text-neutral-400">C </span>
+                      {totals.carbs.toFixed(0)}g<span className="mx-1.5 text-neutral-500">·</span>
+                      <span className="text-neutral-400">F </span>
+                      {totals.fat.toFixed(0)}g
                     </p>
                   </div>
                   <button
