@@ -22,6 +22,13 @@
   /* Semantic */
   --danger: #f87171;
   --success: #34d399;
+
+  /* Macro coding — same hues as the MacroRing dashboard so the same color
+     means the same macro everywhere (rings, meal totals, favorites). */
+  --macro-protein: #a78bfa;
+  --macro-kcal: #f59e0b;
+  --macro-carbs: #60a5fa;
+  --macro-fat: #f472b6;
 }
 
 @theme inline {

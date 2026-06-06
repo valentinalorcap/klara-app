@@ -72,12 +72,17 @@ export function FavoriteTemplateCard({
         </button>
       </div>
 
-      <p className="mt-3 text-2xl font-bold whitespace-nowrap text-white tabular-nums">
-        {totals.protein.toFixed(1)}
-        <span className="text-sm font-medium text-neutral-400">g P</span>
+      <p className="mt-3 text-2xl font-bold whitespace-nowrap tabular-nums">
+        <span className="text-[var(--macro-protein)]">
+          <span className="text-sm font-medium">P </span>
+          {totals.protein.toFixed(1)}
+          <span className="text-sm font-medium">g</span>
+        </span>
         <span className="mx-2 text-neutral-500">·</span>
-        {Math.round(totals.kcal)}
-        <span className="text-sm font-medium text-neutral-400"> kcal</span>
+        <span className="text-[var(--macro-kcal)]">
+          {Math.round(totals.kcal)}
+          <span className="text-sm font-medium"> kcal</span>
+        </span>
       </p>
 
       <AnimatePresence initial={false}>
@@ -89,8 +94,10 @@ export function FavoriteTemplateCard({
             transition={{ type: 'spring', stiffness: 220, damping: 28 }}
             className="overflow-hidden"
           >
-            <p className="mt-1 text-xs text-neutral-400 tabular-nums">
-              C {totals.carbs.toFixed(1)}g · F {totals.fat.toFixed(1)}g
+            <p className="mt-1 text-xs tabular-nums">
+              <span className="text-[var(--macro-carbs)]">C {totals.carbs.toFixed(1)}g</span>
+              <span className="mx-2 text-neutral-500">·</span>
+              <span className="text-[var(--macro-fat)]">F {totals.fat.toFixed(1)}g</span>
             </p>
             <ul className="mt-4 border-t border-white/5 pt-2">
               {template.entries.map((e) => {
