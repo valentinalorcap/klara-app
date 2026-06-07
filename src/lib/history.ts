@@ -81,9 +81,6 @@ export function categorizeStatus(actual: number, target: number | null | undefin
   return 'over';
 }
 
-/** @deprecated use categorizeStatus — the old kcal-only alias is kept for tests. */
-export const categorizeKcal = categorizeStatus;
-
 /** A summary row used by both the calendar grid and the streak math. */
 export type DaySummary = {
   /** `YYYY-MM-DD` in the user's local day. */

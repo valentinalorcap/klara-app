@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildMonthGrid,
-  categorizeKcal,
+  categorizeStatus,
   computeStreak,
   daysInMonth,
   shiftWeek,
@@ -10,23 +10,23 @@ import {
   weekStartFor,
 } from './history';
 
-describe('categorizeKcal', () => {
+describe('categorizeStatus', () => {
   it('returns no-goal when target is null/0/undefined', () => {
-    expect(categorizeKcal(1800, null)).toBe('no-goal');
-    expect(categorizeKcal(1800, 0)).toBe('no-goal');
-    expect(categorizeKcal(1800, undefined)).toBe('no-goal');
+    expect(categorizeStatus(1800, null)).toBe('no-goal');
+    expect(categorizeStatus(1800, 0)).toBe('no-goal');
+    expect(categorizeStatus(1800, undefined)).toBe('no-goal');
   });
 
   it('returns no-data when actual is 0', () => {
-    expect(categorizeKcal(0, 1700)).toBe('no-data');
+    expect(categorizeStatus(0, 1700)).toBe('no-data');
   });
 
   it('maps each band correctly', () => {
-    expect(categorizeKcal(1000, 1700)).toBe('under'); // 59%
-    expect(categorizeKcal(1300, 1700)).toBe('near'); // 76%
-    expect(categorizeKcal(1700, 1700)).toBe('on-target'); // 100%
-    expect(categorizeKcal(1870, 1700)).toBe('on-target'); // 110%
-    expect(categorizeKcal(1900, 1700)).toBe('over'); // 112%
+    expect(categorizeStatus(1000, 1700)).toBe('under'); // 59%
+    expect(categorizeStatus(1300, 1700)).toBe('near'); // 76%
+    expect(categorizeStatus(1700, 1700)).toBe('on-target'); // 100%
+    expect(categorizeStatus(1870, 1700)).toBe('on-target'); // 110%
+    expect(categorizeStatus(1900, 1700)).toBe('over'); // 112%
   });
 });
 

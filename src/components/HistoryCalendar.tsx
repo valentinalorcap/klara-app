@@ -40,11 +40,7 @@ export function HistoryCalendar({
           const cellInner = (
             <div className="relative mx-auto flex h-9 w-9 items-center justify-center">
               {showRing ? (
-                <DayRing
-                  pct={cell.pct}
-                  isOver={cell.status === 'over'}
-                  accentColor={accentColor}
-                />
+                <DayRing pct={cell.pct} isOver={cell.status === 'over'} accentColor={accentColor} />
               ) : (
                 <div
                   className={cn(
@@ -92,16 +88,6 @@ export function HistoryCalendar({
           );
         })}
       </div>
-
-      <div className="mt-5 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[10px] tracking-wide text-neutral-500">
-        <LegendItem label="Partial" pct={0.5} accentColor={accentColor} />
-        <LegendItem label="On target" pct={1} accentColor={accentColor} />
-        <LegendItem label="Over" pct={1} isOver accentColor={accentColor} />
-        <span className="flex items-center gap-1.5">
-          <span className="h-3 w-3 rounded-full border border-dashed border-white/30" aria-hidden />
-          No data
-        </span>
-      </div>
     </GlassCard>
   );
 }
@@ -126,11 +112,7 @@ function DayRing({
   const dash = fillPct * CIRC;
 
   return (
-    <svg
-      viewBox="0 0 40 40"
-      className="absolute inset-0 size-full -rotate-90"
-      aria-hidden
-    >
+    <svg viewBox="0 0 40 40" className="absolute inset-0 size-full -rotate-90" aria-hidden>
       <circle
         cx={20}
         cy={20}
@@ -152,26 +134,5 @@ function DayRing({
         />
       ) : null}
     </svg>
-  );
-}
-
-function LegendItem({
-  label,
-  pct,
-  isOver,
-  accentColor,
-}: {
-  label: string;
-  pct: number;
-  isOver?: boolean;
-  accentColor: string;
-}) {
-  return (
-    <span className="flex items-center gap-1.5">
-      <span className="relative h-3 w-3" aria-hidden>
-        <DayRing pct={pct} isOver={Boolean(isOver)} accentColor={accentColor} />
-      </span>
-      {label}
-    </span>
   );
 }

@@ -75,44 +75,9 @@ const METRIC_LONG: Record<Metric, string> = {
  */
 const METRIC_PILL_ACTIVE: Record<Metric, string> = {
   kcal: 'border-[var(--macro-kcal)] bg-[var(--macro-kcal)]/15 text-[var(--macro-kcal)]',
-  protein:
-    'border-[var(--macro-protein)] bg-[var(--macro-protein)]/15 text-[var(--macro-protein)]',
+  protein: 'border-[var(--macro-protein)] bg-[var(--macro-protein)]/15 text-[var(--macro-protein)]',
   carbs: 'border-[var(--macro-carbs)] bg-[var(--macro-carbs)]/15 text-[var(--macro-carbs)]',
   fat: 'border-[var(--macro-fat)] bg-[var(--macro-fat)]/15 text-[var(--macro-fat)]',
-};
-
-/**
- * Calendar cell + legend tints per metric. Same shape for every metric
- * so the cell component can stay agnostic. "Over" stays neutral red so
- * it never collides with whichever metric the user picked.
- */
-type CalendarTints = { under: string; near: string; onTarget: string; over: string };
-
-const CALENDAR_TINTS: Record<Metric, CalendarTints> = {
-  kcal: {
-    under: 'bg-[var(--macro-kcal)]/25',
-    near: 'bg-[var(--macro-kcal)]/55',
-    onTarget: 'bg-[var(--macro-kcal)]',
-    over: 'bg-[var(--danger)]',
-  },
-  protein: {
-    under: 'bg-[var(--macro-protein)]/25',
-    near: 'bg-[var(--macro-protein)]/55',
-    onTarget: 'bg-[var(--macro-protein)]',
-    over: 'bg-[var(--danger)]',
-  },
-  carbs: {
-    under: 'bg-[var(--macro-carbs)]/25',
-    near: 'bg-[var(--macro-carbs)]/55',
-    onTarget: 'bg-[var(--macro-carbs)]',
-    over: 'bg-[var(--danger)]',
-  },
-  fat: {
-    under: 'bg-[var(--macro-fat)]/25',
-    near: 'bg-[var(--macro-fat)]/55',
-    onTarget: 'bg-[var(--macro-fat)]',
-    over: 'bg-[var(--danger)]',
-  },
 };
 
 /** CSS variable reference per metric, used as a stroke/fill in SVG. */
