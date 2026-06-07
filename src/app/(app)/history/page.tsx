@@ -268,15 +268,15 @@ export default async function HistoryPage({
 
         <GlassCard className="flex aspect-square flex-col justify-between p-4 text-center">
           <div>
-            <p className="text-base font-medium text-neutral-400">{vsGoal.word}</p>
+            <p className="text-sm font-medium text-neutral-400">{vsGoal.word}</p>
             {vsGoal.value ? (
-              <p className="text-base font-bold text-white tabular-nums">{vsGoal.value}</p>
+              <p className="text-sm font-bold text-white tabular-nums">{vsGoal.value}</p>
             ) : null}
           </div>
           <div className="border-t border-white/5" />
           <div>
-            <p className="text-base font-medium text-neutral-400">Days in target</p>
-            <p className="text-base font-bold text-white tabular-nums">
+            <p className="text-sm font-medium text-neutral-400">Days in target</p>
+            <p className="text-sm font-bold text-white tabular-nums">
               {inTargetCount}/{totalDaysInMonth}
             </p>
           </div>
