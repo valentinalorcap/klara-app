@@ -8,11 +8,9 @@ import { WeekChart } from '@/components/WeekChart';
 import {
   buildMonthGrid,
   categorizeStatus,
-  computeStreak,
   daysInMonth,
   METRICS,
   metricShortLabel,
-  metricUnit,
   targetFor,
   valueFor,
   weekDays,
@@ -164,17 +162,6 @@ export default async function HistoryPage({
     : 0;
   const inTargetCount = monthCellsWithData.filter((c) => c.status === 'on-target').length;
   const totalDaysInMonth = cells.filter((c): c is CalendarDay => c !== null).length;
-  const streak = computeStreak(
-    todayKey,
-    new Map(
-      [...totals].map(([k, v]) => [
-        k,
-        { kcal: v.kcal, protein: v.protein, carbs: v.carbs, fat: v.fat },
-      ]),
-    ),
-    target,
-    metric,
-  );
 
   const weekKeys = weekDays(weekStartKey);
   const weekValues = weekKeys.map((k) => {
@@ -199,7 +186,19 @@ export default async function HistoryPage({
     `?month=${year}-${String(month0 + 1).padStart(2, '0')}&week=${weekStartKey}&metric=${m}`;
 
   const heroAvgLabel = `AVG ${metricShortLabel(metric).toUpperCase()}/DAY`;
-  const heroAvgValue = avgMetric ? formatValue(avgMetric, metric) : '—';
+  const avgPct = target && target > 0 ? avgMetric / target : 0;
+  const avgIsOver = avgPct > 1.1;
+  const avgDelta = (() => {
+    if (!target || target <= 0) {
+      return avgMetric ? `${formatValue(avgMetric, metric)}${metric === 'kcal' ? ' kcal' : 'g'}` : '—';
+    }
+    if (!avgMetric) return 'No data yet';
+    const diff = avgMetric - target;
+    const unit = metric === 'kcal' ? ' kcal' : 'g';
+    if (Math.abs(diff) <= target * 0.1) return 'On target';
+    if (diff < 0) return `Fell short by ${Math.round(Math.abs(diff))}${unit}`;
+    return `Over by ${Math.round(diff)}${unit}`;
+  })();
 
   return (
     <main className="space-y-5 px-6 py-10">
@@ -258,16 +257,25 @@ export default async function HistoryPage({
       <HistoryCalendar cells={cells} accentColor={METRIC_VAR[metric]} />
 
       {/* Hero stats — below the calendar so the calendar is the first thing in view. */}
-      <GlassCard className="grid grid-cols-3 gap-2 p-5 text-center">
-        <Stat
-          label={heroAvgLabel}
-          value={heroAvgValue}
-          unit={avgMetric ? metricUnit(metric).trim() : ''}
-        />
-        <div className="border-x border-white/5">
-          <Stat label="DAYS IN TARGET" value={`${inTargetCount}`} suffix={`/${totalDaysInMonth}`} />
+      <GlassCard className="grid grid-cols-2 items-center gap-4 p-5">
+        <div className="flex items-center gap-3">
+          <SmallRing pct={avgPct} isOver={avgIsOver} accentColor={METRIC_VAR[metric]} />
+          <div className="min-w-0">
+            <p className="text-[10px] font-medium tracking-wider text-neutral-400 uppercase">
+              {heroAvgLabel}
+            </p>
+            <p className="mt-1 truncate text-sm font-semibold text-white">{avgDelta}</p>
+          </div>
         </div>
-        <Stat label="CURRENT STREAK" value={streak === 0 ? '—' : `${streak}`} accent />
+        <div className="border-l border-white/5 pl-4 text-center">
+          <p className="text-[10px] font-medium tracking-wider text-neutral-400 uppercase">
+            Days in target
+          </p>
+          <p className="mt-1 text-2xl font-bold text-white tabular-nums">
+            {inTargetCount}
+            <span className="text-sm font-medium text-neutral-500">/{totalDaysInMonth}</span>
+          </p>
+        </div>
       </GlassCard>
 
       <WeekChart
@@ -320,31 +328,38 @@ export default async function HistoryPage({
   );
 }
 
-function Stat({
-  label,
-  value,
-  suffix,
-  unit,
-  accent,
+/** Mini donut next to the AVG stat — mirrors the calendar ring math. */
+function SmallRing({
+  pct,
+  isOver,
+  accentColor,
 }: {
-  label: string;
-  value: string;
-  suffix?: string;
-  unit?: string;
-  accent?: boolean;
+  pct: number;
+  isOver: boolean;
+  accentColor: string;
 }) {
+  const fillPct = isOver ? 1 : Math.min(Math.max(pct, 0), 1);
+  const trackColor = isOver ? 'rgba(248, 113, 113, 0.25)' : 'rgba(255,255,255,0.10)';
+  const strokeColor = isOver ? 'var(--danger)' : accentColor;
+  const RADIUS = 16;
+  const CIRC = 2 * Math.PI * RADIUS;
+  const STROKE = 4;
+  const dash = fillPct * CIRC;
   return (
-    <div>
-      <p className="text-[10px] font-medium tracking-wider text-neutral-400 uppercase">{label}</p>
-      <p
-        className={`mt-2 text-2xl font-bold tabular-nums ${
-          accent ? 'text-[var(--accent)]' : 'text-white'
-        }`}
-      >
-        {value}
-        {suffix ? <span className="text-sm font-medium text-neutral-500">{suffix}</span> : null}
-        {unit ? <span className="ml-1 text-xs font-medium text-neutral-400">{unit}</span> : null}
-      </p>
-    </div>
+    <svg viewBox="0 0 40 40" className="size-12 shrink-0 -rotate-90" aria-hidden>
+      <circle cx={20} cy={20} r={RADIUS} fill="none" stroke={trackColor} strokeWidth={STROKE} />
+      {fillPct > 0 ? (
+        <circle
+          cx={20}
+          cy={20}
+          r={RADIUS}
+          fill="none"
+          stroke={strokeColor}
+          strokeWidth={STROKE}
+          strokeLinecap="round"
+          strokeDasharray={`${dash} ${CIRC}`}
+        />
+      ) : null}
+    </svg>
   );
 }

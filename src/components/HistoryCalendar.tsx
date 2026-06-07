@@ -5,7 +5,7 @@ import { GlassCard } from './GlassCard';
 import { type CalendarDay } from '@/lib/history';
 import { cn } from '@/lib/utils';
 
-const HEADERS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+const HEADERS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 const OVER_COLOR = 'var(--danger)';
 
 export function HistoryCalendar({

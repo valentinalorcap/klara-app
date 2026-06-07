@@ -118,13 +118,15 @@ export function daysInMonth(year: number, month0: number): number {
 
 /**
  * Build the cells of a 7-column calendar grid for a given month. The
- * grid starts on Sunday (col 0). Cells before the 1st and after the
- * last day come back as `null` so the caller can render blank slots.
+ * grid starts on **Monday** (col 0). Cells before the 1st and after
+ * the last day come back as `null` so the caller can render blank
+ * slots.
  */
 export function buildMonthGrid(year: number, month0: number): Array<{ date: string } | null> {
   const lastDay = daysInMonth(year, month0);
   const first = new Date(Date.UTC(year, month0, 1));
-  const startDow = first.getUTCDay(); // 0 = Sunday
+  // getUTCDay: 0 = Sunday. Shift so Monday = 0.
+  const startDow = (first.getUTCDay() + 6) % 7;
   const cells: Array<{ date: string } | null> = [];
   for (let i = 0; i < startDow; i++) cells.push(null);
   for (let d = 1; d <= lastDay; d++) {

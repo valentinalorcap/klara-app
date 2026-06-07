@@ -40,11 +40,11 @@ describe('daysInMonth', () => {
 });
 
 describe('buildMonthGrid', () => {
-  it('pads with nulls before the 1st of the month (Sunday-start grid)', () => {
-    // October 2026 — Oct 1 is a Thursday → 4 nulls then day 1
+  it('pads with nulls before the 1st of the month (Monday-start grid)', () => {
+    // October 2026 — Oct 1 is a Thursday → 3 nulls (M, T, W) then day 1
     const grid = buildMonthGrid(2026, 9);
-    expect(grid.slice(0, 4)).toEqual([null, null, null, null]);
-    expect(grid[4]).toEqual({ date: '2026-10-01' });
+    expect(grid.slice(0, 3)).toEqual([null, null, null]);
+    expect(grid[3]).toEqual({ date: '2026-10-01' });
   });
 
   it('lands the last day in the right column', () => {
