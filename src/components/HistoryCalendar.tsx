@@ -7,14 +7,7 @@ import { cn } from '@/lib/utils';
 
 const HEADERS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
-export function HistoryCalendar({
-  cells,
-  weekQS,
-}: {
-  cells: Array<CalendarDay | null>;
-  /** Builder for the href that sets the displayed week to one containing the picked day. */
-  weekQS: (date: string) => string;
-}) {
+export function HistoryCalendar({ cells }: { cells: Array<CalendarDay | null> }) {
   return (
     <GlassCard noAnimate className="p-5">
       <div className="mb-3 grid grid-cols-7 gap-0 text-center">
@@ -108,11 +101,6 @@ export function HistoryCalendar({
           No data
         </span>
       </div>
-      {/* The weekQS callback is here for future "tap a day to also jump the
-          chart to that week" — wired but not exposed in the cell click yet. */}
-      <span className="hidden" aria-hidden>
-        {weekQS('placeholder')}
-      </span>
     </GlassCard>
   );
 }

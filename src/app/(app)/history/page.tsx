@@ -173,7 +173,7 @@ export default async function HistoryPage({
         <Stat label="CURRENT STREAK" value={streak === 0 ? '—' : `${streak}`} accent />
       </GlassCard>
 
-      <HistoryCalendar cells={cells} weekQS={(w) => `/history${weekQS(w)}`} />
+      <HistoryCalendar cells={cells} />
 
       <WeekChart
         weekStartKey={weekStartKey}
