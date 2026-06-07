@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 
@@ -12,6 +12,30 @@ export const metadata: Metadata = {
   title: 'Klara — your nutrition assistant',
   description:
     'Log meals in one tap, see your macros at a glance, get smart suggestions powered by Claude.',
+  // PWA / iOS home-screen behaviour. With these set, "Add to Home Screen"
+  // installs Klara as a standalone app — no Safari chrome around it.
+  applicationName: 'Klara',
+  appleWebApp: {
+    capable: true,
+    title: 'Klara',
+    statusBarStyle: 'black-translucent',
+  },
+  manifest: '/manifest.webmanifest',
+  formatDetection: {
+    telephone: false,
+  },
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  // Match the gradient bottom so iOS doesn't flash white around notches.
+  themeColor: '#0a0814',
+  // Locking maximumScale keeps Safari from doing the disruptive zoom-in
+  // when the user taps an input that's smaller than 16px.
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: 'cover',
 };
 
 export default function RootLayout({
