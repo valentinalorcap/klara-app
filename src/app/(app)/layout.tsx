@@ -7,12 +7,19 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   if (!session?.user) redirect('/login');
 
   return (
-    // pt-[env(safe-area-inset-top)] pushes the page below the iPhone
-    // notch / Dynamic Island when Klara is installed as a PWA. On
-    // devices without a notch (and inside Safari with chrome) the inset
-    // resolves to 0, so nothing changes.
-    <div className="min-h-screen pt-[env(safe-area-inset-top)] pb-32">
-      <div className="mx-auto max-w-md">{children}</div>
+    // App-shell layout: pin the outer container to the viewport so the
+    // document itself never scrolls, and put scroll on an inner element
+    // instead. iOS rubber-band still happens inside that inner scroller
+    // (so we keep the native bounce feel at the top and bottom of a
+    // page), but the BottomNav — which lives as a sibling of the scroll
+    // area — stays planted because the document body never moves.
+    //
+    // env(safe-area-inset-top) on the scroll area clears the iPhone
+    // notch / Dynamic Island; resolves to 0 on devices without one.
+    <div className="fixed inset-0 flex flex-col">
+      <main className="flex-1 overflow-y-auto pt-[env(safe-area-inset-top)] pb-32">
+        <div className="mx-auto max-w-md">{children}</div>
+      </main>
       <BottomNav />
     </div>
   );
