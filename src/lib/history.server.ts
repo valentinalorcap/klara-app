@@ -43,21 +43,24 @@ export async function loadDailyTotalsRange(
 }
 
 /**
- * Pick the day within the given keys whose kcal is closest to the user's
- * target. Returns null when no day in the range has data or no target is
- * set.
+ * Pick the day within the given keys whose metric value is closest to
+ * the user's target for that metric. Returns null when no day in the
+ * range has data or no target is set.
  */
 export function pickBestDay(
   totals: Map<string, DailyTotal>,
   keys: string[],
   target: number | null,
+  getValue: (t: DailyTotal) => number,
 ): { date: string; totals: DailyTotal } | null {
   if (!target || target <= 0) return null;
   let best: { date: string; totals: DailyTotal; distance: number } | null = null;
   for (const k of keys) {
     const t = totals.get(k);
-    if (!t || t.kcal <= 0) continue;
-    const distance = Math.abs(t.kcal - target);
+    if (!t) continue;
+    const value = getValue(t);
+    if (value <= 0) continue;
+    const distance = Math.abs(value - target);
     if (!best || distance < best.distance) {
       best = { date: k, totals: t, distance };
     }

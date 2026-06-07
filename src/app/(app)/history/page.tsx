@@ -7,19 +7,26 @@ import { HistoryCalendar } from '@/components/HistoryCalendar';
 import { WeekChart } from '@/components/WeekChart';
 import {
   buildMonthGrid,
-  categorizeKcal,
+  categorizeStatus,
   computeStreak,
   daysInMonth,
+  METRICS,
+  metricShortLabel,
+  metricUnit,
+  targetFor,
+  valueFor,
   weekDays,
   weekRangeLabel,
   weekStartFor,
   shiftWeek,
   type CalendarDay,
+  type Metric,
 } from '@/lib/history';
 import { computeFetchRange, loadDailyTotalsRange, pickBestDay } from '@/lib/history.server';
 import { isoDate } from '@/lib/meals';
+import { cn } from '@/lib/utils';
 
-type SearchParams = { month?: string; week?: string };
+type SearchParams = { month?: string; week?: string; metric?: string };
 
 function parseMonth(input: string | undefined, fallback: { year: number; month0: number }) {
   if (input && /^\d{4}-\d{2}$/.test(input)) {
@@ -32,6 +39,11 @@ function parseMonth(input: string | undefined, fallback: { year: number; month0:
 function parseWeek(input: string | undefined, fallback: string): string {
   if (input && /^\d{4}-\d{2}-\d{2}$/.test(input)) return weekStartFor(input);
   return fallback;
+}
+
+function parseMetric(input: string | undefined): Metric {
+  if (input === 'kcal' || input === 'protein' || input === 'carbs' || input === 'fat') return input;
+  return 'kcal';
 }
 
 const MONTH_NAMES = [
@@ -48,6 +60,18 @@ const MONTH_NAMES = [
   'November',
   'December',
 ] as const;
+
+const METRIC_LONG: Record<Metric, string> = {
+  kcal: 'Calories',
+  protein: 'Protein',
+  carbs: 'Carbs',
+  fat: 'Fat',
+};
+
+function formatValue(value: number, metric: Metric): string {
+  if (metric === 'kcal') return Math.round(value).toLocaleString();
+  return Math.round(value).toString();
+}
 
 export default async function HistoryPage({
   searchParams,
@@ -68,12 +92,18 @@ export default async function HistoryPage({
     daysInMonth(year, month0),
   ).padStart(2, '0')}`;
   const weekStartKey = parseWeek(params.week, weekStartFor(todayKey));
+  const metric = parseMetric(params.metric);
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { dailyKcalGoal: true },
+    select: {
+      dailyKcalGoal: true,
+      dailyProteinGoal: true,
+      dailyCarbsGoal: true,
+      dailyFatGoal: true,
+    },
   });
-  const target = user?.dailyKcalGoal ?? null;
+  const target = user ? targetFor(user, metric) : null;
 
   const range = computeFetchRange({
     monthFirstKey,
@@ -97,17 +127,19 @@ export default async function HistoryPage({
       date: cell.date,
       totals: { kcal: t.kcal, protein: t.protein, carbs: t.carbs, fat: t.fat },
       mealCount: t.mealCount,
-      status: categorizeKcal(t.kcal, target),
+      status: categorizeStatus(valueFor(t, metric), target),
       isFuture: cell.date > todayKey,
       isToday: cell.date === todayKey,
     };
   });
 
   const monthCellsWithData = cells.filter(
-    (c): c is CalendarDay => c !== null && c.totals.kcal > 0 && !c.isFuture,
+    (c): c is CalendarDay => c !== null && valueFor(c.totals, metric) > 0 && !c.isFuture,
   );
-  const totalKcal = monthCellsWithData.reduce((s, c) => s + c.totals.kcal, 0);
-  const avgKcal = monthCellsWithData.length ? Math.round(totalKcal / monthCellsWithData.length) : 0;
+  const sumMetric = monthCellsWithData.reduce((s, c) => s + valueFor(c.totals, metric), 0);
+  const avgMetric = monthCellsWithData.length
+    ? Math.round(sumMetric / monthCellsWithData.length)
+    : 0;
   const inTargetCount = monthCellsWithData.filter((c) => c.status === 'on-target').length;
   const totalDaysInMonth = cells.filter((c): c is CalendarDay => c !== null).length;
   const streak = computeStreak(
@@ -119,22 +151,33 @@ export default async function HistoryPage({
       ]),
     ),
     target,
+    metric,
   );
 
   const weekKeys = weekDays(weekStartKey);
-  const weekValues = weekKeys.map((k) => totals.get(k)?.kcal ?? 0);
+  const weekValues = weekKeys.map((k) => {
+    const t = totals.get(k);
+    return t ? valueFor(t, metric) : 0;
+  });
   const weekWithData = weekValues.filter((v) => v > 0);
   const weekAvg = weekWithData.length
     ? Math.round(weekWithData.reduce((s, v) => s + v, 0) / weekWithData.length)
     : 0;
 
-  const best = pickBestDay(totals, weekKeys, target);
+  const best = pickBestDay(totals, weekKeys, target, (t) => valueFor(t, metric));
 
   const prevMonth = month0 === 0 ? { y: year - 1, m: 11 } : { y: year, m: month0 - 1 };
   const nextMonth = month0 === 11 ? { y: year + 1, m: 0 } : { y: year, m: month0 + 1 };
+  const baseParams = `metric=${metric}`;
   const monthQS = (y: number, m: number) =>
-    `?month=${y}-${String(m + 1).padStart(2, '0')}&week=${weekStartKey}`;
-  const weekQS = (w: string) => `?month=${year}-${String(month0 + 1).padStart(2, '0')}&week=${w}`;
+    `?month=${y}-${String(m + 1).padStart(2, '0')}&week=${weekStartKey}&${baseParams}`;
+  const weekQS = (w: string) =>
+    `?month=${year}-${String(month0 + 1).padStart(2, '0')}&week=${w}&${baseParams}`;
+  const metricQS = (m: Metric) =>
+    `?month=${year}-${String(month0 + 1).padStart(2, '0')}&week=${weekStartKey}&metric=${m}`;
+
+  const heroAvgLabel = `AVG ${metricShortLabel(metric).toUpperCase()}/DAY`;
+  const heroAvgValue = avgMetric ? formatValue(avgMetric, metric) : '—';
 
   return (
     <main className="space-y-5 px-6 py-10">
@@ -145,6 +188,7 @@ export default async function HistoryPage({
         </p>
       </header>
 
+      {/* Month nav */}
       <div className="flex items-center justify-between">
         <Link
           href={`/history${monthQS(prevMonth.y, prevMonth.m)}`}
@@ -165,8 +209,34 @@ export default async function HistoryPage({
         </Link>
       </div>
 
+      {/* Metric selector */}
+      <div className="-mx-1 flex gap-2 overflow-x-auto px-1">
+        {METRICS.map((m) => {
+          const active = m === metric;
+          return (
+            <Link
+              key={m}
+              href={`/history${metricQS(m)}`}
+              className={cn(
+                'shrink-0 rounded-full border px-4 py-2 text-xs font-medium transition',
+                active
+                  ? 'border-[var(--accent)] bg-[var(--accent)]/15 text-[var(--accent)]'
+                  : 'border-white/10 bg-white/[0.04] text-neutral-300 hover:bg-white/[0.08]',
+              )}
+            >
+              {METRIC_LONG[m]}
+            </Link>
+          );
+        })}
+      </div>
+
+      {/* Hero stats */}
       <GlassCard className="grid grid-cols-3 gap-2 p-5 text-center">
-        <Stat label="AVG KCAL/DAY" value={avgKcal ? avgKcal.toLocaleString() : '—'} />
+        <Stat
+          label={heroAvgLabel}
+          value={heroAvgValue}
+          unit={avgMetric ? metricUnit(metric).trim() : ''}
+        />
         <div className="border-x border-white/5">
           <Stat label="DAYS IN TARGET" value={`${inTargetCount}`} suffix={`/${totalDaysInMonth}`} />
         </div>
@@ -178,9 +248,11 @@ export default async function HistoryPage({
       <WeekChart
         weekStartKey={weekStartKey}
         rangeLabel={weekRangeLabel(weekStartKey)}
-        dailyKcal={weekValues}
-        avgKcal={weekAvg}
+        dailyValues={weekValues}
+        avgValue={weekAvg}
         target={target}
+        unitLabel={metric === 'kcal' ? 'kcal/day' : 'g/day'}
+        targetLabel={target ? `target ${Math.round(target)}${metric === 'kcal' ? '' : 'g'}` : null}
         prevHref={`/history${weekQS(shiftWeek(weekStartKey, -1))}`}
         nextHref={`/history${weekQS(shiftWeek(weekStartKey, 1))}`}
         todayKey={todayKey}
@@ -201,8 +273,8 @@ export default async function HistoryPage({
               </p>
               <p className="mt-0.5 text-sm font-semibold text-white">{best.date}</p>
               <p className="mt-0.5 text-xs text-neutral-400 tabular-nums">
-                {Math.round(best.totals.kcal)} kcal · P {best.totals.protein.toFixed(0)}g · in
-                target
+                {formatValue(valueFor(best.totals, metric), metric)}
+                {metricUnit(metric)} · closest to target
               </p>
             </div>
             <ChevronRight size={16} className="text-neutral-500" />
@@ -224,11 +296,13 @@ function Stat({
   label,
   value,
   suffix,
+  unit,
   accent,
 }: {
   label: string;
   value: string;
   suffix?: string;
+  unit?: string;
   accent?: boolean;
 }) {
   return (
@@ -241,6 +315,7 @@ function Stat({
       >
         {value}
         {suffix ? <span className="text-sm font-medium text-neutral-500">{suffix}</span> : null}
+        {unit ? <span className="ml-1 text-xs font-medium text-neutral-400">{unit}</span> : null}
       </p>
     </div>
   );

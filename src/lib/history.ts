@@ -1,17 +1,77 @@
 import type { MacroSum } from './evaluations';
 
-/** Status of a day relative to the user's kcal target. */
+/** Which macro the history view is colouring/charting against. */
+export type Metric = 'kcal' | 'protein' | 'carbs' | 'fat';
+
+export const METRICS: Metric[] = ['kcal', 'protein', 'carbs', 'fat'];
+
+/** Short label for a metric (kcal · P · C · F style). */
+export function metricShortLabel(metric: Metric): string {
+  switch (metric) {
+    case 'kcal':
+      return 'kcal';
+    case 'protein':
+      return 'P';
+    case 'carbs':
+      return 'C';
+    case 'fat':
+      return 'F';
+  }
+}
+
+/** Full lower-case unit suffix (" kcal" or "g"). */
+export function metricUnit(metric: Metric): string {
+  return metric === 'kcal' ? ' kcal' : 'g';
+}
+
+/** Read the value for `metric` out of a meal/day totals object. */
+export function valueFor(totals: MacroSum, metric: Metric): number {
+  switch (metric) {
+    case 'kcal':
+      return totals.kcal;
+    case 'protein':
+      return totals.protein;
+    case 'carbs':
+      return totals.carbs;
+    case 'fat':
+      return totals.fat;
+  }
+}
+
+/** Read the user's target for `metric` from a UserGoals-like object. */
+export function targetFor(
+  goals: {
+    dailyKcalGoal: number | null;
+    dailyProteinGoal: number | null;
+    dailyCarbsGoal: number | null;
+    dailyFatGoal: number | null;
+  },
+  metric: Metric,
+): number | null {
+  switch (metric) {
+    case 'kcal':
+      return goals.dailyKcalGoal;
+    case 'protein':
+      return goals.dailyProteinGoal;
+    case 'carbs':
+      return goals.dailyCarbsGoal;
+    case 'fat':
+      return goals.dailyFatGoal;
+  }
+}
+
+/** Status of a day relative to the user's target for a single macro. */
 export type DayStatus = 'no-data' | 'no-goal' | 'under' | 'near' | 'on-target' | 'over';
 
 /**
- * Classify a day by its kcal vs target ratio. Thresholds map to the
- * calendar coloring in the History tab:
+ * Classify a day's value vs target. Thresholds map to the calendar
+ * coloring in the History tab:
  * - on-target: 90–110% of goal (the "good" zone)
  * - near: 70–90% (close, but short)
  * - under: <70%
  * - over: >110%
  */
-export function categorizeKcal(actual: number, target: number | null | undefined): DayStatus {
+export function categorizeStatus(actual: number, target: number | null | undefined): DayStatus {
   if (target == null || target <= 0) return 'no-goal';
   if (actual <= 0) return 'no-data';
   const pct = actual / target;
@@ -20,6 +80,9 @@ export function categorizeKcal(actual: number, target: number | null | undefined
   if (pct <= 1.1) return 'on-target';
   return 'over';
 }
+
+/** @deprecated use categorizeStatus — the old kcal-only alias is kept for tests. */
+export const categorizeKcal = categorizeStatus;
 
 /** A summary row used by both the calendar grid and the streak math. */
 export type DaySummary = {
@@ -141,6 +204,7 @@ export function computeStreak(
   todayKey: string,
   dailyTotals: Map<string, MacroSum>,
   target: number | null | undefined,
+  metric: Metric = 'kcal',
 ): number {
   if (target == null || target <= 0) return 0;
   let streak = 0;
@@ -151,7 +215,7 @@ export function computeStreak(
     const key = utcDateKey(cursor);
     const totals = dailyTotals.get(key);
     if (!totals) break;
-    if (categorizeKcal(totals.kcal, target) !== 'on-target') break;
+    if (categorizeStatus(valueFor(totals, metric), target) !== 'on-target') break;
     streak += 1;
     cursor.setUTCDate(cursor.getUTCDate() - 1);
   }

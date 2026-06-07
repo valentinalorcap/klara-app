@@ -9,9 +9,11 @@ const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 export function WeekChart({
   weekStartKey,
   rangeLabel,
-  dailyKcal,
-  avgKcal,
+  dailyValues,
+  avgValue,
   target,
+  unitLabel,
+  targetLabel,
   prevHref,
   nextHref,
   todayKey,
@@ -19,18 +21,22 @@ export function WeekChart({
   weekStartKey: string;
   rangeLabel: string;
   /** Mon → Sun. 0 = no data for that day. */
-  dailyKcal: number[];
-  avgKcal: number;
+  dailyValues: number[];
+  avgValue: number;
   target: number | null;
+  /** "kcal/day", "g/day", etc. */
+  unitLabel: string;
+  /** Text rendered next to the dashed target line, or null to hide it. */
+  targetLabel: string | null;
   prevHref: string;
   nextHref: string;
   todayKey: string;
 }) {
   const keys = weekDays(weekStartKey);
-  const hasAnyData = dailyKcal.some((v) => v > 0);
+  const hasAnyData = dailyValues.some((v) => v > 0);
 
   // y-axis range — symmetric around the target when set, else 0..max.
-  const max = Math.max(target ?? 0, ...dailyKcal);
+  const max = Math.max(target ?? 0, ...dailyValues);
   const min = 0;
   const yMin = Math.max(0, min);
   const yMax = max > 0 ? max * 1.1 : 2000;
@@ -47,7 +53,7 @@ export function WeekChart({
     return CHART_H - ((v - yMin) / (yMax - yMin)) * CHART_H;
   }
 
-  const polylinePoints = dailyKcal
+  const polylinePoints = dailyValues
     .map((v, i) => (v > 0 ? `${xFor(i).toFixed(1)},${yFor(v).toFixed(1)}` : null))
     .filter((p): p is string => p !== null)
     .join(' ');
@@ -57,8 +63,8 @@ export function WeekChart({
       <div>
         <p className="text-[10px] font-medium tracking-wider text-neutral-400 uppercase">Average</p>
         <p className="mt-1 text-3xl font-bold text-white tabular-nums">
-          {avgKcal ? avgKcal.toLocaleString() : '—'}
-          <span className="ml-1 text-sm font-medium text-neutral-400">kcal/day</span>
+          {avgValue ? avgValue.toLocaleString() : '—'}
+          <span className="ml-1 text-sm font-medium text-neutral-400">{unitLabel}</span>
         </p>
       </div>
 
@@ -92,16 +98,18 @@ export function WeekChart({
                 stroke="rgba(255,255,255,0.15)"
                 strokeDasharray="3 4"
               />
-              <text
-                x={CHART_W - PAD_X}
-                y={yFor(target) - 4}
-                textAnchor="end"
-                className="fill-neutral-600"
-                fontSize="9"
-                fontStyle="italic"
-              >
-                target {target}
-              </text>
+              {targetLabel ? (
+                <text
+                  x={CHART_W - PAD_X}
+                  y={yFor(target) - 4}
+                  textAnchor="end"
+                  className="fill-neutral-600"
+                  fontSize="9"
+                  fontStyle="italic"
+                >
+                  {targetLabel}
+                </text>
+              ) : null}
             </>
           ) : null}
 
@@ -115,7 +123,7 @@ export function WeekChart({
                 strokeLinejoin="round"
                 points={polylinePoints}
               />
-              {dailyKcal.map((v, i) => {
+              {dailyValues.map((v, i) => {
                 if (v <= 0) return null;
                 const isToday = keys[i] === todayKey;
                 return (
