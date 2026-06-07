@@ -188,7 +188,7 @@ export default async function HistoryPage({
 
   const avgPct = target && target > 0 ? avgMetric / target : 0;
   const avgIsOver = avgPct > 1.1;
-  const avgUnitShort = metric === 'kcal' ? 'kcal/day' : 'g/day';
+  const avgUnitShort = metric === 'kcal' ? 'avg kcal/day' : 'avg g/day';
   const vsGoal: { word: string; value: string | null } = (() => {
     if (!target || target <= 0 || !avgMetric) return { word: 'No goal', value: null };
     const diff = avgMetric - target;
