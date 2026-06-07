@@ -254,9 +254,9 @@ export default async function HistoryPage({
 
       <HistoryCalendar cells={cells} accentColor={METRIC_VAR[metric]} />
 
-      {/* Hero stats — below the calendar so the calendar is the first thing in view. */}
-      <GlassCard className="grid grid-cols-3 items-center gap-3 p-5">
-        <div className="flex justify-center">
+      {/* Hero stats — two square cards side by side below the calendar. */}
+      <div className="grid grid-cols-2 gap-3">
+        <GlassCard className="flex aspect-square items-center justify-center p-4">
           <AvgRing
             pct={avgPct}
             isOver={avgIsOver}
@@ -264,23 +264,27 @@ export default async function HistoryPage({
             valueText={avgMetric ? formatValue(avgMetric, metric) : '—'}
             label={avgUnitShort}
           />
-        </div>
-        <div className="border-x border-white/5 px-2 text-center">
-          <p className="text-[10px] font-medium tracking-wider text-neutral-400 uppercase">
-            vs goal
-          </p>
-          <p className="mt-2 text-sm font-bold text-white tabular-nums">{vsGoalText}</p>
-        </div>
-        <div className="text-center">
-          <p className="text-[10px] font-medium tracking-wider text-neutral-400 uppercase">
-            Days in target
-          </p>
-          <p className="mt-2 text-2xl font-bold text-white tabular-nums">
-            {inTargetCount}
-            <span className="text-sm font-medium text-neutral-500">/{totalDaysInMonth}</span>
-          </p>
-        </div>
-      </GlassCard>
+        </GlassCard>
+
+        <GlassCard className="flex aspect-square flex-col justify-between p-4 text-center">
+          <div>
+            <p className="text-[10px] font-medium tracking-wider text-neutral-400 uppercase">
+              vs goal
+            </p>
+            <p className="mt-2 text-lg font-bold text-white tabular-nums">{vsGoalText}</p>
+          </div>
+          <div className="border-t border-white/5" />
+          <div>
+            <p className="text-[10px] font-medium tracking-wider text-neutral-400 uppercase">
+              Days in target
+            </p>
+            <p className="mt-2 text-2xl font-bold text-white tabular-nums">
+              {inTargetCount}
+              <span className="text-sm font-medium text-neutral-500">/{totalDaysInMonth}</span>
+            </p>
+          </div>
+        </GlassCard>
+      </div>
 
       <WeekChart
         weekStartKey={weekStartKey}
@@ -354,7 +358,7 @@ function AvgRing({
   const STROKE = 3.5;
   const dash = fillPct * CIRC;
   return (
-    <div className="relative size-20 shrink-0">
+    <div className="relative size-32 shrink-0">
       <svg viewBox="0 0 40 40" className="size-full -rotate-90" aria-hidden>
         <circle cx={20} cy={20} r={RADIUS} fill="none" stroke={trackColor} strokeWidth={STROKE} />
         {fillPct > 0 ? (
@@ -371,8 +375,8 @@ function AvgRing({
         ) : null}
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-        <p className="text-sm font-bold text-white tabular-nums leading-none">{valueText}</p>
-        <p className="mt-0.5 text-[9px] tracking-wider text-neutral-400 uppercase">{label}</p>
+        <p className="text-2xl font-bold text-white tabular-nums leading-none">{valueText}</p>
+        <p className="mt-1 text-[10px] tracking-wider text-neutral-400 uppercase">{label}</p>
       </div>
     </div>
   );
