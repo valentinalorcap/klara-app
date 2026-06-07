@@ -14,11 +14,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     // page), but the BottomNav — which lives as a sibling of the scroll
     // area — stays planted because the document body never moves.
     //
-    // calc(env(safe-area-inset-top) + 0.75rem) on the scroll area
-    // clears the iPhone notch / Dynamic Island and adds 12 px of
-    // breathing room so top tap targets don't graze the status bar.
+    // env(safe-area-inset-top) on the scroll area clears the iPhone
+    // notch / Dynamic Island; resolves to 0 on devices without one.
     <div className="fixed inset-0 flex flex-col">
-      <main className="flex-1 overflow-y-auto pt-[calc(env(safe-area-inset-top)+0.75rem)] pb-32">
+      <main className="flex-1 overflow-y-auto pt-[env(safe-area-inset-top)] pb-32">
         <div className="mx-auto max-w-md">{children}</div>
       </main>
       <BottomNav />
