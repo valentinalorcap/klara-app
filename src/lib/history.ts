@@ -99,6 +99,8 @@ export type CalendarDay = DaySummary & {
   isFuture: boolean;
   /** True for today's cell — drives the ring highlight. */
   isToday: boolean;
+  /** Actual / target for the currently selected metric. 0 if no data or no goal. */
+  pct: number;
 };
 
 /** Pad a number as 2 digits. */

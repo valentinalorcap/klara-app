@@ -178,13 +178,15 @@ export default async function HistoryPage({
       fat: 0,
       mealCount: 0,
     };
+    const value = valueFor(t, metric);
     return {
       date: cell.date,
       totals: { kcal: t.kcal, protein: t.protein, carbs: t.carbs, fat: t.fat },
       mealCount: t.mealCount,
-      status: categorizeStatus(valueFor(t, metric), target),
+      status: categorizeStatus(value, target),
       isFuture: cell.date > todayKey,
       isToday: cell.date === todayKey,
+      pct: target && target > 0 ? value / target : 0,
     };
   });
 
@@ -288,7 +290,7 @@ export default async function HistoryPage({
         </Link>
       </div>
 
-      <HistoryCalendar cells={cells} tints={CALENDAR_TINTS[metric]} />
+      <HistoryCalendar cells={cells} accentColor={METRIC_VAR[metric]} />
 
       {/* Hero stats — below the calendar so the calendar is the first thing in view. */}
       <GlassCard className="grid grid-cols-3 gap-2 p-5 text-center">
