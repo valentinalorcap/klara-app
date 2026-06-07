@@ -36,6 +36,11 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: 'cover',
+  // With overlays-content the on-screen keyboard sits on top of the page
+  // without shrinking the viewport, so the BottomNav stays at the
+  // bottom of the layout (hidden behind the keyboard) instead of being
+  // shoved upward to sit above it.
+  interactiveWidget: 'overlays-content',
 };
 
 export default function RootLayout({
