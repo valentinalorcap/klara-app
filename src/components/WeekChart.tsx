@@ -66,12 +66,25 @@ export function WeekChart({
 
   return (
     <GlassCard noAnimate className="space-y-3 p-5">
-      <div>
-        <p className="text-[10px] font-medium tracking-wider text-neutral-400 uppercase">Average</p>
-        <p className="mt-1 text-3xl font-bold text-white tabular-nums">
-          {avgValue ? avgValue.toLocaleString() : '—'}
-          <span className="ml-1 text-sm font-medium text-neutral-400">{unitLabel}</span>
-        </p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-[10px] font-medium tracking-wider text-neutral-400 uppercase">
+            Average
+          </p>
+          <p className="mt-1 text-3xl font-bold text-white tabular-nums">
+            {avgValue ? avgValue.toLocaleString() : '—'}
+            <span className="ml-1 text-sm font-medium text-neutral-400">{unitLabel}</span>
+          </p>
+        </div>
+        {!isCurrentWeek ? (
+          <Link
+            scroll={false}
+            href={todayHref}
+            className="mt-1 shrink-0 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[11px] font-medium text-neutral-200 transition hover:border-[var(--accent)]/40 hover:bg-[var(--accent)]/10 hover:text-white"
+          >
+            Today
+          </Link>
+        ) : null}
       </div>
 
       <div className="flex items-center justify-between">
@@ -93,18 +106,6 @@ export function WeekChart({
           <ChevronRight size={16} />
         </Link>
       </div>
-
-      {!isCurrentWeek ? (
-        <div className="flex justify-center">
-          <Link
-            scroll={false}
-            href={todayHref}
-            className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[11px] font-medium text-neutral-200 transition hover:border-[var(--accent)]/40 hover:bg-[var(--accent)]/10 hover:text-white"
-          >
-            Today
-          </Link>
-        </div>
-      ) : null}
 
       <div className="relative pt-3">
         <svg viewBox={`0 0 ${CHART_W} ${CHART_H + 22}`} className="w-full" role="img" aria-hidden>
