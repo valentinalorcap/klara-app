@@ -7,7 +7,20 @@ import { cn } from '@/lib/utils';
 
 const HEADERS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
-export function HistoryCalendar({ cells }: { cells: Array<CalendarDay | null> }) {
+export type CalendarTints = {
+  under: string;
+  near: string;
+  onTarget: string;
+  over: string;
+};
+
+export function HistoryCalendar({
+  cells,
+  tints,
+}: {
+  cells: Array<CalendarDay | null>;
+  tints: CalendarTints;
+}) {
   return (
     <GlassCard noAnimate className="p-5">
       <div className="mb-3 grid grid-cols-7 gap-0 text-center">
@@ -32,10 +45,10 @@ export function HistoryCalendar({ cells }: { cells: Array<CalendarDay | null> })
               <div
                 className={cn(
                   'absolute inset-0 rounded-full',
-                  cell.status === 'on-target' && 'bg-[var(--accent)]',
-                  cell.status === 'near' && 'bg-[var(--accent)]/55',
-                  cell.status === 'under' && 'bg-[var(--accent)]/25',
-                  cell.status === 'over' && 'bg-[var(--macro-protein)]',
+                  cell.status === 'on-target' && tints.onTarget,
+                  cell.status === 'near' && tints.near,
+                  cell.status === 'under' && tints.under,
+                  cell.status === 'over' && tints.over,
                   noGoal && cell.totals.kcal > 0 && 'bg-white/10',
                   empty && !cell.isFuture && 'border border-dashed border-white/15',
                   cell.isFuture && 'border border-white/[0.06]',
@@ -85,16 +98,16 @@ export function HistoryCalendar({ cells }: { cells: Array<CalendarDay | null> })
       {/* Legend */}
       <div className="mt-5 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[10px] tracking-wide text-neutral-500">
         <span className="flex items-center gap-1.5">
-          <span className="h-3 w-3 rounded-full bg-[var(--accent)]/25" aria-hidden /> Under
+          <span className={cn('h-3 w-3 rounded-full', tints.under)} aria-hidden /> Under
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="h-3 w-3 rounded-full bg-[var(--accent)]/55" aria-hidden /> Near
+          <span className={cn('h-3 w-3 rounded-full', tints.near)} aria-hidden /> Near
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="h-3 w-3 rounded-full bg-[var(--accent)]" aria-hidden /> On target
+          <span className={cn('h-3 w-3 rounded-full', tints.onTarget)} aria-hidden /> On target
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="h-3 w-3 rounded-full bg-[var(--macro-protein)]" aria-hidden /> Over
+          <span className={cn('h-3 w-3 rounded-full', tints.over)} aria-hidden /> Over
         </span>
         <span className="flex items-center gap-1.5">
           <span className="h-3 w-3 rounded-full border border-dashed border-white/30" aria-hidden />{' '}

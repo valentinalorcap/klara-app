@@ -12,6 +12,7 @@ export function WeekChart({
   dailyValues,
   avgValue,
   target,
+  lineColor,
   unitLabel,
   targetLabel,
   isCurrentWeek,
@@ -26,6 +27,8 @@ export function WeekChart({
   dailyValues: number[];
   avgValue: number;
   target: number | null;
+  /** CSS variable reference for the line + dots, e.g. "var(--macro-protein)". */
+  lineColor: string;
   /** "kcal/day", "g/day", etc. */
   unitLabel: string;
   /** Text rendered next to the dashed target line, or null to hide it. */
@@ -138,7 +141,7 @@ export function WeekChart({
             <>
               <polyline
                 fill="none"
-                stroke="var(--accent)"
+                stroke={lineColor}
                 strokeWidth="2.5"
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -150,15 +153,9 @@ export function WeekChart({
                 return (
                   <g key={i}>
                     {isToday ? (
-                      <circle
-                        cx={xFor(i)}
-                        cy={yFor(v)}
-                        r={7}
-                        fill="var(--accent)"
-                        fillOpacity={0.3}
-                      />
+                      <circle cx={xFor(i)} cy={yFor(v)} r={7} fill={lineColor} fillOpacity={0.3} />
                     ) : null}
-                    <circle cx={xFor(i)} cy={yFor(v)} r={3.5} fill="var(--accent)" />
+                    <circle cx={xFor(i)} cy={yFor(v)} r={3.5} fill={lineColor} />
                   </g>
                 );
               })}
