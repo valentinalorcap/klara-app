@@ -41,6 +41,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# local design / mockup files (not part of the app)
+/mockups
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

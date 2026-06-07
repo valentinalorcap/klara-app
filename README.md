@@ -125,7 +125,6 @@ prisma/
 └── migrations/         One folder per migration
 
 e2e/                    Playwright specs
-mockups/                Design SVGs referenced by the backlog
 ```
 
 ## Testing
@@ -163,7 +162,7 @@ matching milestones):
 8. Free-text meal estimation
 9. Conversational chat with day context
 10. History calendar with weekly trend and retroactive editing
-11. PWA + portfolio polish (this one)
+11. PWA + final polish (this one)
 
 Backlog (small, kept in a private `discovery/backlog.md`): edit
 favourites from Library, Klara's auto-maintained user memory, design
