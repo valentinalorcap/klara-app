@@ -11,6 +11,7 @@ import {
   daysInMonth,
   METRICS,
   metricShortLabel,
+  metricUnit,
   targetFor,
   valueFor,
   weekDays,
