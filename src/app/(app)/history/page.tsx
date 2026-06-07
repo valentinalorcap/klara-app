@@ -186,19 +186,16 @@ export default async function HistoryPage({
   const metricQS = (m: Metric) =>
     `?month=${year}-${String(month0 + 1).padStart(2, '0')}&week=${weekStartKey}&metric=${m}`;
 
-  const heroAvgLabel = `AVG ${metricShortLabel(metric).toUpperCase()}/DAY`;
   const avgPct = target && target > 0 ? avgMetric / target : 0;
   const avgIsOver = avgPct > 1.1;
-  const avgDelta = (() => {
-    if (!target || target <= 0) {
-      return avgMetric ? `${formatValue(avgMetric, metric)}${metric === 'kcal' ? ' kcal' : 'g'}` : '—';
-    }
-    if (!avgMetric) return 'No data yet';
+  const avgUnitShort = metric === 'kcal' ? 'kcal/day' : 'g/day';
+  const vsGoalText = (() => {
+    if (!target || target <= 0 || !avgMetric) return '—';
     const diff = avgMetric - target;
     const unit = metric === 'kcal' ? ' kcal' : 'g';
-    if (Math.abs(diff) <= target * 0.1) return 'On target';
-    if (diff < 0) return `Fell short by ${Math.round(Math.abs(diff))}${unit}`;
-    return `Over by ${Math.round(diff)}${unit}`;
+    if (diff < 0) return `Remains ${Math.round(Math.abs(diff))}${unit}`;
+    if (diff > 0) return `Over by ${Math.round(diff)}${unit}`;
+    return 'On target';
   })();
 
   return (
@@ -258,21 +255,27 @@ export default async function HistoryPage({
       <HistoryCalendar cells={cells} accentColor={METRIC_VAR[metric]} />
 
       {/* Hero stats — below the calendar so the calendar is the first thing in view. */}
-      <GlassCard className="grid grid-cols-2 items-center gap-4 p-5">
-        <div className="flex items-center gap-3">
-          <SmallRing pct={avgPct} isOver={avgIsOver} accentColor={METRIC_VAR[metric]} />
-          <div className="min-w-0">
-            <p className="text-[10px] font-medium tracking-wider text-neutral-400 uppercase">
-              {heroAvgLabel}
-            </p>
-            <p className="mt-1 truncate text-sm font-semibold text-white">{avgDelta}</p>
-          </div>
+      <GlassCard className="grid grid-cols-3 items-center gap-3 p-5">
+        <div className="flex justify-center">
+          <AvgRing
+            pct={avgPct}
+            isOver={avgIsOver}
+            accentColor={METRIC_VAR[metric]}
+            valueText={avgMetric ? formatValue(avgMetric, metric) : '—'}
+            label={avgUnitShort}
+          />
         </div>
-        <div className="border-l border-white/5 pl-4 text-center">
+        <div className="border-x border-white/5 px-2 text-center">
+          <p className="text-[10px] font-medium tracking-wider text-neutral-400 uppercase">
+            vs goal
+          </p>
+          <p className="mt-2 text-sm font-bold text-white tabular-nums">{vsGoalText}</p>
+        </div>
+        <div className="text-center">
           <p className="text-[10px] font-medium tracking-wider text-neutral-400 uppercase">
             Days in target
           </p>
-          <p className="mt-1 text-2xl font-bold text-white tabular-nums">
+          <p className="mt-2 text-2xl font-bold text-white tabular-nums">
             {inTargetCount}
             <span className="text-sm font-medium text-neutral-500">/{totalDaysInMonth}</span>
           </p>
@@ -329,38 +332,48 @@ export default async function HistoryPage({
   );
 }
 
-/** Mini donut next to the AVG stat — mirrors the calendar ring math. */
-function SmallRing({
+/** Hero-stats donut that shows the average value inside the ring. */
+function AvgRing({
   pct,
   isOver,
   accentColor,
+  valueText,
+  label,
 }: {
   pct: number;
   isOver: boolean;
   accentColor: string;
+  valueText: string;
+  label: string;
 }) {
   const fillPct = isOver ? 1 : Math.min(Math.max(pct, 0), 1);
   const trackColor = isOver ? 'rgba(248, 113, 113, 0.25)' : 'rgba(255,255,255,0.10)';
   const strokeColor = isOver ? 'var(--danger)' : accentColor;
   const RADIUS = 16;
   const CIRC = 2 * Math.PI * RADIUS;
-  const STROKE = 4;
+  const STROKE = 3.5;
   const dash = fillPct * CIRC;
   return (
-    <svg viewBox="0 0 40 40" className="size-12 shrink-0 -rotate-90" aria-hidden>
-      <circle cx={20} cy={20} r={RADIUS} fill="none" stroke={trackColor} strokeWidth={STROKE} />
-      {fillPct > 0 ? (
-        <circle
-          cx={20}
-          cy={20}
-          r={RADIUS}
-          fill="none"
-          stroke={strokeColor}
-          strokeWidth={STROKE}
-          strokeLinecap="round"
-          strokeDasharray={`${dash} ${CIRC}`}
-        />
-      ) : null}
-    </svg>
+    <div className="relative size-20 shrink-0">
+      <svg viewBox="0 0 40 40" className="size-full -rotate-90" aria-hidden>
+        <circle cx={20} cy={20} r={RADIUS} fill="none" stroke={trackColor} strokeWidth={STROKE} />
+        {fillPct > 0 ? (
+          <circle
+            cx={20}
+            cy={20}
+            r={RADIUS}
+            fill="none"
+            stroke={strokeColor}
+            strokeWidth={STROKE}
+            strokeLinecap="round"
+            strokeDasharray={`${dash} ${CIRC}`}
+          />
+        ) : null}
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+        <p className="text-sm font-bold text-white tabular-nums leading-none">{valueText}</p>
+        <p className="mt-0.5 text-[9px] tracking-wider text-neutral-400 uppercase">{label}</p>
+      </div>
+    </div>
   );
 }
