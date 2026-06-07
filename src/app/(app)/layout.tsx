@@ -7,7 +7,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   if (!session?.user) redirect('/login');
 
   return (
-    <div className="min-h-screen pb-32">
+    // pt-[env(safe-area-inset-top)] pushes the page below the iPhone
+    // notch / Dynamic Island when Klara is installed as a PWA. On
+    // devices without a notch (and inside Safari with chrome) the inset
+    // resolves to 0, so nothing changes.
+    <div className="min-h-screen pt-[env(safe-area-inset-top)] pb-32">
       <div className="mx-auto max-w-md">{children}</div>
       <BottomNav />
     </div>
