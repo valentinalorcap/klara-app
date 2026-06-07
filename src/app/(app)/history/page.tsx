@@ -188,27 +188,6 @@ export default async function HistoryPage({
         </p>
       </header>
 
-      {/* Month nav */}
-      <div className="flex items-center justify-between">
-        <Link
-          href={`/history${monthQS(prevMonth.y, prevMonth.m)}`}
-          className="flex h-9 w-9 items-center justify-center rounded-full text-neutral-400 transition hover:bg-white/5 hover:text-white"
-          aria-label="Previous month"
-        >
-          <ChevronLeft size={18} />
-        </Link>
-        <p className="text-sm font-semibold text-white">
-          {MONTH_NAMES[month0]} {year}
-        </p>
-        <Link
-          href={`/history${monthQS(nextMonth.y, nextMonth.m)}`}
-          className="flex h-9 w-9 items-center justify-center rounded-full text-neutral-400 transition hover:bg-white/5 hover:text-white"
-          aria-label="Next month"
-        >
-          <ChevronRight size={18} />
-        </Link>
-      </div>
-
       {/* Metric selector */}
       <div className="-mx-1 flex gap-2 overflow-x-auto px-1">
         {METRICS.map((m) => {
@@ -216,6 +195,7 @@ export default async function HistoryPage({
           return (
             <Link
               key={m}
+              scroll={false}
               href={`/history${metricQS(m)}`}
               className={cn(
                 'shrink-0 rounded-full border px-4 py-2 text-xs font-medium transition',
@@ -230,7 +210,32 @@ export default async function HistoryPage({
         })}
       </div>
 
-      {/* Hero stats */}
+      {/* Month nav */}
+      <div className="flex items-center justify-between">
+        <Link
+          scroll={false}
+          href={`/history${monthQS(prevMonth.y, prevMonth.m)}`}
+          className="flex h-9 w-9 items-center justify-center rounded-full text-neutral-400 transition hover:bg-white/5 hover:text-white"
+          aria-label="Previous month"
+        >
+          <ChevronLeft size={18} />
+        </Link>
+        <p className="text-sm font-semibold text-white">
+          {MONTH_NAMES[month0]} {year}
+        </p>
+        <Link
+          scroll={false}
+          href={`/history${monthQS(nextMonth.y, nextMonth.m)}`}
+          className="flex h-9 w-9 items-center justify-center rounded-full text-neutral-400 transition hover:bg-white/5 hover:text-white"
+          aria-label="Next month"
+        >
+          <ChevronRight size={18} />
+        </Link>
+      </div>
+
+      <HistoryCalendar cells={cells} />
+
+      {/* Hero stats — below the calendar so the calendar is the first thing in view. */}
       <GlassCard className="grid grid-cols-3 gap-2 p-5 text-center">
         <Stat
           label={heroAvgLabel}
@@ -243,8 +248,6 @@ export default async function HistoryPage({
         <Stat label="CURRENT STREAK" value={streak === 0 ? '—' : `${streak}`} accent />
       </GlassCard>
 
-      <HistoryCalendar cells={cells} />
-
       <WeekChart
         weekStartKey={weekStartKey}
         rangeLabel={weekRangeLabel(weekStartKey)}
@@ -253,6 +256,8 @@ export default async function HistoryPage({
         target={target}
         unitLabel={metric === 'kcal' ? 'kcal/day' : 'g/day'}
         targetLabel={target ? `target ${Math.round(target)}${metric === 'kcal' ? '' : 'g'}` : null}
+        isCurrentWeek={weekStartKey === weekStartFor(todayKey)}
+        todayHref={`/history${weekQS(weekStartFor(todayKey))}`}
         prevHref={`/history${weekQS(shiftWeek(weekStartKey, -1))}`}
         nextHref={`/history${weekQS(shiftWeek(weekStartKey, 1))}`}
         todayKey={todayKey}

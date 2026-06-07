@@ -14,6 +14,8 @@ export function WeekChart({
   target,
   unitLabel,
   targetLabel,
+  isCurrentWeek,
+  todayHref,
   prevHref,
   nextHref,
   todayKey,
@@ -28,6 +30,10 @@ export function WeekChart({
   unitLabel: string;
   /** Text rendered next to the dashed target line, or null to hide it. */
   targetLabel: string | null;
+  /** True when `weekStartKey` is the week containing today. */
+  isCurrentWeek: boolean;
+  /** Href that resets the week to the one containing today. */
+  todayHref: string;
   prevHref: string;
   nextHref: string;
   todayKey: string;
@@ -70,6 +76,7 @@ export function WeekChart({
 
       <div className="flex items-center justify-between">
         <Link
+          scroll={false}
           href={prevHref}
           aria-label="Previous week"
           className="flex h-8 w-8 items-center justify-center rounded-full text-neutral-400 transition hover:bg-white/5 hover:text-white"
@@ -78,6 +85,7 @@ export function WeekChart({
         </Link>
         <p className="text-sm text-neutral-300">{rangeLabel}</p>
         <Link
+          scroll={false}
           href={nextHref}
           aria-label="Next week"
           className="flex h-8 w-8 items-center justify-center rounded-full text-neutral-400 transition hover:bg-white/5 hover:text-white"
@@ -86,7 +94,19 @@ export function WeekChart({
         </Link>
       </div>
 
-      <div className="pt-3">
+      {!isCurrentWeek ? (
+        <div className="flex justify-center">
+          <Link
+            scroll={false}
+            href={todayHref}
+            className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[11px] font-medium text-neutral-200 transition hover:border-[var(--accent)]/40 hover:bg-[var(--accent)]/10 hover:text-white"
+          >
+            Today
+          </Link>
+        </div>
+      ) : null}
+
+      <div className="relative pt-3">
         <svg viewBox={`0 0 ${CHART_W} ${CHART_H + 22}`} className="w-full" role="img" aria-hidden>
           {target ? (
             <>
@@ -158,8 +178,15 @@ export function WeekChart({
           ))}
         </svg>
 
+        {/* "No data" sits as an overlay inside the chart area so the day
+            labels at the bottom of the SVG stay visible underneath. */}
         {!hasAnyData ? (
-          <p className="-mt-12 text-center text-xs text-neutral-500">No data this week yet.</p>
+          <div
+            className="pointer-events-none absolute inset-x-0 top-3 flex h-[100px] items-center justify-center"
+            aria-hidden
+          >
+            <p className="text-xs text-neutral-500">No data this week yet.</p>
+          </div>
         ) : null}
       </div>
     </GlassCard>
