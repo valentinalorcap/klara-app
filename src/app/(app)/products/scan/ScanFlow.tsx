@@ -11,6 +11,11 @@ import type { ExtractedLabel } from '@/lib/labelExtraction';
 
 type Phase = 'select' | 'preview' | 'analyzing' | 'review';
 
+// Mirrors the server action's MAX_IMAGE_BYTES. Catching oversized files
+// here lets us show a useful message instead of a generic 500 from Next
+// rejecting the Server Action body.
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+
 export function ScanFlow() {
   const [phase, setPhase] = useState<Phase>('select');
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -23,6 +28,14 @@ export function ScanFlow() {
   function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const picked = e.target.files?.[0];
     if (!picked) return;
+    if (picked.size > MAX_IMAGE_BYTES) {
+      const mb = (picked.size / 1024 / 1024).toFixed(1);
+      setError(
+        `That photo is ${mb} MB. The label scanner needs an image under 5 MB — try retaking it at a lower resolution.`,
+      );
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
     setFile(picked);
     setPreviewUrl(URL.createObjectURL(picked));
     setError(null);
@@ -78,6 +91,11 @@ export function ScanFlow() {
             Take photo or choose one
           </span>
         </label>
+        {error ? (
+          <p className="mt-4 text-sm text-[var(--danger)]" role="alert">
+            {error}
+          </p>
+        ) : null}
       </GlassCard>
     );
   }
