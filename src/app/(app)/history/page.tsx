@@ -189,13 +189,13 @@ export default async function HistoryPage({
   const avgPct = target && target > 0 ? avgMetric / target : 0;
   const avgIsOver = avgPct > 1.1;
   const avgUnitShort = metric === 'kcal' ? 'kcal/day' : 'g/day';
-  const vsGoalText = (() => {
-    if (!target || target <= 0 || !avgMetric) return '—';
+  const vsGoal: { word: string; value: string | null } = (() => {
+    if (!target || target <= 0 || !avgMetric) return { word: 'No goal', value: null };
     const diff = avgMetric - target;
     const unit = metric === 'kcal' ? ' kcal' : 'g';
-    if (diff < 0) return `Remains ${Math.round(Math.abs(diff))}${unit}`;
-    if (diff > 0) return `Over by ${Math.round(diff)}${unit}`;
-    return 'On target';
+    if (Math.abs(diff) <= target * 0.05) return { word: 'On target', value: null };
+    if (diff < 0) return { word: 'Remains', value: `${Math.round(Math.abs(diff))}${unit}` };
+    return { word: 'Over by', value: `${Math.round(diff)}${unit}` };
   })();
 
   return (
@@ -268,19 +268,16 @@ export default async function HistoryPage({
 
         <GlassCard className="flex aspect-square flex-col justify-between p-4 text-center">
           <div>
-            <p className="text-[10px] font-medium tracking-wider text-neutral-400 uppercase">
-              vs goal
-            </p>
-            <p className="mt-2 text-lg font-bold text-white tabular-nums">{vsGoalText}</p>
+            <p className="text-base font-medium text-neutral-400">{vsGoal.word}</p>
+            {vsGoal.value ? (
+              <p className="text-base font-bold text-white tabular-nums">{vsGoal.value}</p>
+            ) : null}
           </div>
           <div className="border-t border-white/5" />
           <div>
-            <p className="text-[10px] font-medium tracking-wider text-neutral-400 uppercase">
-              Days in target
-            </p>
-            <p className="mt-2 text-2xl font-bold text-white tabular-nums">
-              {inTargetCount}
-              <span className="text-sm font-medium text-neutral-500">/{totalDaysInMonth}</span>
+            <p className="text-base font-medium text-neutral-400">Days in target</p>
+            <p className="text-base font-bold text-white tabular-nums">
+              {inTargetCount}/{totalDaysInMonth}
             </p>
           </div>
         </GlassCard>
