@@ -266,15 +266,15 @@ export default async function HistoryPage({
           />
         </GlassCard>
 
-        <GlassCard className="flex aspect-square flex-col justify-between p-4 text-center">
-          <div>
+        <GlassCard className="grid aspect-square grid-rows-[1fr_auto_1fr] p-4 text-center">
+          <div className="flex flex-col justify-center">
             <p className="text-sm font-medium text-neutral-400">{vsGoal.word}</p>
             {vsGoal.value ? (
               <p className="text-sm font-bold text-white tabular-nums">{vsGoal.value}</p>
             ) : null}
           </div>
           <div className="border-t border-white/5" />
-          <div>
+          <div className="flex flex-col justify-center">
             <p className="text-sm font-medium text-neutral-400">Days in target</p>
             <p className="text-sm font-bold text-white tabular-nums">
               {inTargetCount}/{totalDaysInMonth}
