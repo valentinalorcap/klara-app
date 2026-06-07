@@ -1,0 +1,105 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 706 820" width="706" height="820">
+  <defs>
+    <!-- Option A — Violet → Coral gradient -->
+    <linearGradient id="gradA" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#9963f6"/>
+      <stop offset="100%" stop-color="#fa5c63"/>
+    </linearGradient>
+
+    <!-- Option B — Dark radial -->
+    <radialGradient id="gradB" cx="50%" cy="0%" r="120%">
+      <stop offset="0%" stop-color="#2c2756"/>
+      <stop offset="100%" stop-color="#0a0814"/>
+    </radialGradient>
+
+    <!-- Option C — Soft pastel duo -->
+    <linearGradient id="gradC" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#4eddf1"/>
+      <stop offset="100%" stop-color="#ff5db1"/>
+    </linearGradient>
+
+    <!-- Option D — Coral solid -->
+    <linearGradient id="gradD" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fa5c63"/>
+      <stop offset="100%" stop-color="#d63c43"/>
+    </linearGradient>
+
+    <!-- Sparkle path (Lucide-style 4-point) -->
+    <symbol id="sparkle" viewBox="-12 -12 24 24">
+      <path d="M0,-11 L2.5,-2.5 L11,0 L2.5,2.5 L0,11 L-2.5,2.5 L-11,0 L-2.5,-2.5 Z" fill="currentColor"/>
+    </symbol>
+  </defs>
+
+  <!-- Page bg -->
+  <rect width="706" height="820" fill="#0a0814"/>
+
+  <!-- ============== Header ============== -->
+  <text x="353" y="42" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="600" letter-spacing="2" fill="#a3a3a3" text-anchor="middle">PICK AN APP ICON</text>
+
+  <!-- ============== Option A — Bold K on violet→coral gradient ============== -->
+  <g transform="translate(60, 86)">
+    <rect width="260" height="260" rx="56" fill="url(#gradA)"/>
+    <text x="130" y="180" font-family="ui-sans-serif, system-ui, sans-serif" font-size="180" font-weight="900" fill="white" text-anchor="middle" letter-spacing="-6">K</text>
+    <!-- subtle glossy highlight -->
+    <rect x="0" y="0" width="260" height="80" rx="56" fill="white" fill-opacity="0.06"/>
+
+    <text x="130" y="300" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="700" fill="white" text-anchor="middle">OPTION A</text>
+    <text x="130" y="320" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" font-weight="500" fill="#a3a3a3" text-anchor="middle">Bold K · violet → coral gradient</text>
+  </g>
+
+  <!-- ============== Option B — Sparkle on deep navy ============== -->
+  <g transform="translate(386, 86)">
+    <rect width="260" height="260" rx="56" fill="url(#gradB)"/>
+    <!-- main sparkle in coral, large -->
+    <g transform="translate(130, 132)" color="#fa5c63">
+      <use href="#sparkle" width="180" height="180" x="-90" y="-90"/>
+    </g>
+    <!-- tiny sparkle in violet upper right -->
+    <g transform="translate(190, 80)" color="#9963f6">
+      <use href="#sparkle" width="38" height="38" x="-19" y="-19"/>
+    </g>
+    <!-- tiny sparkle in aqua lower left -->
+    <g transform="translate(78, 190)" color="#4eddf1">
+      <use href="#sparkle" width="28" height="28" x="-14" y="-14"/>
+    </g>
+
+    <text x="130" y="300" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="700" fill="white" text-anchor="middle">OPTION B</text>
+    <text x="130" y="320" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" font-weight="500" fill="#a3a3a3" text-anchor="middle">Klara sparkles · the AI vibe</text>
+  </g>
+
+  <!-- ============== Option C — Macro ring with K ============== -->
+  <g transform="translate(60, 442)">
+    <rect width="260" height="260" rx="56" fill="#0e0a1f"/>
+    <!-- Macro ring: 3 arcs in 3 macro colours stitched into one donut -->
+    <g transform="translate(130, 130)">
+      <!-- track -->
+      <circle cx="0" cy="0" r="78" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="22"/>
+      <!-- protein arc (coral) ~0° → 120° -->
+      <circle cx="0" cy="0" r="78" fill="none" stroke="#fa5c63" stroke-width="22" stroke-linecap="round" stroke-dasharray="160 1000" transform="rotate(-90)"/>
+      <!-- carbs arc (aqua) ~120° → 240° -->
+      <circle cx="0" cy="0" r="78" fill="none" stroke="#4eddf1" stroke-width="22" stroke-linecap="round" stroke-dasharray="160 1000" transform="rotate(30)"/>
+      <!-- fat arc (pink) ~240° → 360° -->
+      <circle cx="0" cy="0" r="78" fill="none" stroke="#ff5db1" stroke-width="22" stroke-linecap="round" stroke-dasharray="160 1000" transform="rotate(150)"/>
+      <!-- K in the middle -->
+      <text y="22" font-family="ui-sans-serif, system-ui, sans-serif" font-size="68" font-weight="900" fill="white" text-anchor="middle" letter-spacing="-2">K</text>
+    </g>
+
+    <text x="130" y="300" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="700" fill="white" text-anchor="middle">OPTION C</text>
+    <text x="130" y="320" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" font-weight="500" fill="#a3a3a3" text-anchor="middle">Macro ring · the app's signature</text>
+  </g>
+
+  <!-- ============== Option D — K on coral solid ============== -->
+  <g transform="translate(386, 442)">
+    <rect width="260" height="260" rx="56" fill="url(#gradD)"/>
+    <!-- soft top highlight -->
+    <rect x="0" y="0" width="260" height="80" rx="56" fill="white" fill-opacity="0.08"/>
+    <!-- K serif-y -->
+    <text x="130" y="190" font-family="Georgia, ui-serif, serif" font-size="200" font-weight="900" fill="white" text-anchor="middle" letter-spacing="-10">K</text>
+
+    <text x="130" y="300" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="700" fill="white" text-anchor="middle">OPTION D</text>
+    <text x="130" y="320" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" font-weight="500" fill="#a3a3a3" text-anchor="middle">Serif K · solid coral · editorial feel</text>
+  </g>
+
+  <!-- ============== Footer hint ============== -->
+  <text x="353" y="800" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" font-weight="500" letter-spacing="0.5" fill="#525252" text-anchor="middle">Each tile is 260×260 — actual iOS home-icon renders at ~120px so all four read clean small.</text>
+</svg>
