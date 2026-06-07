@@ -372,7 +372,7 @@ function AvgRing({
         ) : null}
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-        <p className="text-2xl font-bold text-white tabular-nums leading-none">{valueText}</p>
+        <p className="text-2xl leading-none font-bold text-white tabular-nums">{valueText}</p>
         <p className="mt-1 text-[10px] tracking-wider text-neutral-400 uppercase">{label}</p>
       </div>
     </div>
