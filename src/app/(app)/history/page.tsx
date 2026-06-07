@@ -68,6 +68,19 @@ const METRIC_LONG: Record<Metric, string> = {
   fat: 'Fat',
 };
 
+/**
+ * Tailwind classes spelled out per metric so the JIT picks them up. Each
+ * "active" string uses the macro's own colour token (matches MacroRing),
+ * so the pills read as a key to the calendar / chart colouring.
+ */
+const METRIC_PILL_ACTIVE: Record<Metric, string> = {
+  kcal: 'border-[var(--macro-kcal)] bg-[var(--macro-kcal)]/15 text-[var(--macro-kcal)]',
+  protein:
+    'border-[var(--macro-protein)] bg-[var(--macro-protein)]/15 text-[var(--macro-protein)]',
+  carbs: 'border-[var(--macro-carbs)] bg-[var(--macro-carbs)]/15 text-[var(--macro-carbs)]',
+  fat: 'border-[var(--macro-fat)] bg-[var(--macro-fat)]/15 text-[var(--macro-fat)]',
+};
+
 function formatValue(value: number, metric: Metric): string {
   if (metric === 'kcal') return Math.round(value).toLocaleString();
   return Math.round(value).toString();
@@ -188,7 +201,7 @@ export default async function HistoryPage({
         </p>
       </header>
 
-      {/* Metric selector */}
+      {/* Metric selector — each pill in its macro colour. */}
       <div className="-mx-1 flex gap-2 overflow-x-auto px-1">
         {METRICS.map((m) => {
           const active = m === metric;
@@ -200,7 +213,7 @@ export default async function HistoryPage({
               className={cn(
                 'shrink-0 rounded-full border px-4 py-2 text-xs font-medium transition',
                 active
-                  ? 'border-[var(--accent)] bg-[var(--accent)]/15 text-[var(--accent)]'
+                  ? METRIC_PILL_ACTIVE[m]
                   : 'border-white/10 bg-white/[0.04] text-neutral-300 hover:bg-white/[0.08]',
               )}
             >
