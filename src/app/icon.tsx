@@ -5,6 +5,8 @@ export const contentType = 'image/png';
 export const dynamic = 'force-static';
 
 export default function Icon() {
+  // 32px favicon: skip the sparkle (too small to read) and just show the
+  // gradient K on the navy bg.
   return new ImageResponse(
     <div
       style={{
@@ -13,15 +15,24 @@ export default function Icon() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: 'linear-gradient(135deg, #1e1b4b 0%, #0a0814 100%)',
-        color: '#fa5c63',
-        fontSize: 22,
-        fontWeight: 800,
-        fontFamily: 'system-ui, sans-serif',
+        background: 'radial-gradient(ellipse at top, #2c2756 0%, #0a0814 100%)',
         borderRadius: 6,
       }}
     >
-      K
+      <div
+        style={{
+          display: 'flex',
+          backgroundImage: 'linear-gradient(135deg, #9963f6 0%, #4eddf1 100%)',
+          backgroundClip: 'text',
+          color: 'transparent',
+          fontSize: 22,
+          fontWeight: 700,
+          fontFamily: 'system-ui, sans-serif',
+          letterSpacing: -1,
+        }}
+      >
+        K
+      </div>
     </div>,
     { ...size },
   );
