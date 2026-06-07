@@ -6,33 +6,22 @@ export const dynamic = 'force-static';
 
 export default function Icon192() {
   return new ImageResponse(
-    (
-      <div
-        style={{
-          width: '100%',
-          height: '100%',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          background: 'radial-gradient(ellipse at top, #2c2756 0%, #0a0814 100%)',
-        }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            backgroundImage: 'linear-gradient(135deg, #9963f6 0%, #fa5c63 100%)',
-            backgroundClip: 'text',
-            color: 'transparent',
-            fontSize: 138,
-            fontWeight: 900,
-            fontFamily: 'system-ui, sans-serif',
-            letterSpacing: -4,
-          }}
-        >
-          K
-        </div>
-      </div>
-    ),
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'radial-gradient(ellipse 80% 60% at 50% 0%, #1e1b4b 0%, #0a0814 100%)',
+        color: '#fa5c63',
+        fontSize: 132,
+        fontWeight: 800,
+        fontFamily: 'system-ui, sans-serif',
+      }}
+    >
+      K
+    </div>,
     { ...size },
   );
 }
