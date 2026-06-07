@@ -1,10 +1,13 @@
 import { ImageResponse } from 'next/og';
+import { loadInterBold } from '@/lib/icon-font';
 
 export const size = { width: 512, height: 512 };
 export const contentType = 'image/png';
 export const dynamic = 'force-static';
 
 export default function Icon512() {
+  const interBold = loadInterBold();
+
   return new ImageResponse(
     <div
       style={{
@@ -18,10 +21,10 @@ export default function Icon512() {
       }}
     >
       <svg
-        width={74}
-        height={74}
+        width={78}
+        height={78}
         viewBox="-12 -12 24 24"
-        style={{ position: 'absolute', top: 91, right: 102 }}
+        style={{ position: 'absolute', top: 127, right: 68 }}
       >
         <path
           d="M0,-11 L2.5,-2.5 L11,0 L2.5,2.5 L0,11 L-2.5,2.5 L-11,0 L-2.5,-2.5 Z"
@@ -36,13 +39,16 @@ export default function Icon512() {
           color: 'transparent',
           fontSize: 370,
           fontWeight: 700,
-          fontFamily: 'system-ui, sans-serif',
+          fontFamily: 'Inter',
           letterSpacing: -8,
         }}
       >
         K
       </div>
     </div>,
-    { ...size },
+    {
+      ...size,
+      fonts: [{ name: 'Inter', data: interBold, weight: 700, style: 'normal' }],
+    },
   );
 }

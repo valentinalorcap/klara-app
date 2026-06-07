@@ -1,10 +1,13 @@
 import { ImageResponse } from 'next/og';
+import { loadInterBold } from '@/lib/icon-font';
 
 export const size = { width: 180, height: 180 };
 export const contentType = 'image/png';
 export const dynamic = 'force-static';
 
 export default function AppleIcon() {
+  const interBold = loadInterBold();
+
   return new ImageResponse(
     <div
       style={{
@@ -18,10 +21,10 @@ export default function AppleIcon() {
       }}
     >
       <svg
-        width={26}
-        height={26}
+        width={28}
+        height={28}
         viewBox="-12 -12 24 24"
-        style={{ position: 'absolute', top: 32, right: 36 }}
+        style={{ position: 'absolute', top: 45, right: 24 }}
       >
         <path
           d="M0,-11 L2.5,-2.5 L11,0 L2.5,2.5 L0,11 L-2.5,2.5 L-11,0 L-2.5,-2.5 Z"
@@ -36,13 +39,16 @@ export default function AppleIcon() {
           color: 'transparent',
           fontSize: 130,
           fontWeight: 700,
-          fontFamily: 'system-ui, sans-serif',
+          fontFamily: 'Inter',
           letterSpacing: -3,
         }}
       >
         K
       </div>
     </div>,
-    { ...size },
+    {
+      ...size,
+      fonts: [{ name: 'Inter', data: interBold, weight: 700, style: 'normal' }],
+    },
   );
 }

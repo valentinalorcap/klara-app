@@ -1,10 +1,13 @@
 import { ImageResponse } from 'next/og';
+import { loadInterBold } from '@/lib/icon-font';
 
 export const size = { width: 32, height: 32 };
 export const contentType = 'image/png';
 export const dynamic = 'force-static';
 
 export default function Icon() {
+  const interBold = loadInterBold();
+
   // 32px favicon: skip the sparkle (too small to read) and just show the
   // gradient K on the navy bg.
   return new ImageResponse(
@@ -27,13 +30,16 @@ export default function Icon() {
           color: 'transparent',
           fontSize: 22,
           fontWeight: 700,
-          fontFamily: 'system-ui, sans-serif',
+          fontFamily: 'Inter',
           letterSpacing: -1,
         }}
       >
         K
       </div>
     </div>,
-    { ...size },
+    {
+      ...size,
+      fonts: [{ name: 'Inter', data: interBold, weight: 700, style: 'normal' }],
+    },
   );
 }
