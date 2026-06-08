@@ -17,6 +17,13 @@ export const productInputSchema = z.object({
     .union([z.literal(''), z.coerce.number().min(1).max(2000)])
     .optional()
     .transform((v) => (v === '' || v === undefined ? undefined : v)),
+  // Carried through from the scan flow (Claude's pick). Not user-edited; the
+  // render-time resolver re-validates against the palette, so accept any string.
+  icon: z
+    .string()
+    .trim()
+    .optional()
+    .transform((v) => (v ? v : undefined)),
 });
 
 export type ProductInput = z.infer<typeof productInputSchema>;

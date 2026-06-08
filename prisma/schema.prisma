@@ -92,6 +92,11 @@ model Product {
   name  String
   brand String?
 
+  /// Iconify icon name from the curated palette (e.g. "tabler:egg").
+  /// Set by Claude during label scan; null products fall back to a
+  /// keyword map / generic icon at render time. See src/lib/productIcons.ts.
+  icon String?
+
   kcalPer100g    Float
   proteinPer100g Float
   carbsPer100g   Float

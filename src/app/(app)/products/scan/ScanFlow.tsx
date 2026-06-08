@@ -123,6 +123,7 @@ export function ScanFlow() {
             carbsPer100g: extracted.carbsPer100g,
             fatPer100g: extracted.fatPer100g,
             suggestedPortionGrams: extracted.suggestedPortionGrams ?? null,
+            icon: extracted.icon ?? null,
           }}
         />
       </div>
