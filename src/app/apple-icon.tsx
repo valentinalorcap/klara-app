@@ -17,7 +17,7 @@ export default function AppleIcon() {
         position: 'relative',
         alignItems: 'center',
         justifyContent: 'center',
-        background: 'radial-gradient(ellipse at top, #2c2756 0%, #0a0814 100%)',
+        background: 'radial-gradient(ellipse at top, #1a1338 0%, #050308 100%)',
       }}
     >
       <svg
