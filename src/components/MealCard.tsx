@@ -5,8 +5,10 @@ import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Star, MoreVertical, Pencil, Trash2 } from 'lucide-react';
 import { GlassCard } from './GlassCard';
+import { ProductIcon } from './ProductIcon';
 import { toggleFavorite, deleteMeal } from '@/app/(app)/today/actions';
 import { MEAL_TYPE_LABELS, type MealType, entryMacros, sumEntries } from '@/lib/meals';
+import { mealIconName } from '@/lib/productIcons';
 import { cn } from '@/lib/utils';
 
 export type MealCardEntry = {
@@ -83,13 +85,29 @@ export function MealCard({
       onClick={() => setExpanded((v) => !v)}
     >
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <p className="text-[10px] font-medium tracking-wider text-[var(--accent)] uppercase">
-            {MEAL_TYPE_LABELS[meal.type]}
-          </p>
-          {meal.name ? (
-            <h3 className="mt-0.5 truncate text-sm font-semibold text-white">{meal.name}</h3>
-          ) : null}
+        <div className="flex min-w-0 flex-1 gap-3">
+          <span className="mt-4 flex h-12 w-12 shrink-0 items-center justify-center rounded-[15px] border border-white/10 bg-white/[0.06] text-[var(--accent)]">
+            <ProductIcon name={mealIconName(meal)} size={26} />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] font-medium tracking-wider text-[var(--accent)] uppercase">
+              {MEAL_TYPE_LABELS[meal.type]}
+            </p>
+            {meal.name ? (
+              <h3 className="mt-0.5 truncate text-sm font-semibold text-white">{meal.name}</h3>
+            ) : null}
+            <p className="mt-2 text-sm font-medium whitespace-nowrap text-white tabular-nums">
+              {Math.round(totals.kcal)}
+              <span className="text-neutral-400"> kcal</span>
+              <span className="mx-2 text-neutral-500">·</span>
+              <span className="text-neutral-400">P </span>
+              {totals.protein.toFixed(0)}g<span className="mx-1.5 text-neutral-500">·</span>
+              <span className="text-neutral-400">C </span>
+              {totals.carbs.toFixed(0)}g<span className="mx-1.5 text-neutral-500">·</span>
+              <span className="text-neutral-400">F </span>
+              {totals.fat.toFixed(0)}g
+            </p>
+          </div>
         </div>
         <div className="flex shrink-0 items-center gap-1">
           <IconButton
@@ -136,18 +154,6 @@ export function MealCard({
           ) : null}
         </div>
       </div>
-
-      <p className="mt-2 text-sm font-medium whitespace-nowrap text-white tabular-nums">
-        {Math.round(totals.kcal)}
-        <span className="text-neutral-400"> kcal</span>
-        <span className="mx-2 text-neutral-500">·</span>
-        <span className="text-neutral-400">P </span>
-        {totals.protein.toFixed(0)}g<span className="mx-1.5 text-neutral-500">·</span>
-        <span className="text-neutral-400">C </span>
-        {totals.carbs.toFixed(0)}g<span className="mx-1.5 text-neutral-500">·</span>
-        <span className="text-neutral-400">F </span>
-        {totals.fat.toFixed(0)}g
-      </p>
 
       <AnimatePresence initial={false}>
         {expanded ? (

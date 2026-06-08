@@ -13,6 +13,7 @@ type Product = {
   carbsPer100g: number;
   fatPer100g: number;
   suggestedPortionGrams: number | null;
+  icon?: string | null;
 };
 
 export function ProductForm({
@@ -28,6 +29,9 @@ export function ProductForm({
 
   return (
     <form action={formAction} className="space-y-5">
+      {/* Carries Claude's scanned icon (or an existing product's) through
+          to the server action. Not user-editable — icons are automatic. */}
+      <input type="hidden" name="icon" defaultValue={initialValues?.icon ?? ''} />
       <Field
         label="Name"
         name="name"

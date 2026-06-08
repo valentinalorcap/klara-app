@@ -4,6 +4,7 @@ import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { EmptyTab } from '@/components/EmptyTab';
 import { GlassCard } from '@/components/GlassCard';
+import { ProductIconAvatar } from '@/components/ProductIcon';
 import { StaggerList, StaggerItem } from '@/components/StaggerList';
 
 export default async function ProductsPage() {
@@ -55,12 +56,24 @@ export default async function ProductsPage() {
                   noAnimate
                   className="p-4 transition hover:border-white/20 active:scale-[0.99]"
                 >
-                  <div className="flex items-baseline justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold text-white">{p.name}</p>
-                      {p.brand ? (
-                        <p className="truncate text-xs text-neutral-400">{p.brand}</p>
-                      ) : null}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex min-w-0 items-start gap-3">
+                      <ProductIconAvatar product={p} />
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-white">{p.name}</p>
+                        {p.brand ? (
+                          <p className="truncate text-xs text-neutral-400">{p.brand}</p>
+                        ) : null}
+                        <p className="mt-2 text-xs text-neutral-400 tabular-nums">
+                          P {p.proteinPer100g.toFixed(1)}g · C {p.carbsPer100g.toFixed(1)}g · F{' '}
+                          {p.fatPer100g.toFixed(1)}g
+                        </p>
+                        {p.suggestedPortionGrams ? (
+                          <p className="mt-1 text-xs text-[var(--accent)]">
+                            {p.suggestedPortionGrams}g per portion
+                          </p>
+                        ) : null}
+                      </div>
                     </div>
                     <div className="shrink-0 text-right">
                       <p className="text-sm font-semibold text-white tabular-nums">
@@ -69,15 +82,6 @@ export default async function ProductsPage() {
                       <p className="text-xs text-neutral-500">per 100g</p>
                     </div>
                   </div>
-                  <p className="mt-3 text-xs text-neutral-400 tabular-nums">
-                    P {p.proteinPer100g.toFixed(1)}g · C {p.carbsPer100g.toFixed(1)}g · F{' '}
-                    {p.fatPer100g.toFixed(1)}g
-                  </p>
-                  {p.suggestedPortionGrams ? (
-                    <p className="mt-1 text-xs text-[var(--accent)]">
-                      {p.suggestedPortionGrams}g per portion
-                    </p>
-                  ) : null}
                 </GlassCard>
               </Link>
             </StaggerItem>

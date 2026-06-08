@@ -7,3 +7,6 @@ coverage
 *.lock
 package-lock.json
 public
+
+# auto-generated (see scripts/gen-product-icons.mjs)
+src/lib/productIcons.generated.ts

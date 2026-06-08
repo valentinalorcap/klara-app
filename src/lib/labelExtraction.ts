@@ -1,5 +1,6 @@
 import type Anthropic from '@anthropic-ai/sdk';
 import { z } from 'zod';
+import { ICON_NAMES, isValidIcon } from './productIcons';
 
 /** Shape the AI returns after reading a nutrition label. */
 export const extractedLabelSchema = z.object({
@@ -10,6 +11,11 @@ export const extractedLabelSchema = z.object({
   carbsPer100g: z.number().min(0).max(200),
   fatPer100g: z.number().min(0).max(200),
   suggestedPortionGrams: z.number().min(1).max(2000).optional(),
+  // Drop anything off-palette so a bad pick never breaks extraction.
+  icon: z
+    .string()
+    .optional()
+    .transform((v) => (isValidIcon(v) ? v : undefined)),
 });
 
 export type ExtractedLabel = z.infer<typeof extractedLabelSchema>;
@@ -54,6 +60,12 @@ export const labelExtractionTool: Anthropic.Tool = {
         description:
           'Suggested serving size in grams or millilitres if shown on the label (e.g. "porción 150g" → 150).',
       },
+      icon: {
+        type: 'string',
+        enum: ICON_NAMES,
+        description:
+          'The icon from this list that best represents the product by its food/drink type. Pick the closest match; omit only if truly none fit.',
+      },
     },
     required: ['kcalPer100g', 'proteinPer100g', 'carbsPer100g', 'fatPer100g'],
   },
@@ -68,6 +80,7 @@ per-100g column.
 Also extract:
 - The product name and brand, if clearly visible.
 - The suggested portion size in grams or millilitres, if shown.
+- The icon that best matches the product, chosen from the allowed values of the icon field.
 
 Round to one decimal place. If a value is not visible or you are uncertain, omit it
 rather than guessing.
