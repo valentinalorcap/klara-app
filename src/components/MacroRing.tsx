@@ -30,19 +30,21 @@ export function MacroRing({
   className,
 }: MacroRingProps) {
   const hasGoal = target != null && target > 0;
+  const isReached = hasGoal && current >= target;
   const isOverflow = hasGoal && current > target;
-  // In normal mode the arc fills proportionally to current/target.
-  // In overflow mode the *background* shows that the goal is full (red,
-  // less opacity) and the *arc* shows how far past the goal the user
-  // went — overage / target, capped at one full ring.
+  // Hitting (or passing) the goal turns the ring GREEN — reaching a target
+  // should feel like a win, not a warning. Under target the arc fills
+  // proportionally; over target it shows how far past — overage / target,
+  // capped at one full ring — on a green track.
+  const reachedColor = '#34d399'; // emerald-400
   const pct = !hasGoal
     ? 0
     : isOverflow
       ? Math.min((current - target) / target, 1)
       : current / target;
   const dash = CIRCUMFERENCE * pct;
-  const trackColor = isOverflow ? 'rgba(248, 113, 113, 0.25)' : 'rgba(255,255,255,0.08)';
-  const strokeColor = isOverflow ? '#dc2626' : color;
+  const trackColor = isReached ? 'rgba(52, 211, 153, 0.25)' : 'rgba(255,255,255,0.08)';
+  const strokeColor = isReached ? reachedColor : color;
   const strokeWidth = 9;
 
   return (
@@ -90,7 +92,7 @@ export function MacroRing({
           <p
             className={cn(
               'mt-0.5 tabular-nums',
-              isOverflow ? 'text-[var(--danger)]' : 'text-neutral-500',
+              isReached ? 'text-emerald-400' : 'text-neutral-500',
               size === 'lg' ? 'text-[11px]' : 'text-[9px]',
             )}
           >
