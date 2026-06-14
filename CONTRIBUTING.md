@@ -65,13 +65,15 @@ calls them (`src/app/(app)/<route>/actions.ts`), pure logic lives in
 <optional body explaining the why — the code already shows the what>
 ```
 
-The optional scope captures **which phase** the change belongs to, so the
-git history and PR list double as a portfolio narrative:
+The optional scope is the **area of the app** the change touches, so the git
+history reads as a clear story:
 
-| Scope      | When                                                                               |
-| ---------- | ---------------------------------------------------------------------------------- |
-| `phase-N`  | Anything that ships as part of an implementation-plan phase (`feat(phase-4): ...`) |
-| (no scope) | One-off fixes or chores between phases (`fix: ...`, `chore: ...`)                  |
+| Scope      | When                                                             |
+| ---------- | ---------------------------------------------------------------- |
+| area       | The feature/area touched — `today`, `icons`, `chat`, `scan`, …   |
+| (no scope) | Cross-cutting one-off fixes or chores (`fix: ...`, `chore: ...`) |
+
+(Pre-1.0 used `phase-N` scopes for the build phases; post-release, use area scopes.)
 
 | Type       | When                                         |
 | ---------- | -------------------------------------------- |
@@ -94,7 +96,7 @@ Rules:
 Good:
 
 ```
-feat(phase-5): add daily goals and macro rings
+feat(today): add day-by-day navigation
 fix: prevent meal delete from removing the favorite
 refactor: extract macros calc into a pure helper
 chore: bump prisma to 6.20.0
@@ -104,14 +106,13 @@ Bad: `WIP`, `update files`, `bug fix`, `arreglo`.
 
 ## Branches
 
-Name: `<type>/<scope-or-slug>` — lowercase with dashes. Phase-scoped
-branches mirror the commits.
+Name: `<type>/<short-slug>` — lowercase with dashes.
 
-| Example                     | Type          |
-| --------------------------- | ------------- |
-| `feat/phase-4-meal-logging` | phase feature |
-| `fix/dropdown-overflow`     | bug fix       |
-| `chore/upgrade-next`        | maintenance   |
+| Example                 | Type        |
+| ----------------------- | ----------- |
+| `feat/day-navigation`   | feature     |
+| `fix/dropdown-overflow` | bug fix     |
+| `chore/upgrade-next`    | maintenance |
 
 Branches are deleted automatically on merge (configured at the repo
 level). No need to delete by hand.
@@ -120,13 +121,9 @@ level). No need to delete by hand.
 
 Title: same Conventional-Commit shape as the commit.
 
-### Labels and milestones
+### Labels
 
-Before opening a PR (or right after, before merge), set the metadata.
-This is what makes the PR list double as a portfolio: anyone landing
-on `/pulls` or `/milestones` can read the progress at a glance.
-
-**Labels** — pick exactly one type label per PR:
+Pick exactly one type label per PR — it keeps the `/pulls` list readable at a glance:
 
 | Label     | When                                             |
 | --------- | ------------------------------------------------ |
@@ -136,17 +133,23 @@ on `/pulls` or `/milestones` can read the progress at a glance.
 | `chore`   | Tooling, deps, internal cleanup                  |
 | `docs`    | Documentation only                               |
 
-**Milestone** — the phase this PR ships under (`Phase 4`, `Phase 5`, …).
-Sub-phase PRs (`Phase 3.5`, `Phase 2.1`, …) attach to the parent phase
-milestone, with the sub-phase reflected in the PR title and commit
-scope. Close the milestone right after the last PR for that phase
-merges.
+```
+gh pr edit <num> --add-label feature
+```
 
-CLI shortcuts:
+### Releases
+
+The app shipped as **v1.0.0** (the initial 11-phase build). Past 1.0 there are
+no phases or per-version milestones — work is continuous, pulled from the
+backlog. **Vercel deploys every merge to `main` automatically**, so that's the
+real shipping; tags/Releases are just an organizational record.
+
+Cut a tagged GitHub Release now and then — when something worth naming
+accumulates, **not per PR** — following SemVer (`feat` → minor, `fix`/`polish`
+→ patch):
 
 ```
-gh pr edit <num> --add-label feature --milestone "Phase 6"
-gh api repos/:owner/:repo/milestones -X POST -f title="Phase 7"
+gh release create v1.1.0 --target main --generate-notes
 ```
 
 Body — four short sections:
@@ -235,7 +238,7 @@ A PR is ready to merge when:
 - [ ] If the change is visual, before/after screenshots are in the PR body.
 - [ ] Pure logic that earns it has a Vitest test. The prompt builders are
       the bar: small, deterministic, fast.
-- [ ] The PR has exactly one type label and the right phase milestone.
+- [ ] The PR has exactly one type label.
 - [ ] Anything deliberately deferred is captured in my backlog with a
       `Why defer` note — not as a TODO comment in the code.
 - [ ] No `console.log`, no commented-out blocks, no dead exports.
