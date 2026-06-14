@@ -40,7 +40,11 @@ export function HistoryCalendar({
           const cellInner = (
             <div className="relative mx-auto flex h-9 w-9 items-center justify-center">
               {showRing ? (
-                <DayRing pct={cell.pct} isOver={cell.status === 'over'} accentColor={accentColor} />
+                <DayRing
+                  pct={cell.pct}
+                  isOver={cell.status === 'over'}
+                  accentColor={cell.color ?? accentColor}
+                />
               ) : (
                 <div
                   className={cn(

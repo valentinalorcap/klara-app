@@ -8,6 +8,7 @@ import { MealCard } from '@/components/MealCard';
 import { MacroRing, MACRO_COLORS } from '@/components/MacroRing';
 import { KlaraTakeCard } from '@/components/KlaraTakeCard';
 import { sumEntries } from '@/lib/meals';
+import { dayScore } from '@/lib/dayScore';
 
 type Params = { date: string };
 
@@ -70,6 +71,14 @@ export default async function HistoryDayPage({ params }: { params: Promise<Param
   ]);
 
   const totals = sumEntries(meals.flatMap((m) => m.entries));
+  const score = meals.length
+    ? dayScore(totals, {
+        dailyKcalGoal: user?.dailyKcalGoal ?? null,
+        dailyProteinGoal: user?.dailyProteinGoal ?? null,
+        dailyCarbsGoal: user?.dailyCarbsGoal ?? null,
+        dailyFatGoal: user?.dailyFatGoal ?? null,
+      })
+    : null;
   const latestEval =
     meals
       .map((m) => m.evaluation)
@@ -94,7 +103,21 @@ export default async function HistoryDayPage({ params }: { params: Promise<Param
       </header>
 
       <GlassCard className="p-6">
-        <p className="text-xs font-medium tracking-wider text-neutral-400 uppercase">Totals</p>
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-xs font-medium tracking-wider text-neutral-400 uppercase">Totals</p>
+          {score ? (
+            <span
+              className="rounded-full px-2.5 py-1 text-xs font-semibold"
+              style={{
+                color: score.color,
+                backgroundColor: `${score.color}22`,
+                border: `1px solid ${score.color}55`,
+              }}
+            >
+              Score {score.score} · {score.label}
+            </span>
+          ) : null}
+        </div>
         <div className="mt-2 flex justify-center">
           <div className="w-36">
             <MacroRing

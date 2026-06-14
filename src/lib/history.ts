@@ -1,9 +1,10 @@
 import type { MacroSum } from './evaluations';
 
-/** Which macro the history view is colouring/charting against. */
-export type Metric = 'kcal' | 'protein' | 'carbs' | 'fat';
+/** Which metric the history view is colouring/charting against. `score` is
+ *  the composite day-quality score (see lib/dayScore.ts). */
+export type Metric = 'kcal' | 'protein' | 'carbs' | 'fat' | 'score';
 
-export const METRICS: Metric[] = ['kcal', 'protein', 'carbs', 'fat'];
+export const METRICS: Metric[] = ['kcal', 'protein', 'carbs', 'fat', 'score'];
 
 /** Short label for a metric (kcal · P · C · F style). */
 export function metricShortLabel(metric: Metric): string {
@@ -16,12 +17,16 @@ export function metricShortLabel(metric: Metric): string {
       return 'C';
     case 'fat':
       return 'F';
+    case 'score':
+      return 'Score';
   }
 }
 
 /** Full lower-case unit suffix (" kcal" or "g"). */
 export function metricUnit(metric: Metric): string {
-  return metric === 'kcal' ? ' kcal' : 'g';
+  if (metric === 'kcal') return ' kcal';
+  if (metric === 'score') return '';
+  return 'g';
 }
 
 /** Read the value for `metric` out of a meal/day totals object. */
@@ -35,6 +40,8 @@ export function valueFor(totals: MacroSum, metric: Metric): number {
       return totals.carbs;
     case 'fat':
       return totals.fat;
+    case 'score':
+      return 0; // score is computed via lib/dayScore, not read from totals here
   }
 }
 
@@ -57,6 +64,8 @@ export function targetFor(
       return goals.dailyCarbsGoal;
     case 'fat':
       return goals.dailyFatGoal;
+    case 'score':
+      return null; // score has no single goal field
   }
 }
 
@@ -98,6 +107,10 @@ export type CalendarDay = DaySummary & {
   isToday: boolean;
   /** Actual / target for the currently selected metric. 0 if no data or no goal. */
   pct: number;
+  /** The selected metric's value for the day (the score in score mode); 0 if none. */
+  value: number;
+  /** Per-day ring colour (score mode). Falls back to the metric colour otherwise. */
+  color?: string;
 };
 
 /** Pad a number as 2 digits. */
