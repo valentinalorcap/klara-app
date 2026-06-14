@@ -87,3 +87,60 @@ export function isoDate(date: Date): string {
   const d = String(date.getDate()).padStart(2, '0');
   return `${y}-${m}-${d}`;
 }
+
+/** True for a well-formed `YYYY-MM-DD` day key. */
+export function isDateKey(value: unknown): value is string {
+  return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value);
+}
+
+/**
+ * Shift a `YYYY-MM-DD` key by `days`, in UTC so it never drifts across DST.
+ * Day keys are calendar dates, so all math is done at UTC midnight.
+ */
+export function shiftDay(dateKey: string, days: number): string {
+  const [y, m, d] = dateKey.split('-').map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  dt.setUTCDate(dt.getUTCDate() + days);
+  const yy = dt.getUTCFullYear();
+  const mm = String(dt.getUTCMonth() + 1).padStart(2, '0');
+  const dd = String(dt.getUTCDate()).padStart(2, '0');
+  return `${yy}-${mm}-${dd}`;
+}
+
+const WEEKDAY_NAMES = [
+  'Sunday',
+  'Monday',
+  'Tuesday',
+  'Wednesday',
+  'Thursday',
+  'Friday',
+  'Saturday',
+];
+const MONTH_NAMES = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+];
+
+/** Human label for a day key, e.g. "Friday, June 12" (parsed in UTC). */
+export function formatDayLabel(dateKey: string): string {
+  const [y, m, d] = dateKey.split('-').map(Number);
+  const weekday = WEEKDAY_NAMES[new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
+  return `${weekday}, ${MONTH_NAMES[m - 1]} ${d}`;
+}
+
+/** Split day-key parts for a two-line header: weekday + "Month D". */
+export function formatDayParts(dateKey: string): { weekday: string; monthDay: string } {
+  const [y, m, d] = dateKey.split('-').map(Number);
+  const weekday = WEEKDAY_NAMES[new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
+  return { weekday, monthDay: `${MONTH_NAMES[m - 1]} ${d}` };
+}

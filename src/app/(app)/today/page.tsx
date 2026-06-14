@@ -7,17 +7,29 @@ import { MealCard } from '@/components/MealCard';
 import { MacroRing, MACRO_COLORS } from '@/components/MacroRing';
 import { EvalPoller } from '@/components/EvalPoller';
 import { KlaraTakeCard } from '@/components/KlaraTakeCard';
+import { DayNav } from '@/components/DayNav';
+import { CopyDayButton } from '@/components/CopyDayButton';
 import { EvalStatus } from '@prisma/client';
-import { isoDate, sumEntries } from '@/lib/meals';
+import { isoDate, isDateKey, formatDayLabel, sumEntries } from '@/lib/meals';
 import { hasAnyGoal } from '@/lib/goals';
 
-export default async function TodayPage() {
+export default async function TodayPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ date?: string }>;
+}) {
   const session = await auth();
   const userId = session!.user.id;
   const firstName = session?.user?.name?.split(' ')[0] ?? 'friend';
 
-  const dayKey = isoDate(new Date());
-  const dayDate = new Date(dayKey + 'T00:00:00Z');
+  const { date } = await searchParams;
+  const todayKey = isoDate(new Date());
+  const dateKey = isDateKey(date) ? date : todayKey;
+  const isToday = dateKey === todayKey;
+  const isPast = dateKey < todayKey;
+  const dayDate = new Date(dateKey + 'T00:00:00Z');
+  const returnTo = isToday ? '/today' : `/today?date=${dateKey}`;
+  const newMealHref = isToday ? '/today/new' : `/today/new?date=${dateKey}`;
 
   const [user, meals] = await Promise.all([
     prisma.user.findUnique({
@@ -49,50 +61,34 @@ export default async function TodayPage() {
   const allEntries = meals.flatMap((m) => m.entries);
   const dayTotals = sumEntries(allEntries);
   const hasPendingEvals = meals.some((m) => m.evaluation?.status === EvalStatus.PENDING);
-  // Pick the evaluation that was most recently touched, not the eval of
-  // the most recent meal. Editing an older meal bumps its eval back to
-  // PENDING with a fresh updatedAt — that's the take the user should see
-  // (skeleton → new take), not the stale DONE take of the newest meal.
   const latestEval =
     meals
       .map((m) => m.evaluation)
       .filter((e): e is NonNullable<typeof e> => e !== null)
       .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime())[0] ?? null;
 
-  const today = new Date().toLocaleDateString('en-US', {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-  });
-
   return (
     <main className="space-y-5 px-6 py-10">
-      <header className="flex items-start justify-between">
-        <div>
-          <p className="text-sm text-neutral-400">{today}</p>
-          <h1 className="mt-1 text-2xl font-bold tracking-tight text-white">Hi {firstName} 👋</h1>
+      <header className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold tracking-tight text-white">Hi {firstName} 👋</h1>
+          <div className="flex items-center gap-2">
+            {isPast ? <CopyDayButton dateKey={dateKey} /> : null}
+            <Link
+              href="/settings"
+              aria-label="Settings"
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.06] text-neutral-300 backdrop-blur-xl transition hover:bg-white/10"
+            >
+              <Settings size={16} />
+            </Link>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Link
-            href="/today/new"
-            aria-label="Log a meal"
-            className="flex h-11 w-11 items-center justify-center rounded-full bg-[var(--accent)] text-white shadow-[0_8px_24px_-8px_var(--accent-glow)] transition hover:bg-[var(--accent-hover)] active:scale-95"
-          >
-            <Plus size={20} />
-          </Link>
-          <Link
-            href="/settings"
-            aria-label="Settings"
-            className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.06] text-neutral-300 backdrop-blur-xl transition hover:bg-white/10"
-          >
-            <Settings size={16} />
-          </Link>
-        </div>
+        <DayNav dateKey={dateKey} todayKey={todayKey} />
       </header>
 
       <GlassCard className="p-6">
         <p className="text-xs font-medium tracking-wider text-neutral-400 uppercase">
-          Today so far
+          {isToday ? 'Today so far' : formatDayLabel(dateKey)}
         </p>
 
         <div className="mt-2 flex justify-center">
@@ -148,6 +144,14 @@ export default async function TodayPage() {
         ) : null}
       </GlassCard>
 
+      <Link
+        href={newMealHref}
+        className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--accent)] px-4 py-3.5 text-sm font-semibold text-white shadow-[0_8px_24px_-8px_var(--accent-glow)] transition hover:bg-[var(--accent-hover)] active:scale-[0.98]"
+      >
+        <Plus size={18} />
+        Add meals
+      </Link>
+
       <EvalPoller hasPending={hasPendingEvals} />
 
       {latestEval ? (
@@ -164,14 +168,17 @@ export default async function TodayPage() {
 
       {meals.length === 0 ? (
         <GlassCard className="p-8 text-center">
-          <p className="text-sm text-neutral-300">No meals logged yet.</p>
-          <p className="mt-1 text-xs text-neutral-500">Tap the + above to log your first one.</p>
+          <p className="text-sm text-neutral-300">
+            {isToday ? 'No meals logged yet.' : 'No meals logged for this day.'}
+          </p>
+          <p className="mt-1 text-xs text-neutral-500">Tap “Add meals” above to log one.</p>
         </GlassCard>
       ) : (
         <div className="space-y-3">
           {meals.map((m) => (
             <MealCard
               key={m.id}
+              returnTo={returnTo}
               meal={{
                 id: m.id,
                 type: m.type,
