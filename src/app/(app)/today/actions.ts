@@ -6,7 +6,7 @@ import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
-import { createMealInputSchema, type CreateMealInput } from '@/lib/meals';
+import { createMealInputSchema, type CreateMealInput, isoDate, isDateKey } from '@/lib/meals';
 import { evaluateMealById, markEvaluationPending } from '@/lib/evaluations.server';
 import { estimateMealFromText } from '@/lib/freeTextEstimation.server';
 import type { EstimationResult } from '@/lib/freeTextEstimation';
@@ -53,11 +53,13 @@ function flatFirstError(error: z.ZodError): string {
 
 const ALLOWED_REDIRECTS = ['/today', '/library', '/history'] as const;
 const HISTORY_DAY_PATTERN = /^\/history\/\d{4}-\d{2}-\d{2}$/;
+const TODAY_DAY_PATTERN = /^\/today\?date=\d{4}-\d{2}-\d{2}$/;
 
 function safeReturnTo(returnTo: unknown): string {
   if (typeof returnTo !== 'string') return '/today';
   if ((ALLOWED_REDIRECTS as readonly string[]).includes(returnTo)) return returnTo;
   if (HISTORY_DAY_PATTERN.test(returnTo)) return returnTo;
+  if (TODAY_DAY_PATTERN.test(returnTo)) return returnTo;
   return '/today';
 }
 
@@ -93,7 +95,7 @@ const createMealWithSourceSchema = createMealInputSchema.extend({
 });
 
 /** Create a full meal — type + optional name + entries — in one shot. */
-export async function createMeal(input: unknown): Promise<ActionResult> {
+export async function createMeal(input: unknown, returnTo?: string): Promise<ActionResult> {
   const userId = await requireUserId();
   const parsed = createMealWithSourceSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: flatFirstError(parsed.error) };
@@ -146,7 +148,7 @@ export async function createMeal(input: unknown): Promise<ActionResult> {
     });
   }
   revalidatePath('/today');
-  redirect('/today');
+  redirect(safeReturnTo(returnTo));
 }
 
 /** Replace a meal's metadata + entries atomically. */
@@ -266,6 +268,76 @@ export async function createMealBatch(input: unknown): Promise<ActionResult> {
   );
 
   const lastMeal = created[created.length - 1];
+  if (user && lastMeal) {
+    await markEvaluationPending(lastMeal.id, user.defaultEvalTone, userId);
+    after(async () => {
+      await evaluateMealById(lastMeal.id);
+      revalidatePath('/today');
+    });
+  }
+
+  revalidatePath('/today');
+  redirect('/today');
+}
+
+/**
+ * Replace today with the meals logged on `sourceDateKey`: clears today's
+ * meals, then copies the source day in as fresh logs (new snapshots, not
+ * favorites). Used by "Copy this day to today" when viewing a past day.
+ */
+export async function copyDayToToday(sourceDateKey: unknown): Promise<ActionResult> {
+  const userId = await requireUserId();
+  if (!isDateKey(sourceDateKey)) return { ok: false, error: 'Invalid date.' };
+
+  const todayKey = isoDate(new Date());
+  if (sourceDateKey === todayKey) return { ok: false, error: "That's already today." };
+
+  const meals = await prisma.meal.findMany({
+    where: { userId, date: new Date(sourceDateKey + 'T00:00:00Z') },
+    include: { entries: true },
+    orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+  });
+  if (meals.length === 0) return { ok: false, error: 'No meals to copy from that day.' };
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { defaultEvalTone: true },
+  });
+
+  const todayDate = new Date(todayKey + 'T00:00:00Z');
+  const batchId = crypto.randomUUID();
+  // "Copy day" REPLACES today: wipe whatever is logged today, then copy the
+  // source day in — atomically, so a failure can't leave today half-cleared.
+  const lastMeal = await prisma.$transaction(async (tx) => {
+    await tx.meal.deleteMany({ where: { userId, date: todayDate } });
+    let last: { id: string } | null = null;
+    for (const m of meals) {
+      last = await tx.meal.create({
+        data: {
+          userId,
+          batchId,
+          date: todayDate,
+          type: m.type,
+          name: m.name,
+          entries: {
+            create: m.entries.map((e) => ({
+              name: e.name,
+              grams: e.grams,
+              kcalPer100g: e.kcalPer100g,
+              proteinPer100g: e.proteinPer100g,
+              carbsPer100g: e.carbsPer100g,
+              fatPer100g: e.fatPer100g,
+              productId: e.productId,
+              recipeId: e.recipeId,
+            })),
+          },
+        },
+        select: { id: true },
+      });
+    }
+    return last;
+  });
+
   if (user && lastMeal) {
     await markEvaluationPending(lastMeal.id, user.defaultEvalTone, userId);
     after(async () => {

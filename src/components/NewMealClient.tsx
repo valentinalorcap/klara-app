@@ -9,11 +9,15 @@ import { type LibraryItem } from './IngredientPicker';
 export function NewMealClient({
   items,
   favorites,
+  targetDate,
 }: {
   items: LibraryItem[];
   favorites: FavoriteMeal[];
+  /** When set, the new meal attaches to this day (a navigated past/future day). */
+  targetDate?: string;
 }) {
   const [favoritesOpen, setFavoritesOpen] = useState(false);
+  const returnTo = targetDate ? `/today?date=${targetDate}` : undefined;
 
   return (
     <>
@@ -42,6 +46,8 @@ export function NewMealClient({
           items={items}
           favorites={favorites}
           hideFavoritesButton
+          defaultDate={targetDate}
+          returnTo={returnTo}
           controlledFavoritesOpen={favoritesOpen}
           onCloseFavorites={() => setFavoritesOpen(false)}
         />

@@ -80,6 +80,9 @@ export type MealInitialValues = {
    * used by the describe-in-text flow to preload the AI estimate.
    */
   mealId?: string;
+  /** The meal's own day (`YYYY-MM-DD`). On edit, preserved so saving never
+   *  moves the meal to today. */
+  date?: string;
   type: MealType;
   name: string | null;
   entries: {
@@ -115,6 +118,7 @@ export function MealForm({
   favorites,
   initial,
   returnTo,
+  defaultDate,
   onAddToBatch,
   submitLabel,
   cancelHref,
@@ -125,8 +129,10 @@ export function MealForm({
   items: LibraryItem[];
   favorites: FavoriteMeal[];
   initial?: MealInitialValues;
-  /** Where the form should redirect after a successful save (edit mode only). */
+  /** Where the form should redirect after a successful save. */
   returnTo?: string;
+  /** Day (`YYYY-MM-DD`) a NEW meal attaches to. Defaults to today. */
+  defaultDate?: string;
   /**
    * When set, the submit button stages this meal into a local batch
    * instead of calling createMeal — used by /today/batch. The form
@@ -249,7 +255,9 @@ export function MealForm({
       return;
     }
     const payload: MealFormPayload = {
-      date: isoDate(new Date()),
+      // Edit: keep the meal's own day. New: the target day (a past day when
+      // adding from a navigated date) or today. Never silently move to today.
+      date: initial?.date ?? defaultDate ?? isoDate(new Date()),
       type,
       name: name.trim() || undefined,
       entries,
@@ -265,7 +273,7 @@ export function MealForm({
       const result =
         editMode && initial?.mealId
           ? await updateMeal(initial.mealId, payload, returnTo)
-          : await createMeal(payload);
+          : await createMeal(payload, returnTo);
       // On success the action redirects to /today; we only get here on error.
       if (result && !result.ok) setError(result.error);
     });
