@@ -8,7 +8,7 @@ import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { createMealInputSchema, type CreateMealInput, isoDate, isDateKey } from '@/lib/meals';
 import { evaluateMealById, markEvaluationPending } from '@/lib/evaluations.server';
-import { generateMealName } from '@/lib/mealName.server';
+import { generateMealName, nameFromEntries } from '@/lib/mealName.server';
 import { estimateMealFromText } from '@/lib/freeTextEstimation.server';
 import type { EstimationResult } from '@/lib/freeTextEstimation';
 import { loadMealFormData } from '@/app/(app)/today/_data';
@@ -49,6 +49,22 @@ async function requireUserId(): Promise<string> {
   const session = await auth();
   if (!session?.user?.id) throw new Error('Unauthorized');
   return session.user.id;
+}
+
+const suggestNameSchema = z
+  .array(z.object({ name: z.string().min(1).max(200), grams: z.number().positive() }))
+  .min(1)
+  .max(50);
+
+/**
+ * Suggest a short meal name from a set of (not-yet-saved) entries — used to
+ * name a meal the moment it's staged into the batch, before it's posted.
+ */
+export async function suggestMealName(entries: unknown): Promise<{ name: string }> {
+  await requireUserId();
+  const parsed = suggestNameSchema.safeParse(entries);
+  if (!parsed.success) return { name: '' };
+  return { name: await nameFromEntries(parsed.data) };
 }
 
 function flatFirstError(error: z.ZodError): string {

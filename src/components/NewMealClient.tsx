@@ -1,14 +1,17 @@
 'use client';
 
-import { useState, useCallback, useTransition } from 'react';
+import { useState, useCallback, useRef, useTransition } from 'react';
 import Link from 'next/link';
 import { Star, Trash2 } from 'lucide-react';
 import { GlassCard } from './GlassCard';
 import { MealForm, type MealFormPayload, type FavoriteMeal } from './MealForm';
 import { type LibraryItem } from './IngredientPicker';
 import { MEAL_TYPE_LABELS, sumEntries } from '@/lib/meals';
-import { createMealBatch } from '@/app/(app)/today/actions';
+import { createMealBatch, suggestMealName } from '@/app/(app)/today/actions';
 import { cn } from '@/lib/utils';
+
+/** A meal staged into the batch, with its auto-naming state. */
+type QueuedMeal = { key: string; payload: MealFormPayload; naming: boolean };
 
 /**
  * Always-multi-meal "add meals" flow. You build one meal in the form; "Add
@@ -28,12 +31,13 @@ export function NewMealClient({
 }) {
   const returnTo = targetDate ? `/today?date=${targetDate}` : undefined;
 
-  const [queue, setQueue] = useState<MealFormPayload[]>([]);
+  const [queue, setQueue] = useState<QueuedMeal[]>([]);
   const [current, setCurrent] = useState<MealFormPayload | null>(null);
   const [formKey, setFormKey] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const [favoritesOpen, setFavoritesOpen] = useState(false);
+  const keySeq = useRef(0);
 
   const onValidChange = useCallback((p: MealFormPayload | null) => setCurrent(p), []);
 
@@ -45,18 +49,39 @@ export function NewMealClient({
       setError('Add at least one ingredient before adding another meal.');
       return;
     }
-    setQueue((prev) => [...prev, current]);
+    const payload = current;
+    const key = `q-${keySeq.current++}`;
+    const hasName = Boolean(payload.name && payload.name.trim());
+
+    setQueue((prev) => [...prev, { key, payload, naming: !hasName }]);
     setCurrent(null);
     setFormKey((k) => k + 1); // remount the form blank for the next meal
     setError(null);
+
+    // Name a freshly-built meal right away (favorites already carry a name).
+    if (!hasName) {
+      suggestMealName(payload.entries.map((e) => ({ name: e.name, grams: e.grams })))
+        .then(({ name }) =>
+          setQueue((prev) =>
+            prev.map((q) =>
+              q.key === key
+                ? { ...q, naming: false, payload: { ...q.payload, name: name || q.payload.name } }
+                : q,
+            ),
+          ),
+        )
+        .catch(() =>
+          setQueue((prev) => prev.map((q) => (q.key === key ? { ...q, naming: false } : q))),
+        );
+    }
   }
 
-  function removeFromQueue(index: number) {
-    setQueue((prev) => prev.filter((_, i) => i !== index));
+  function removeFromQueue(key: string) {
+    setQueue((prev) => prev.filter((q) => q.key !== key));
   }
 
   function saveAll() {
-    const meals = current ? [...queue, current] : queue;
+    const meals = [...queue.map((q) => q.payload), ...(current ? [current] : [])];
     if (meals.length === 0) {
       setError('Add at least one ingredient with grams.');
       return;
@@ -90,18 +115,25 @@ export function NewMealClient({
             Added · {queue.length} {queue.length === 1 ? 'meal' : 'meals'}
           </p>
           <ul className="space-y-2">
-            {queue.map((m, i) => {
-              const totals = sumEntries(m.entries);
+            {queue.map((q) => {
+              const totals = sumEntries(q.payload.entries);
               return (
                 <li
-                  key={i}
+                  key={q.key}
                   className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-3"
                 >
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold text-white">
-                      {m.name ?? MEAL_TYPE_LABELS[m.type]}
-                    </p>
-                    <p className="text-xs text-white tabular-nums">
+                    {q.naming && !q.payload.name ? (
+                      <span
+                        className="block h-4 w-32 animate-pulse rounded bg-white/15"
+                        aria-label="Naming…"
+                      />
+                    ) : (
+                      <p className="truncate text-sm font-semibold text-white">
+                        {q.payload.name ?? MEAL_TYPE_LABELS[q.payload.type]}
+                      </p>
+                    )}
+                    <p className="mt-0.5 text-xs text-white tabular-nums">
                       {Math.round(totals.kcal)}
                       <span className="text-neutral-400"> kcal</span>
                       <span className="mx-1.5 text-neutral-500">·</span>
@@ -115,7 +147,7 @@ export function NewMealClient({
                   </div>
                   <button
                     type="button"
-                    onClick={() => removeFromQueue(i)}
+                    onClick={() => removeFromQueue(q.key)}
                     aria-label="Remove meal"
                     className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-neutral-400 transition hover:text-[var(--danger)]"
                   >
