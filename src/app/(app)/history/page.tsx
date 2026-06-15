@@ -239,8 +239,8 @@ export default async function HistoryPage({
         </p>
       </header>
 
-      {/* Metric selector — each pill in its macro colour. */}
-      <div className="-mx-1 flex gap-2 overflow-x-auto px-1">
+      {/* Metric selector — full-width row of equal pills, each in its colour. */}
+      <div className="grid grid-cols-5 gap-1.5">
         {METRICS.map((m) => {
           const active = m === metric;
           return (
@@ -249,7 +249,7 @@ export default async function HistoryPage({
               scroll={false}
               href={`/history${metricQS(m)}`}
               className={cn(
-                'shrink-0 rounded-full border px-4 py-2 text-xs font-medium transition',
+                'rounded-full border px-1 py-2 text-center text-[11px] font-medium whitespace-nowrap transition',
                 active
                   ? METRIC_PILL_ACTIVE[m]
                   : 'border-white/10 bg-white/[0.04] text-neutral-300 hover:bg-white/[0.08]',
@@ -336,7 +336,7 @@ export default async function HistoryPage({
         avgValue={weekAvg}
         target={target}
         lineColor={isScore ? bandFor(weekAvg).color : METRIC_VAR[metric]}
-        unitLabel={isScore ? 'score' : metric === 'kcal' ? 'kcal/day' : 'g/day'}
+        unitLabel={isScore ? '/ 100 score' : metric === 'kcal' ? 'kcal/day' : 'g/day'}
         targetLabel={
           isScore
             ? null

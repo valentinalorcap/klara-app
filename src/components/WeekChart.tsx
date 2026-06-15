@@ -74,7 +74,7 @@ export function WeekChart({
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-[10px] font-medium tracking-wider text-neutral-400 uppercase">
-            Average
+            Weekly average
           </p>
           <p className="mt-1 text-3xl font-bold text-white tabular-nums">
             {avgValue ? avgValue.toLocaleString() : '—'}
