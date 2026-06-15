@@ -75,6 +75,21 @@ export async function updateProduct(
   redirect('/products');
 }
 
+/** Flip the "currently using" marker on a product. */
+export async function toggleProductInUse(productId: string) {
+  const userId = await requireUserId();
+  const existing = await prisma.product.findUnique({
+    where: { id: productId },
+    select: { userId: true, inUse: true },
+  });
+  if (!existing || existing.userId !== userId) return;
+  await prisma.product.update({
+    where: { id: productId },
+    data: { inUse: !existing.inUse },
+  });
+  revalidatePath('/products');
+}
+
 export async function deleteProduct(productId: string) {
   const userId = await requireUserId();
   const existing = await prisma.product.findUnique({ where: { id: productId } });
