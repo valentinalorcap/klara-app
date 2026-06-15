@@ -5,7 +5,6 @@ import { prisma } from '@/lib/prisma';
 import { GlassCard } from '@/components/GlassCard';
 import { HistoryCalendar } from '@/components/HistoryCalendar';
 import { WeekChart } from '@/components/WeekChart';
-import { MacroRing, MACRO_COLORS } from '@/components/MacroRing';
 import {
   buildMonthGrid,
   categorizeStatus,
@@ -300,43 +299,11 @@ export default async function HistoryPage({
             />
           </GlassCard>
 
-          <GlassCard className="grid aspect-square grid-cols-2 gap-1 p-3">
-            <MacroRing
-              size="sm"
-              current={sel.kcal}
-              target={goals.dailyKcalGoal}
-              color={MACRO_COLORS.kcal}
-              label="kcal"
-              valueText={Math.round(sel.kcal).toString()}
-              className="mx-auto max-w-[5rem]"
-            />
-            <MacroRing
-              size="sm"
-              current={sel.protein}
-              target={goals.dailyProteinGoal}
-              color={MACRO_COLORS.protein}
-              label="P"
-              valueText={sel.protein.toFixed(0)}
-              className="mx-auto max-w-[5rem]"
-            />
-            <MacroRing
-              size="sm"
-              current={sel.carbs}
-              target={goals.dailyCarbsGoal}
-              color={MACRO_COLORS.carbs}
-              label="C"
-              valueText={sel.carbs.toFixed(0)}
-              className="mx-auto max-w-[5rem]"
-            />
-            <MacroRing
-              size="sm"
-              current={sel.fat}
-              target={goals.dailyFatGoal}
-              color={MACRO_COLORS.fat}
-              label="F"
-              valueText={sel.fat.toFixed(0)}
-              className="mx-auto max-w-[5rem]"
-            />
+          <GlassCard className="flex aspect-square flex-col justify-center gap-3 p-5">
+            <MacroLine label="Calories" value={sel.kcal} goal={goals.dailyKcalGoal} unit="kcal" />
+            <MacroLine label="Protein" value={sel.protein} goal={goals.dailyProteinGoal} unit="g" />
+            <MacroLine label="Carbs" value={sel.carbs} goal={goals.dailyCarbsGoal} unit="g" />
+            <MacroLine label="Fat" value={sel.fat} goal={goals.dailyFatGoal} unit="g" />
           </GlassCard>
         </div>
       </div>
@@ -395,6 +362,32 @@ export default async function HistoryPage({
         </GlassCard>
       )}
     </main>
+  );
+}
+
+/** One macro line in the selected-day summary: "Calories  820 / 1700 kcal". */
+function MacroLine({
+  label,
+  value,
+  goal,
+  unit,
+}: {
+  label: string;
+  value: number;
+  goal: number | null;
+  unit: string;
+}) {
+  return (
+    <div className="flex items-baseline justify-between gap-2">
+      <span className="text-sm text-neutral-400">{label}</span>
+      <span className="text-sm font-semibold text-white tabular-nums">
+        {Math.round(value)}
+        {goal != null ? (
+          <span className="font-normal text-neutral-500"> / {Math.round(goal)}</span>
+        ) : null}{' '}
+        <span className="text-xs font-normal text-neutral-500">{unit}</span>
+      </span>
+    </div>
   );
 }
 
