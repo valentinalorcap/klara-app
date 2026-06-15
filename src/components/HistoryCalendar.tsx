@@ -64,11 +64,7 @@ export function HistoryCalendar({
               )}
               {isSelected ? (
                 <span
-                  className="pointer-events-none absolute inset-0 rounded-full"
-                  style={{
-                    boxShadow:
-                      '0 0 0 3px rgba(153,99,246,0.18), 0 0 14px 4px rgba(153,99,246,0.45)',
-                  }}
+                  className="pointer-events-none absolute inset-1.5 rounded-full bg-[var(--accent)]"
                   aria-hidden
                 />
               ) : cell.isToday ? (
@@ -80,11 +76,13 @@ export function HistoryCalendar({
               <span
                 className={cn(
                   'relative text-xs tabular-nums',
-                  cell.isFuture
-                    ? 'text-neutral-600'
-                    : empty
-                      ? 'text-neutral-500'
-                      : 'font-semibold text-white',
+                  isSelected
+                    ? 'font-semibold text-white'
+                    : cell.isFuture
+                      ? 'text-neutral-600'
+                      : empty
+                        ? 'text-neutral-500'
+                        : 'font-semibold text-white',
                 )}
               >
                 {day}
