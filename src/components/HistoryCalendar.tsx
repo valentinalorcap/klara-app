@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { GlassCard } from './GlassCard';
-import { type CalendarDay } from '@/lib/history';
+import { type CalendarDay, weekStartFor } from '@/lib/history';
 import { cn } from '@/lib/utils';
 
 const HEADERS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
@@ -95,7 +95,7 @@ export function HistoryCalendar({
             <Link
               key={cell.date}
               scroll={false}
-              href={`/history?${selectBase}&day=${cell.date}`}
+              href={`/history?${selectBase}&day=${cell.date}&week=${weekStartFor(cell.date)}`}
               aria-label={`Select ${cell.date}`}
               onMouseDown={(e) => e.preventDefault()}
               className="block transition active:scale-95"
