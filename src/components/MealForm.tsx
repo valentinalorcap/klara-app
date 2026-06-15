@@ -16,7 +16,8 @@ import {
 } from 'lucide-react';
 import { GlassCard } from './GlassCard';
 import { type LibraryItem } from './IngredientPicker';
-import { IngredientSearch } from './IngredientSearch';
+import { DescribeMeal } from './DescribeMeal';
+import { ProductPicker } from './ProductPicker';
 import { MEAL_TYPE_OPTIONS, type MealType, sumEntries, entryMacros, isoDate } from '@/lib/meals';
 import { createMeal, updateMeal } from '@/app/(app)/today/actions';
 import type { EstimationEntry } from '@/lib/freeTextEstimation';
@@ -381,8 +382,8 @@ export function MealForm({
         />
       ) : null}
 
-      <GlassCard className="relative z-20 space-y-4 p-5">
-        {rows.length > 0 ? (
+      {rows.length > 0 ? (
+        <GlassCard className="p-5">
           <ul>
             {rows.map((row, i) => (
               <IngredientSwipeRow
@@ -394,14 +395,15 @@ export function MealForm({
               />
             ))}
           </ul>
-        ) : null}
+        </GlassCard>
+      ) : null}
 
-        <IngredientSearch
-          items={items}
-          onAddItem={addRowFromItem}
-          onAddEstimate={addRowsFromEstimate}
-          onError={setError}
-        />
+      <GlassCard className="p-5">
+        <DescribeMeal onAddEstimate={addRowsFromEstimate} onError={setError} />
+      </GlassCard>
+
+      <GlassCard className="p-5">
+        <ProductPicker items={items} onAddItem={addRowFromItem} />
       </GlassCard>
 
       <GlassCard className="space-y-3 p-5">
