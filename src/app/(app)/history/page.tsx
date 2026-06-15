@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { GlassCard } from '@/components/GlassCard';
 import { HistoryCalendar } from '@/components/HistoryCalendar';
 import { WeekChart } from '@/components/WeekChart';
+import { MacroRing, MACRO_COLORS } from '@/components/MacroRing';
 import {
   buildMonthGrid,
   categorizeStatus,
@@ -290,13 +291,26 @@ export default async function HistoryPage({
         </p>
         <div className="grid grid-cols-2 gap-3">
           <GlassCard className="flex aspect-square items-center justify-center p-4">
-            <AvgRing
-              pct={selScore ? selScore.score / 100 : 0}
-              isOver={false}
-              accentColor={selScore ? selScore.color : 'var(--macro-kcal)'}
-              valueText={selScore ? String(selScore.score) : '—'}
-              label={selScore ? selScore.label : 'score'}
-            />
+            {isScore ? (
+              <AvgRing
+                pct={selScore ? selScore.score / 100 : 0}
+                isOver={false}
+                accentColor={selScore ? selScore.color : 'var(--macro-kcal)'}
+                valueText={selScore ? String(selScore.score) : '—'}
+                label={selScore ? selScore.label : 'score'}
+              />
+            ) : (
+              <div className="w-32">
+                <MacroRing
+                  size="lg"
+                  current={valueFor(sel, metric)}
+                  target={target}
+                  color={MACRO_COLORS[metric as keyof typeof MACRO_COLORS]}
+                  label={metric === 'kcal' ? 'kcal' : `g ${METRIC_LONG[metric].toLowerCase()}`}
+                  valueText={formatValue(valueFor(sel, metric), metric)}
+                />
+              </div>
+            )}
           </GlassCard>
 
           <GlassCard className="flex aspect-square flex-col justify-center gap-3 p-5">
