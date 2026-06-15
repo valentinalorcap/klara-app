@@ -8,6 +8,7 @@ import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { createMealInputSchema, type CreateMealInput, isoDate, isDateKey } from '@/lib/meals';
 import { evaluateMealById, markEvaluationPending } from '@/lib/evaluations.server';
+import { generateMealName } from '@/lib/mealName.server';
 import { estimateMealFromText } from '@/lib/freeTextEstimation.server';
 import type { EstimationResult } from '@/lib/freeTextEstimation';
 
@@ -143,6 +144,7 @@ export async function createMeal(input: unknown, returnTo?: string): Promise<Act
   if (user) {
     await markEvaluationPending(meal.id, user.defaultEvalTone, userId);
     after(async () => {
+      await generateMealName(meal.id);
       await evaluateMealById(meal.id);
       revalidatePath('/today');
     });
@@ -204,6 +206,7 @@ export async function updateMeal(
   if (user) {
     await markEvaluationPending(mealId, user.defaultEvalTone, userId);
     after(async () => {
+      await generateMealName(mealId);
       await evaluateMealById(mealId);
       revalidatePath('/today');
     });
@@ -271,6 +274,8 @@ export async function createMealBatch(input: unknown): Promise<ActionResult> {
   if (user && lastMeal) {
     await markEvaluationPending(lastMeal.id, user.defaultEvalTone, userId);
     after(async () => {
+      // Name every meal in the batch; evaluate only the last (it sees the rest).
+      for (const m of created) await generateMealName(m.id);
       await evaluateMealById(lastMeal.id);
       revalidatePath('/today');
     });
