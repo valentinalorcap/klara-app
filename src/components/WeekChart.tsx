@@ -162,10 +162,9 @@ export function WeekChart({
                       <circle
                         cx={xFor(i)}
                         cy={yFor(v)}
-                        r={7}
-                        fill="none"
-                        stroke="var(--accent)"
-                        strokeWidth={2}
+                        r={9}
+                        fill="var(--accent)"
+                        fillOpacity={0.35}
                       />
                     ) : null}
                     <circle cx={xFor(i)} cy={yFor(v)} r={3.5} fill={lineColor} />
@@ -193,15 +192,6 @@ export function WeekChart({
               {d}
             </text>
           ))}
-
-          {keys.includes(selectedKey) ? (
-            <circle
-              cx={xFor(keys.indexOf(selectedKey))}
-              cy={CHART_H + 20}
-              r={2.5}
-              fill="var(--accent)"
-            />
-          ) : null}
         </svg>
 
         {/* "No data" sits as an overlay inside the chart area so the day

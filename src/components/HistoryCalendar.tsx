@@ -64,7 +64,11 @@ export function HistoryCalendar({
               )}
               {isSelected ? (
                 <span
-                  className="pointer-events-none absolute -inset-1 rounded-full border-2 border-[var(--accent)]"
+                  className="pointer-events-none absolute inset-0 rounded-full"
+                  style={{
+                    boxShadow:
+                      '0 0 0 3px rgba(153,99,246,0.18), 0 0 14px 4px rgba(153,99,246,0.45)',
+                  }}
                   aria-hidden
                 />
               ) : cell.isToday ? (
