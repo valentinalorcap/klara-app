@@ -300,7 +300,7 @@ export default async function HistoryPage({
           </GlassCard>
 
           <GlassCard className="flex aspect-square flex-col justify-center gap-3 p-5">
-            <MacroLine label="Calories" value={sel.kcal} goal={goals.dailyKcalGoal} unit="kcal" />
+            <MacroLine label="Calories" value={sel.kcal} goal={goals.dailyKcalGoal} unit="" />
             <MacroLine label="Protein" value={sel.protein} goal={goals.dailyProteinGoal} unit="g" />
             <MacroLine label="Carbs" value={sel.carbs} goal={goals.dailyCarbsGoal} unit="g" />
             <MacroLine label="Fat" value={sel.fat} goal={goals.dailyFatGoal} unit="g" />
@@ -378,16 +378,12 @@ function MacroLine({
   unit: string;
 }) {
   return (
-    <div className="flex items-baseline justify-between gap-2">
-      <span className="text-sm text-neutral-400">{label}</span>
-      <span className="text-sm font-semibold text-white tabular-nums">
-        {Math.round(value)}
-        {goal != null ? (
-          <span className="font-normal text-neutral-500"> / {Math.round(goal)}</span>
-        ) : null}{' '}
-        <span className="text-xs font-normal text-neutral-500">{unit}</span>
-      </span>
-    </div>
+    <p className="text-sm">
+      <span className="text-neutral-400">{label}: </span>
+      <span className="font-semibold text-white tabular-nums">{Math.round(value)}</span>
+      {goal != null ? <span className="text-neutral-500"> / {Math.round(goal)}</span> : null}
+      {unit ? <span className="text-neutral-500"> {unit}</span> : null}
+    </p>
   );
 }
 
