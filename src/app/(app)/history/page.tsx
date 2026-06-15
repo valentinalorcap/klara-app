@@ -291,13 +291,13 @@ export default async function HistoryPage({
         selectBase={selectBase}
       />
 
-      {/* Selected-day summary — score ring (left) + the four macro rings (right). */}
+      {/* Selected-day summary — one card: score ring (left) + macros (right). */}
       <div>
         <p className="mb-2 text-xs font-medium tracking-wider text-neutral-400 uppercase">
           {selectedDay === todayKey ? 'Today' : formatDayLabel(selectedDay)}
         </p>
-        <div className="grid grid-cols-2 gap-3">
-          <GlassCard className="flex aspect-square items-center justify-center p-4">
+        <GlassCard className="flex items-center gap-8 p-5">
+          <div className="shrink-0">
             {isScore ? (
               <AvgRing
                 pct={selScore ? selScore.score / 100 : 0}
@@ -318,15 +318,15 @@ export default async function HistoryPage({
                 />
               </div>
             )}
-          </GlassCard>
+          </div>
 
-          <GlassCard className="flex aspect-square flex-col justify-center gap-3 p-5">
+          <div className="flex flex-1 flex-col gap-3">
             <MacroLine label="Calories" value={sel.kcal} goal={goals.dailyKcalGoal} unit="" />
             <MacroLine label="Protein" value={sel.protein} goal={goals.dailyProteinGoal} unit="g" />
             <MacroLine label="Carbs" value={sel.carbs} goal={goals.dailyCarbsGoal} unit="g" />
             <MacroLine label="Fat" value={sel.fat} goal={goals.dailyFatGoal} unit="g" />
-          </GlassCard>
-        </div>
+          </div>
+        </GlassCard>
       </div>
 
       <WeekChart
@@ -400,12 +400,21 @@ function MacroLine({
   unit: string;
 }) {
   return (
-    <p className="text-sm">
-      <span className="text-neutral-400">{label}: </span>
-      <span className="font-semibold text-white tabular-nums">{Math.round(value)}</span>
-      {goal != null ? <span className="text-neutral-500"> / {Math.round(goal)}</span> : null}
-      {unit ? <span className="text-neutral-500"> {unit}</span> : null}
-    </p>
+    <div>
+      <p className="text-[10px] font-medium tracking-wider text-neutral-500 uppercase">{label}</p>
+      <p className="mt-0.5 text-sm whitespace-nowrap tabular-nums">
+        <span className="font-semibold text-white">{Math.round(value)}</span>
+        {goal != null ? (
+          <span className="text-neutral-500">
+            {' '}
+            / {Math.round(goal)}
+            {unit ? ` ${unit}` : ''}
+          </span>
+        ) : unit ? (
+          <span className="text-neutral-500"> {unit}</span>
+        ) : null}
+      </p>
+    </div>
   );
 }
 
