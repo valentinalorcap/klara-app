@@ -106,6 +106,11 @@ model Product {
   /// Comes from the nutrition label's "porción sugerida" / serving size.
   suggestedPortionGrams Float?
 
+  /// "Currently using" marker — the product the user is actively buying.
+  /// When free-text mentions an ambiguous food (e.g. "yogurt") and several
+  /// products match, the in-use one wins, so Klara uses its exact macros.
+  inUse Boolean @default(false)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

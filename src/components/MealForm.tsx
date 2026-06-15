@@ -1,25 +1,41 @@
 'use client';
 
-import { useState, useMemo, useTransition } from 'react';
+import { useState, useMemo, useRef, useEffect, useTransition } from 'react';
 import Link from 'next/link';
 import { motion, useMotionValue, useTransform, animate } from 'framer-motion';
-import { Trash2, Star } from 'lucide-react';
+import {
+  Trash2,
+  Star,
+  Sunrise,
+  Dumbbell,
+  Sandwich,
+  Cookie,
+  Moon,
+  Utensils,
+  type LucideIcon,
+} from 'lucide-react';
 import { GlassCard } from './GlassCard';
 import { type LibraryItem } from './IngredientPicker';
-import { IngredientSearch } from './IngredientSearch';
-import {
-  MEAL_TYPE_OPTIONS,
-  MEAL_TYPE_LABELS,
-  type MealType,
-  sumEntries,
-  entryMacros,
-  isoDate,
-} from '@/lib/meals';
+import { DescribeMeal } from './DescribeMeal';
+import { ProductPicker } from './ProductPicker';
+import { MEAL_TYPE_OPTIONS, type MealType, sumEntries, entryMacros, isoDate } from '@/lib/meals';
 import { createMeal, updateMeal } from '@/app/(app)/today/actions';
 import type { EstimationEntry } from '@/lib/freeTextEstimation';
 import { cn } from '@/lib/utils';
 
+/** Per-type icon so each meal-type chip is recognizable at a glance. */
+const MEAL_TYPE_ICONS: Record<MealType, LucideIcon> = {
+  BREAKFAST: Sunrise,
+  PREWORKOUT: Dumbbell,
+  LUNCH: Sandwich,
+  SNACK: Cookie,
+  DINNER: Moon,
+  OTHER: Utensils,
+};
+
 type IngredientRow = {
+  /** Stable per-row key so swipe state follows the row, not its index. */
+  id: string;
   name: string;
   grams: string;
   resolved: boolean;
@@ -31,8 +47,9 @@ type IngredientRow = {
   fatPer100g: number;
 };
 
-function rowFromItem(item: LibraryItem, grams: number): IngredientRow {
+function rowFromItem(item: LibraryItem, grams: number, id: string): IngredientRow {
   return {
+    id,
     name: item.name,
     grams: String(grams),
     resolved: true,
@@ -45,11 +62,16 @@ function rowFromItem(item: LibraryItem, grams: number): IngredientRow {
   };
 }
 
-function rowFromEstimate(e: EstimationEntry): IngredientRow {
+function rowFromEstimate(e: EstimationEntry, id: string): IngredientRow {
   return {
+    id,
     name: e.name,
     grams: String(Math.round(e.grams)),
     resolved: true,
+    // A free-text entry that resolved to one of the user's foods carries the
+    // link, so the saved meal entry snapshots from that product/recipe.
+    productId: e.productId,
+    recipeId: e.recipeId,
     kcalPer100g: e.kcalPer100g,
     proteinPer100g: e.proteinPer100g,
     carbsPer100g: e.carbsPer100g,
@@ -125,6 +147,8 @@ export function MealForm({
   hideFavoritesButton = false,
   controlledFavoritesOpen,
   onCloseFavorites,
+  onValidChange,
+  hideActions = false,
 }: {
   items: LibraryItem[];
   favorites: FavoriteMeal[];
@@ -152,14 +176,28 @@ export function MealForm({
   controlledFavoritesOpen?: boolean;
   /** Called when the controlled picker should close. */
   onCloseFavorites?: () => void;
+  /**
+   * Builder mode: report the current meal as a payload (or null when it has
+   * no valid entries) whenever it changes, so a parent can stage / save it.
+   * Must be referentially stable (wrap in useCallback).
+   */
+  onValidChange?: (payload: MealFormPayload | null) => void;
+  /** Hide the form's own Save/Cancel buttons — the parent renders actions. */
+  hideActions?: boolean;
 }) {
   const editMode = Boolean(initial?.mealId);
   const batchMode = Boolean(onAddToBatch);
-  const [type, setType] = useState<MealType>(initial?.type ?? 'BREAKFAST');
+  const [type, setType] = useState<MealType>(initial?.type ?? 'SNACK');
   const [name, setName] = useState(initial?.name ?? '');
+  // Monotonic row-id source for rows added at runtime. Seeded past the initial
+  // rows (which get deterministic index ids) so ids never collide, and so the
+  // ref is never read during render — initial ids stay hydration-stable.
+  const rowIdSeq = useRef(initial?.entries.length ?? 0);
+  const nextRowId = () => `row-${rowIdSeq.current++}`;
   const [rows, setRows] = useState<IngredientRow[]>(
     initial?.entries.length
-      ? initial.entries.map((e) => ({
+      ? initial.entries.map((e, i) => ({
+          id: `row-${i}`,
           name: e.name,
           grams: String(e.grams),
           resolved: true,
@@ -198,6 +236,36 @@ export function MealForm({
     [rows],
   );
 
+  // The current meal as a save-ready payload, or null when it has no valid
+  // entries. Both the Save button and the builder-mode report use this.
+  const currentPayload = useMemo<MealFormPayload | null>(() => {
+    const entries = rows
+      .filter((r) => r.resolved && r.name.trim() && Number(r.grams) > 0)
+      .map((r) => ({
+        name: r.name.trim(),
+        grams: Number(r.grams),
+        productId: r.productId,
+        recipeId: r.recipeId,
+        kcalPer100g: r.kcalPer100g,
+        proteinPer100g: r.proteinPer100g,
+        carbsPer100g: r.carbsPer100g,
+        fatPer100g: r.fatPer100g,
+      }));
+    if (entries.length === 0) return null;
+    return {
+      // Edit: keep the meal's own day. New: the target day (a navigated past/
+      // future day) or today. Never silently move a meal to today.
+      date: initial?.date ?? defaultDate ?? isoDate(new Date()),
+      type,
+      name: name.trim() || undefined,
+      entries,
+    };
+  }, [rows, type, name, initial?.date, defaultDate]);
+
+  useEffect(() => {
+    onValidChange?.(currentPayload);
+  }, [currentPayload, onValidChange]);
+
   function updateGrams(index: number, grams: string) {
     setRows((prev) => prev.map((r, i) => (i === index ? { ...r, grams } : r)));
   }
@@ -205,15 +273,16 @@ export function MealForm({
     setRows((prev) => prev.filter((_, i) => i !== index));
   }
   function addRowFromItem(item: LibraryItem, grams: number) {
-    setRows((prev) => [...prev, rowFromItem(item, grams)]);
+    setRows((prev) => [...prev, rowFromItem(item, grams, nextRowId())]);
   }
   function addRowsFromEstimate(entries: EstimationEntry[]) {
-    setRows((prev) => [...prev, ...entries.map(rowFromEstimate)]);
+    setRows((prev) => [...prev, ...entries.map((e) => rowFromEstimate(e, nextRowId()))]);
   }
 
   function importFavorite(fav: FavoriteMeal) {
     setRows(
       fav.entries.map((e) => ({
+        id: nextRowId(),
         name: e.name,
         grams: String(e.grams),
         resolved: true,
@@ -230,7 +299,7 @@ export function MealForm({
   }
 
   function resetForm() {
-    setType('BREAKFAST');
+    setType('SNACK');
     setName('');
     setRows([]);
     setError(null);
@@ -238,30 +307,11 @@ export function MealForm({
 
   function handleSubmit() {
     setError(null);
-    const entries = rows
-      .filter((r) => r.resolved && r.name.trim() && Number(r.grams) > 0)
-      .map((r) => ({
-        name: r.name.trim(),
-        grams: Number(r.grams),
-        productId: r.productId,
-        recipeId: r.recipeId,
-        kcalPer100g: r.kcalPer100g,
-        proteinPer100g: r.proteinPer100g,
-        carbsPer100g: r.carbsPer100g,
-        fatPer100g: r.fatPer100g,
-      }));
-    if (entries.length === 0) {
+    if (!currentPayload) {
       setError('Add at least one ingredient with grams.');
       return;
     }
-    const payload: MealFormPayload = {
-      // Edit: keep the meal's own day. New: the target day (a past day when
-      // adding from a navigated date) or today. Never silently move to today.
-      date: initial?.date ?? defaultDate ?? isoDate(new Date()),
-      type,
-      name: name.trim() || undefined,
-      entries,
-    };
+    const payload = currentPayload;
 
     if (onAddToBatch) {
       onAddToBatch(payload);
@@ -282,30 +332,29 @@ export function MealForm({
   return (
     <div className="space-y-5">
       <GlassCard className="space-y-3 p-5">
-        <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
-          {MEAL_TYPE_OPTIONS.map((opt) => (
-            <button
-              key={opt.value}
-              type="button"
-              onClick={() => setType(opt.value)}
-              className={cn(
-                'shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium transition',
-                type === opt.value
-                  ? 'border-[var(--accent)] bg-[var(--accent)]/15 text-[var(--accent)]'
-                  : 'border-white/10 bg-white/[0.04] text-neutral-300 hover:bg-white/[0.08]',
-              )}
-            >
-              {opt.label}
-            </button>
-          ))}
+        <div className="grid grid-cols-3 gap-2">
+          {MEAL_TYPE_OPTIONS.map((opt) => {
+            const Icon = MEAL_TYPE_ICONS[opt.value];
+            const active = type === opt.value;
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setType(opt.value)}
+                aria-pressed={active}
+                className={cn(
+                  'flex flex-col items-center justify-center gap-1 rounded-2xl border px-2 py-2.5 text-[11px] font-medium transition',
+                  active
+                    ? 'border-[var(--accent)] bg-[var(--accent)]/15 text-[var(--accent)]'
+                    : 'border-white/10 bg-white/[0.04] text-neutral-300 hover:bg-white/[0.08]',
+                )}
+              >
+                <Icon size={16} className={active ? 'text-[var(--accent)]' : 'text-neutral-400'} />
+                {opt.label}
+              </button>
+            );
+          })}
         </div>
-        <input
-          type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Name (optional)"
-          className="block w-full rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm text-white placeholder:text-neutral-500 focus:bg-white/[0.08] focus:ring-2 focus:ring-[var(--accent)]/60 focus:outline-none"
-        />
       </GlassCard>
 
       {favorites.length > 0 && !hideFavoritesButton ? (
@@ -333,12 +382,12 @@ export function MealForm({
         />
       ) : null}
 
-      <GlassCard className="relative z-20 space-y-4 p-5">
-        {rows.length > 0 ? (
+      {rows.length > 0 ? (
+        <GlassCard className="p-5">
           <ul>
             {rows.map((row, i) => (
               <IngredientSwipeRow
-                key={i}
+                key={row.id}
                 row={row}
                 isLast={i === rows.length - 1}
                 onGramsChange={(grams) => updateGrams(i, grams)}
@@ -346,14 +395,15 @@ export function MealForm({
               />
             ))}
           </ul>
-        ) : null}
+        </GlassCard>
+      ) : null}
 
-        <IngredientSearch
-          items={items}
-          onAddItem={addRowFromItem}
-          onAddEstimate={addRowsFromEstimate}
-          onError={setError}
-        />
+      <GlassCard className="p-5">
+        <DescribeMeal onAddEstimate={addRowsFromEstimate} onError={setError} />
+      </GlassCard>
+
+      <GlassCard className="p-5">
+        <ProductPicker items={items} onAddItem={addRowFromItem} />
       </GlassCard>
 
       <GlassCard className="space-y-3 p-5">
@@ -374,25 +424,27 @@ export function MealForm({
         </p>
       ) : null}
 
-      <div className="space-y-2">
-        <button
-          type="button"
-          onClick={handleSubmit}
-          disabled={pending}
-          className="w-full rounded-2xl bg-[var(--accent)] px-4 py-3.5 text-sm font-semibold text-white shadow-[0_8px_24px_-8px_var(--accent-glow)] transition hover:bg-[var(--accent-hover)] active:scale-[0.98] disabled:opacity-50"
-        >
-          {pending
-            ? 'Saving…'
-            : (submitLabel ??
-              (batchMode ? 'Add to batch' : editMode ? 'Save changes' : 'Save meal'))}
-        </button>
-        <Link
-          href={cancelHref ?? returnTo ?? '/today'}
-          className="block w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-center text-sm font-medium text-neutral-300 transition hover:bg-white/[0.08]"
-        >
-          Cancel
-        </Link>
-      </div>
+      {!hideActions ? (
+        <div className="space-y-2">
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={pending}
+            className="w-full rounded-2xl bg-[var(--accent)] px-4 py-3.5 text-sm font-semibold text-white shadow-[0_8px_24px_-8px_var(--accent-glow)] transition hover:bg-[var(--accent-hover)] active:scale-[0.98] disabled:opacity-50"
+          >
+            {pending
+              ? 'Saving…'
+              : (submitLabel ??
+                (batchMode ? 'Add to batch' : editMode ? 'Save changes' : 'Save meal'))}
+          </button>
+          <Link
+            href={cancelHref ?? returnTo ?? '/today'}
+            className="block w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-center text-sm font-medium text-neutral-300 transition hover:bg-white/[0.08]"
+          >
+            Cancel
+          </Link>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -433,48 +485,65 @@ function FavoritesPicker({
           Cancel
         </button>
       </header>
-      <ul className="flex-1 space-y-2 overflow-y-auto px-6 py-4">
-        {favorites.map((f) => {
-          const totals = f.entries.reduce(
-            (acc, e) => {
-              const factor = e.grams / 100;
-              acc.kcal += e.kcalPer100g * factor;
-              acc.protein += e.proteinPer100g * factor;
-              acc.carbs += e.carbsPer100g * factor;
-              acc.fat += e.fatPer100g * factor;
-              return acc;
-            },
-            { kcal: 0, protein: 0, carbs: 0, fat: 0 },
-          );
+      <div className="flex-1 space-y-5 overflow-y-auto px-6 py-4">
+        {MEAL_TYPE_OPTIONS.map((opt) => {
+          const group = favorites.filter((f) => f.type === opt.value);
+          if (group.length === 0) return null;
+          const Icon = MEAL_TYPE_ICONS[opt.value];
           return (
-            <li key={f.id}>
-              <button
-                type="button"
-                onClick={() => onPick(f)}
-                className="flex w-full flex-col gap-1 rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-left transition hover:border-white/20 hover:bg-white/[0.08] active:scale-[0.99]"
-              >
-                <span className="text-[10px] font-medium tracking-wider text-[var(--accent)] uppercase">
-                  {MEAL_TYPE_LABELS[f.type]}
-                </span>
-                {f.name ? (
-                  <span className="truncate text-sm font-semibold text-white">{f.name}</span>
-                ) : null}
-                <span className="text-xs text-white tabular-nums">
-                  {Math.round(totals.kcal)}
-                  <span className="text-neutral-400"> kcal</span>
-                  <span className="mx-1.5 text-neutral-500">·</span>
-                  <span className="text-neutral-400">P </span>
-                  {totals.protein.toFixed(0)}g<span className="mx-1.5 text-neutral-500">·</span>
-                  <span className="text-neutral-400">C </span>
-                  {totals.carbs.toFixed(0)}g<span className="mx-1.5 text-neutral-500">·</span>
-                  <span className="text-neutral-400">F </span>
-                  {totals.fat.toFixed(0)}g
-                </span>
-              </button>
-            </li>
+            <section key={opt.value} className="space-y-2">
+              <h3 className="flex items-center gap-1.5 text-[11px] font-semibold tracking-wider text-neutral-400 uppercase">
+                <Icon size={13} className="text-neutral-500" />
+                {opt.label}
+                <span className="text-neutral-600">· {group.length}</span>
+              </h3>
+              <ul className="space-y-2">
+                {group.map((f) => {
+                  const totals = f.entries.reduce(
+                    (acc, e) => {
+                      const factor = e.grams / 100;
+                      acc.kcal += e.kcalPer100g * factor;
+                      acc.protein += e.proteinPer100g * factor;
+                      acc.carbs += e.carbsPer100g * factor;
+                      acc.fat += e.fatPer100g * factor;
+                      return acc;
+                    },
+                    { kcal: 0, protein: 0, carbs: 0, fat: 0 },
+                  );
+                  return (
+                    <li key={f.id}>
+                      <button
+                        type="button"
+                        onClick={() => onPick(f)}
+                        className="flex w-full flex-col gap-1 rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-left transition hover:border-white/20 hover:bg-white/[0.08] active:scale-[0.99]"
+                      >
+                        {f.name ? (
+                          <span className="truncate text-sm font-semibold text-white">
+                            {f.name}
+                          </span>
+                        ) : null}
+                        <span className="text-xs text-white tabular-nums">
+                          {Math.round(totals.kcal)}
+                          <span className="text-neutral-400"> kcal</span>
+                          <span className="mx-1.5 text-neutral-500">·</span>
+                          <span className="text-neutral-400">P </span>
+                          {totals.protein.toFixed(0)}g
+                          <span className="mx-1.5 text-neutral-500">·</span>
+                          <span className="text-neutral-400">C </span>
+                          {totals.carbs.toFixed(0)}g
+                          <span className="mx-1.5 text-neutral-500">·</span>
+                          <span className="text-neutral-400">F </span>
+                          {totals.fat.toFixed(0)}g
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
           );
         })}
-      </ul>
+      </div>
     </div>
   );
 }

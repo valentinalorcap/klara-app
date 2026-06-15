@@ -5,7 +5,9 @@ import { prisma } from '@/lib/prisma';
 import { EmptyTab } from '@/components/EmptyTab';
 import { GlassCard } from '@/components/GlassCard';
 import { ProductIconAvatar } from '@/components/ProductIcon';
+import { ProductInUseToggle } from '@/components/ProductInUseToggle';
 import { StaggerList, StaggerItem } from '@/components/StaggerList';
+import { cn } from '@/lib/utils';
 
 export default async function ProductsPage() {
   const session = await auth();
@@ -51,39 +53,49 @@ export default async function ProductsPage() {
         <StaggerList className="mt-8 space-y-3">
           {products.map((p) => (
             <StaggerItem key={p.id}>
-              <Link href={`/products/${p.id}/edit`} className="block">
-                <GlassCard
-                  noAnimate
-                  className="p-4 transition hover:border-white/20 active:scale-[0.99]"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex min-w-0 items-start gap-3">
-                      <ProductIconAvatar product={p} />
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-white">{p.name}</p>
-                        {p.brand ? (
-                          <p className="truncate text-xs text-neutral-400">{p.brand}</p>
-                        ) : null}
-                        <p className="mt-2 text-xs text-neutral-400 tabular-nums">
-                          P {p.proteinPer100g.toFixed(1)}g · C {p.carbsPer100g.toFixed(1)}g · F{' '}
-                          {p.fatPer100g.toFixed(1)}g
-                        </p>
-                        {p.suggestedPortionGrams ? (
-                          <p className="mt-1 text-xs text-[var(--accent)]">
-                            {p.suggestedPortionGrams}g per portion
+              <div className="relative">
+                <Link href={`/products/${p.id}/edit`} className="block">
+                  <GlassCard
+                    noAnimate
+                    className={cn(
+                      'p-4 transition hover:border-white/20 active:scale-[0.99]',
+                      p.inUse && 'border-[var(--accent)]/30',
+                    )}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex min-w-0 items-start gap-3">
+                        <ProductIconAvatar product={p} />
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold text-white">{p.name}</p>
+                          {p.brand ? (
+                            <p className="truncate text-xs text-neutral-400">{p.brand}</p>
+                          ) : null}
+                          <p className="mt-2 text-xs text-neutral-400 tabular-nums">
+                            P {p.proteinPer100g.toFixed(1)}g · C {p.carbsPer100g.toFixed(1)}g · F{' '}
+                            {p.fatPer100g.toFixed(1)}g
                           </p>
-                        ) : null}
+                          {p.suggestedPortionGrams ? (
+                            <p className="mt-1 text-xs text-[var(--accent)]">
+                              {p.suggestedPortionGrams}g per portion
+                            </p>
+                          ) : null}
+                        </div>
+                      </div>
+                      <div className="shrink-0 text-right">
+                        <p className="text-sm font-semibold text-white tabular-nums">
+                          {Math.round(p.kcalPer100g)} kcal
+                        </p>
+                        <p className="text-xs text-neutral-500">per 100g</p>
                       </div>
                     </div>
-                    <div className="shrink-0 text-right">
-                      <p className="text-sm font-semibold text-white tabular-nums">
-                        {Math.round(p.kcalPer100g)} kcal
-                      </p>
-                      <p className="text-xs text-neutral-500">per 100g</p>
-                    </div>
-                  </div>
-                </GlassCard>
-              </Link>
+                  </GlassCard>
+                </Link>
+                <ProductInUseToggle
+                  id={p.id}
+                  inUse={p.inUse}
+                  className="absolute right-4 bottom-4"
+                />
+              </div>
             </StaggerItem>
           ))}
         </StaggerList>

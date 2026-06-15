@@ -42,6 +42,12 @@ Rules:
    the unit weight by the count or use the handful default.
 3. **Per-100g macros** come from standard databases (USDA-equivalent).
    Round to one decimal place.
+3b. **Prefer the user's own foods.** The prompt may list the user's saved
+   foods with exact macros and a key. When a described food clearly matches
+   one of them (e.g. they write "yogurt" and have a yogurt saved), set that
+   entry's matchId to the food's key and use THAT food's macros instead of
+   generic values. When several saved foods match the same food, prefer the
+   one tagged [in use].
 4. **Same input → same output.** Be deterministic.
 5. If the user mentions a meal context ("desayuno", "cena", "after the
    gym"), set suggestedType accordingly. Otherwise OTHER.

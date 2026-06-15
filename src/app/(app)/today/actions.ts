@@ -8,8 +8,10 @@ import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { createMealInputSchema, type CreateMealInput, isoDate, isDateKey } from '@/lib/meals';
 import { evaluateMealById, markEvaluationPending } from '@/lib/evaluations.server';
+import { generateMealName, nameFromEntries } from '@/lib/mealName.server';
 import { estimateMealFromText } from '@/lib/freeTextEstimation.server';
 import type { EstimationResult } from '@/lib/freeTextEstimation';
+import { loadMealFormData } from '@/app/(app)/today/_data';
 
 export type ActionResult = { ok: true; mealId?: string } | { ok: false; error: string };
 
@@ -33,7 +35,9 @@ export async function estimateMealAction(description: unknown): Promise<Estimati
   }
 
   try {
-    const data = await estimateMealFromText(parsed.data);
+    // Offer the user's library so "yogurt" resolves to their own product.
+    const { items } = await loadMealFormData(session.user.id);
+    const data = await estimateMealFromText(parsed.data, items);
     return { ok: true, data };
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Klara could not estimate this meal.';
@@ -45,6 +49,22 @@ async function requireUserId(): Promise<string> {
   const session = await auth();
   if (!session?.user?.id) throw new Error('Unauthorized');
   return session.user.id;
+}
+
+const suggestNameSchema = z
+  .array(z.object({ name: z.string().min(1).max(200), grams: z.number().positive() }))
+  .min(1)
+  .max(50);
+
+/**
+ * Suggest a short meal name from a set of (not-yet-saved) entries — used to
+ * name a meal the moment it's staged into the batch, before it's posted.
+ */
+export async function suggestMealName(entries: unknown): Promise<{ name: string }> {
+  await requireUserId();
+  const parsed = suggestNameSchema.safeParse(entries);
+  if (!parsed.success) return { name: '' };
+  return { name: await nameFromEntries(parsed.data) };
 }
 
 function flatFirstError(error: z.ZodError): string {
@@ -143,6 +163,7 @@ export async function createMeal(input: unknown, returnTo?: string): Promise<Act
   if (user) {
     await markEvaluationPending(meal.id, user.defaultEvalTone, userId);
     after(async () => {
+      await generateMealName(meal.id);
       await evaluateMealById(meal.id);
       revalidatePath('/today');
     });
@@ -204,6 +225,7 @@ export async function updateMeal(
   if (user) {
     await markEvaluationPending(mealId, user.defaultEvalTone, userId);
     after(async () => {
+      await generateMealName(mealId);
       await evaluateMealById(mealId);
       revalidatePath('/today');
     });
@@ -222,7 +244,7 @@ const createMealBatchSchema = z.object({
  * the same opaque `batchId`; only the last meal carries the AIEvaluation,
  * whose prompt sees the rest of the batch as context.
  */
-export async function createMealBatch(input: unknown): Promise<ActionResult> {
+export async function createMealBatch(input: unknown, returnTo?: string): Promise<ActionResult> {
   const userId = await requireUserId();
   const parsed = createMealBatchSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: flatFirstError(parsed.error) };
@@ -271,13 +293,15 @@ export async function createMealBatch(input: unknown): Promise<ActionResult> {
   if (user && lastMeal) {
     await markEvaluationPending(lastMeal.id, user.defaultEvalTone, userId);
     after(async () => {
+      // Name every meal in the batch; evaluate only the last (it sees the rest).
+      for (const m of created) await generateMealName(m.id);
       await evaluateMealById(lastMeal.id);
       revalidatePath('/today');
     });
   }
 
   revalidatePath('/today');
-  redirect('/today');
+  redirect(safeReturnTo(returnTo));
 }
 
 /**
