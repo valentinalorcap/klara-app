@@ -34,6 +34,9 @@ export function IngredientSearch({
     if (item.kind === 'recipe') {
       const r = item as RecipeWithDefaultGrams;
       if (r.defaultGrams) grams = Math.round(r.defaultGrams);
+    } else if (item.suggestedPortionGrams) {
+      // Products prefill with their label's suggested portion when set.
+      grams = Math.round(item.suggestedPortionGrams);
     }
     onAddItem(item, grams);
     setValue('');

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useTransition } from 'react';
+import { useState, useMemo, useRef, useTransition } from 'react';
 import Link from 'next/link';
 import { motion, useMotionValue, useTransform, animate } from 'framer-motion';
 import { Trash2, Star } from 'lucide-react';
@@ -20,6 +20,8 @@ import type { EstimationEntry } from '@/lib/freeTextEstimation';
 import { cn } from '@/lib/utils';
 
 type IngredientRow = {
+  /** Stable per-row key so swipe state follows the row, not its index. */
+  id: string;
   name: string;
   grams: string;
   resolved: boolean;
@@ -31,8 +33,9 @@ type IngredientRow = {
   fatPer100g: number;
 };
 
-function rowFromItem(item: LibraryItem, grams: number): IngredientRow {
+function rowFromItem(item: LibraryItem, grams: number, id: string): IngredientRow {
   return {
+    id,
     name: item.name,
     grams: String(grams),
     resolved: true,
@@ -45,8 +48,9 @@ function rowFromItem(item: LibraryItem, grams: number): IngredientRow {
   };
 }
 
-function rowFromEstimate(e: EstimationEntry): IngredientRow {
+function rowFromEstimate(e: EstimationEntry, id: string): IngredientRow {
   return {
+    id,
     name: e.name,
     grams: String(Math.round(e.grams)),
     resolved: true,
@@ -157,9 +161,15 @@ export function MealForm({
   const batchMode = Boolean(onAddToBatch);
   const [type, setType] = useState<MealType>(initial?.type ?? 'BREAKFAST');
   const [name, setName] = useState(initial?.name ?? '');
+  // Monotonic row-id source for rows added at runtime. Seeded past the initial
+  // rows (which get deterministic index ids) so ids never collide, and so the
+  // ref is never read during render — initial ids stay hydration-stable.
+  const rowIdSeq = useRef(initial?.entries.length ?? 0);
+  const nextRowId = () => `row-${rowIdSeq.current++}`;
   const [rows, setRows] = useState<IngredientRow[]>(
     initial?.entries.length
-      ? initial.entries.map((e) => ({
+      ? initial.entries.map((e, i) => ({
+          id: `row-${i}`,
           name: e.name,
           grams: String(e.grams),
           resolved: true,
@@ -205,15 +215,16 @@ export function MealForm({
     setRows((prev) => prev.filter((_, i) => i !== index));
   }
   function addRowFromItem(item: LibraryItem, grams: number) {
-    setRows((prev) => [...prev, rowFromItem(item, grams)]);
+    setRows((prev) => [...prev, rowFromItem(item, grams, nextRowId())]);
   }
   function addRowsFromEstimate(entries: EstimationEntry[]) {
-    setRows((prev) => [...prev, ...entries.map(rowFromEstimate)]);
+    setRows((prev) => [...prev, ...entries.map((e) => rowFromEstimate(e, nextRowId()))]);
   }
 
   function importFavorite(fav: FavoriteMeal) {
     setRows(
       fav.entries.map((e) => ({
+        id: nextRowId(),
         name: e.name,
         grams: String(e.grams),
         resolved: true,
@@ -338,7 +349,7 @@ export function MealForm({
           <ul>
             {rows.map((row, i) => (
               <IngredientSwipeRow
-                key={i}
+                key={row.id}
                 row={row}
                 isLast={i === rows.length - 1}
                 onGramsChange={(grams) => updateGrams(i, grams)}
