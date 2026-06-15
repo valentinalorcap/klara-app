@@ -11,6 +11,7 @@ import { evaluateMealById, markEvaluationPending } from '@/lib/evaluations.serve
 import { generateMealName } from '@/lib/mealName.server';
 import { estimateMealFromText } from '@/lib/freeTextEstimation.server';
 import type { EstimationResult } from '@/lib/freeTextEstimation';
+import { loadMealFormData } from '@/app/(app)/today/_data';
 
 export type ActionResult = { ok: true; mealId?: string } | { ok: false; error: string };
 
@@ -34,7 +35,9 @@ export async function estimateMealAction(description: unknown): Promise<Estimati
   }
 
   try {
-    const data = await estimateMealFromText(parsed.data);
+    // Offer the user's library so "yogurt" resolves to their own product.
+    const { items } = await loadMealFormData(session.user.id);
+    const data = await estimateMealFromText(parsed.data, items);
     return { ok: true, data };
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Klara could not estimate this meal.';

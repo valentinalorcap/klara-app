@@ -10,6 +10,11 @@ export const estimationEntrySchema = z.object({
   proteinPer100g: z.number().min(0).max(200),
   carbsPer100g: z.number().min(0).max(200),
   fatPer100g: z.number().min(0).max(200),
+  /** Key of a matched item from the user's library (e.g. "p:abc"), if any. */
+  matchId: z.string().max(80).optional(),
+  /** Resolved server-side from matchId — links the entry to the user's food. */
+  productId: z.string().optional(),
+  recipeId: z.string().optional(),
 });
 
 export const estimationResponseSchema = z.object({
@@ -50,6 +55,11 @@ export const estimateMealTool: Anthropic.Tool = {
             proteinPer100g: { type: 'number' },
             carbsPer100g: { type: 'number' },
             fatPer100g: { type: 'number' },
+            matchId: {
+              type: 'string',
+              description:
+                'If this food clearly matches one of the user\'s saved foods listed in the prompt, set this to that food\'s exact key (e.g. "p:clx123"). When several saved foods match the same described food, prefer the one tagged [in use]. Still fill the macros from that saved food. Omit when nothing matches.',
+            },
           },
           required: [
             'name',
@@ -122,6 +132,12 @@ Rules:
    the unit weight by the count or use the handful default.
 3. **Per-100g macros** come from standard databases (USDA-equivalent).
    Round to one decimal place.
+3b. **Prefer the user's own foods.** The prompt may list the user's saved
+   foods with exact macros and a key. When a described food clearly matches
+   one of them (e.g. they write "yogurt" and have a yogurt saved), set that
+   entry's matchId to the food's key and use THAT food's macros instead of
+   generic values. When several saved foods match the same food, prefer the
+   one tagged [in use].
 4. **Same input → same output.** Be deterministic.
 5. If the user mentions a meal context ("desayuno", "cena", "after the
    gym"), set suggestedType accordingly. Otherwise OTHER.

@@ -25,6 +25,7 @@ export async function loadMealFormData(userId: string): Promise<{
         carbsPer100g: true,
         fatPer100g: true,
         suggestedPortionGrams: true,
+        inUse: true,
       },
     }),
     prisma.recipe.findMany({
@@ -51,6 +52,7 @@ export async function loadMealFormData(userId: string): Promise<{
         carbsPer100g: p.carbsPer100g,
         fatPer100g: p.fatPer100g,
         suggestedPortionGrams: p.suggestedPortionGrams,
+        inUse: p.inUse,
       }),
     ),
     ...recipes.map((r): LibraryItem & { defaultGrams: number } => {

@@ -67,6 +67,10 @@ function rowFromEstimate(e: EstimationEntry, id: string): IngredientRow {
     name: e.name,
     grams: String(Math.round(e.grams)),
     resolved: true,
+    // A free-text entry that resolved to one of the user's foods carries the
+    // link, so the saved meal entry snapshots from that product/recipe.
+    productId: e.productId,
+    recipeId: e.recipeId,
     kcalPer100g: e.kcalPer100g,
     proteinPer100g: e.proteinPer100g,
     carbsPer100g: e.carbsPer100g,
