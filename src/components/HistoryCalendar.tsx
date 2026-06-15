@@ -11,10 +11,16 @@ const OVER_COLOR = 'var(--danger)';
 export function HistoryCalendar({
   cells,
   accentColor,
+  selectedDate,
+  selectBase,
 }: {
   cells: Array<CalendarDay | null>;
   /** CSS variable string for the macro the user picked, e.g. "var(--macro-protein)". */
   accentColor: string;
+  /** The currently selected day key — highlighted, drives the summary below. */
+  selectedDate: string;
+  /** Query string (month/week/metric) a day link appends `&day=` to. */
+  selectBase: string;
 }) {
   return (
     <GlassCard noAnimate className="p-5">
@@ -33,6 +39,7 @@ export function HistoryCalendar({
         {cells.map((cell, i) => {
           if (!cell) return <div key={`pad-${i}`} aria-hidden />;
           const day = Number(cell.date.slice(8, 10));
+          const isSelected = cell.date === selectedDate;
           const empty = cell.totals.kcal === 0 || cell.status === 'no-data' || cell.isFuture;
           const noGoal = cell.status === 'no-goal' && cell.totals.kcal > 0;
           const showRing = !empty && !noGoal;
@@ -55,7 +62,12 @@ export function HistoryCalendar({
                   )}
                 />
               )}
-              {cell.isToday ? (
+              {isSelected ? (
+                <span
+                  className="pointer-events-none absolute -inset-1 rounded-full border-2 border-[var(--accent)]"
+                  aria-hidden
+                />
+              ) : cell.isToday ? (
                 <span
                   className="pointer-events-none absolute -inset-1 rounded-full border-2 border-white/70"
                   aria-hidden
@@ -76,14 +88,15 @@ export function HistoryCalendar({
             </div>
           );
 
-          if (empty) {
+          if (cell.isFuture) {
             return <div key={cell.date}>{cellInner}</div>;
           }
           return (
             <Link
               key={cell.date}
-              href={`/history/${cell.date}`}
-              aria-label={`Open ${cell.date}`}
+              scroll={false}
+              href={`/history?${selectBase}&day=${cell.date}`}
+              aria-label={`Select ${cell.date}`}
               onMouseDown={(e) => e.preventDefault()}
               className="block transition active:scale-95"
             >

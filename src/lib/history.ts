@@ -4,7 +4,7 @@ import type { MacroSum } from './evaluations';
  *  the composite day-quality score (see lib/dayScore.ts). */
 export type Metric = 'kcal' | 'protein' | 'carbs' | 'fat' | 'score';
 
-export const METRICS: Metric[] = ['kcal', 'protein', 'carbs', 'fat', 'score'];
+export const METRICS: Metric[] = ['score', 'kcal', 'protein', 'carbs', 'fat'];
 
 /** Short label for a metric (kcal · P · C · F style). */
 export function metricShortLabel(metric: Metric): string {
