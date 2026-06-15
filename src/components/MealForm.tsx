@@ -3,7 +3,17 @@
 import { useState, useMemo, useRef, useTransition } from 'react';
 import Link from 'next/link';
 import { motion, useMotionValue, useTransform, animate } from 'framer-motion';
-import { Trash2, Star } from 'lucide-react';
+import {
+  Trash2,
+  Star,
+  Sunrise,
+  Dumbbell,
+  Sandwich,
+  Cookie,
+  Moon,
+  Utensils,
+  type LucideIcon,
+} from 'lucide-react';
 import { GlassCard } from './GlassCard';
 import { type LibraryItem } from './IngredientPicker';
 import { IngredientSearch } from './IngredientSearch';
@@ -18,6 +28,16 @@ import {
 import { createMeal, updateMeal } from '@/app/(app)/today/actions';
 import type { EstimationEntry } from '@/lib/freeTextEstimation';
 import { cn } from '@/lib/utils';
+
+/** Per-type icon so each meal-type chip is recognizable at a glance. */
+const MEAL_TYPE_ICONS: Record<MealType, LucideIcon> = {
+  BREAKFAST: Sunrise,
+  PREWORKOUT: Dumbbell,
+  LUNCH: Sandwich,
+  SNACK: Cookie,
+  DINNER: Moon,
+  OTHER: Utensils,
+};
 
 type IngredientRow = {
   /** Stable per-row key so swipe state follows the row, not its index. */
@@ -159,7 +179,7 @@ export function MealForm({
 }) {
   const editMode = Boolean(initial?.mealId);
   const batchMode = Boolean(onAddToBatch);
-  const [type, setType] = useState<MealType>(initial?.type ?? 'BREAKFAST');
+  const [type, setType] = useState<MealType>(initial?.type ?? 'SNACK');
   const [name, setName] = useState(initial?.name ?? '');
   // Monotonic row-id source for rows added at runtime. Seeded past the initial
   // rows (which get deterministic index ids) so ids never collide, and so the
@@ -241,7 +261,7 @@ export function MealForm({
   }
 
   function resetForm() {
-    setType('BREAKFAST');
+    setType('SNACK');
     setName('');
     setRows([]);
     setError(null);
@@ -293,22 +313,28 @@ export function MealForm({
   return (
     <div className="space-y-5">
       <GlassCard className="space-y-3 p-5">
-        <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
-          {MEAL_TYPE_OPTIONS.map((opt) => (
-            <button
-              key={opt.value}
-              type="button"
-              onClick={() => setType(opt.value)}
-              className={cn(
-                'shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium transition',
-                type === opt.value
-                  ? 'border-[var(--accent)] bg-[var(--accent)]/15 text-[var(--accent)]'
-                  : 'border-white/10 bg-white/[0.04] text-neutral-300 hover:bg-white/[0.08]',
-              )}
-            >
-              {opt.label}
-            </button>
-          ))}
+        <div className="grid grid-cols-3 gap-2">
+          {MEAL_TYPE_OPTIONS.map((opt) => {
+            const Icon = MEAL_TYPE_ICONS[opt.value];
+            const active = type === opt.value;
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setType(opt.value)}
+                aria-pressed={active}
+                className={cn(
+                  'flex flex-col items-center justify-center gap-1 rounded-2xl border px-2 py-2.5 text-[11px] font-medium transition',
+                  active
+                    ? 'border-[var(--accent)] bg-[var(--accent)]/15 text-[var(--accent)]'
+                    : 'border-white/10 bg-white/[0.04] text-neutral-300 hover:bg-white/[0.08]',
+                )}
+              >
+                <Icon size={16} className={active ? 'text-[var(--accent)]' : 'text-neutral-400'} />
+                {opt.label}
+              </button>
+            );
+          })}
         </div>
         <input
           type="text"
