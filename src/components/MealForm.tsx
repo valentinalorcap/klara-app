@@ -17,14 +17,7 @@ import {
 import { GlassCard } from './GlassCard';
 import { type LibraryItem } from './IngredientPicker';
 import { IngredientSearch } from './IngredientSearch';
-import {
-  MEAL_TYPE_OPTIONS,
-  MEAL_TYPE_LABELS,
-  type MealType,
-  sumEntries,
-  entryMacros,
-  isoDate,
-} from '@/lib/meals';
+import { MEAL_TYPE_OPTIONS, type MealType, sumEntries, entryMacros, isoDate } from '@/lib/meals';
 import { createMeal, updateMeal } from '@/app/(app)/today/actions';
 import type { EstimationEntry } from '@/lib/freeTextEstimation';
 import { cn } from '@/lib/utils';
@@ -463,48 +456,65 @@ function FavoritesPicker({
           Cancel
         </button>
       </header>
-      <ul className="flex-1 space-y-2 overflow-y-auto px-6 py-4">
-        {favorites.map((f) => {
-          const totals = f.entries.reduce(
-            (acc, e) => {
-              const factor = e.grams / 100;
-              acc.kcal += e.kcalPer100g * factor;
-              acc.protein += e.proteinPer100g * factor;
-              acc.carbs += e.carbsPer100g * factor;
-              acc.fat += e.fatPer100g * factor;
-              return acc;
-            },
-            { kcal: 0, protein: 0, carbs: 0, fat: 0 },
-          );
+      <div className="flex-1 space-y-5 overflow-y-auto px-6 py-4">
+        {MEAL_TYPE_OPTIONS.map((opt) => {
+          const group = favorites.filter((f) => f.type === opt.value);
+          if (group.length === 0) return null;
+          const Icon = MEAL_TYPE_ICONS[opt.value];
           return (
-            <li key={f.id}>
-              <button
-                type="button"
-                onClick={() => onPick(f)}
-                className="flex w-full flex-col gap-1 rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-left transition hover:border-white/20 hover:bg-white/[0.08] active:scale-[0.99]"
-              >
-                <span className="text-[10px] font-medium tracking-wider text-[var(--accent)] uppercase">
-                  {MEAL_TYPE_LABELS[f.type]}
-                </span>
-                {f.name ? (
-                  <span className="truncate text-sm font-semibold text-white">{f.name}</span>
-                ) : null}
-                <span className="text-xs text-white tabular-nums">
-                  {Math.round(totals.kcal)}
-                  <span className="text-neutral-400"> kcal</span>
-                  <span className="mx-1.5 text-neutral-500">·</span>
-                  <span className="text-neutral-400">P </span>
-                  {totals.protein.toFixed(0)}g<span className="mx-1.5 text-neutral-500">·</span>
-                  <span className="text-neutral-400">C </span>
-                  {totals.carbs.toFixed(0)}g<span className="mx-1.5 text-neutral-500">·</span>
-                  <span className="text-neutral-400">F </span>
-                  {totals.fat.toFixed(0)}g
-                </span>
-              </button>
-            </li>
+            <section key={opt.value} className="space-y-2">
+              <h3 className="flex items-center gap-1.5 text-[11px] font-semibold tracking-wider text-neutral-400 uppercase">
+                <Icon size={13} className="text-neutral-500" />
+                {opt.label}
+                <span className="text-neutral-600">· {group.length}</span>
+              </h3>
+              <ul className="space-y-2">
+                {group.map((f) => {
+                  const totals = f.entries.reduce(
+                    (acc, e) => {
+                      const factor = e.grams / 100;
+                      acc.kcal += e.kcalPer100g * factor;
+                      acc.protein += e.proteinPer100g * factor;
+                      acc.carbs += e.carbsPer100g * factor;
+                      acc.fat += e.fatPer100g * factor;
+                      return acc;
+                    },
+                    { kcal: 0, protein: 0, carbs: 0, fat: 0 },
+                  );
+                  return (
+                    <li key={f.id}>
+                      <button
+                        type="button"
+                        onClick={() => onPick(f)}
+                        className="flex w-full flex-col gap-1 rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-left transition hover:border-white/20 hover:bg-white/[0.08] active:scale-[0.99]"
+                      >
+                        {f.name ? (
+                          <span className="truncate text-sm font-semibold text-white">
+                            {f.name}
+                          </span>
+                        ) : null}
+                        <span className="text-xs text-white tabular-nums">
+                          {Math.round(totals.kcal)}
+                          <span className="text-neutral-400"> kcal</span>
+                          <span className="mx-1.5 text-neutral-500">·</span>
+                          <span className="text-neutral-400">P </span>
+                          {totals.protein.toFixed(0)}g
+                          <span className="mx-1.5 text-neutral-500">·</span>
+                          <span className="text-neutral-400">C </span>
+                          {totals.carbs.toFixed(0)}g
+                          <span className="mx-1.5 text-neutral-500">·</span>
+                          <span className="text-neutral-400">F </span>
+                          {totals.fat.toFixed(0)}g
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
           );
         })}
-      </ul>
+      </div>
     </div>
   );
 }
