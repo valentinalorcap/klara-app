@@ -2,7 +2,6 @@ import Link from 'next/link';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { GlassCard } from './GlassCard';
 import { weekDays } from '@/lib/history';
-import { cn } from '@/lib/utils';
 
 const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -20,6 +19,7 @@ export function WeekChart({
   prevHref,
   nextHref,
   todayKey,
+  selectedKey,
 }: {
   weekStartKey: string;
   rangeLabel: string;
@@ -40,6 +40,8 @@ export function WeekChart({
   prevHref: string;
   nextHref: string;
   todayKey: string;
+  /** The day selected in the calendar — marked with an accent dot. */
+  selectedKey: string;
 }) {
   const keys = weekDays(weekStartKey);
   const hasAnyData = dailyValues.some((v) => v > 0);
@@ -150,10 +152,21 @@ export function WeekChart({
               {dailyValues.map((v, i) => {
                 if (v <= 0) return null;
                 const isToday = keys[i] === todayKey;
+                const isSel = keys[i] === selectedKey;
                 return (
                   <g key={i}>
                     {isToday ? (
                       <circle cx={xFor(i)} cy={yFor(v)} r={7} fill={lineColor} fillOpacity={0.3} />
+                    ) : null}
+                    {isSel ? (
+                      <circle
+                        cx={xFor(i)}
+                        cy={yFor(v)}
+                        r={7}
+                        fill="none"
+                        stroke="var(--accent)"
+                        strokeWidth={2}
+                      />
                     ) : null}
                     <circle cx={xFor(i)} cy={yFor(v)} r={3.5} fill={lineColor} />
                   </g>
@@ -168,12 +181,27 @@ export function WeekChart({
               x={xFor(i)}
               y={CHART_H + 16}
               textAnchor="middle"
-              className={cn('fill-neutral-500', keys[i] === todayKey && 'fill-white font-semibold')}
+              className={
+                keys[i] === selectedKey
+                  ? 'fill-[var(--accent)] font-semibold'
+                  : keys[i] === todayKey
+                    ? 'fill-white font-semibold'
+                    : 'fill-neutral-500'
+              }
               fontSize="10"
             >
               {d}
             </text>
           ))}
+
+          {keys.includes(selectedKey) ? (
+            <circle
+              cx={xFor(keys.indexOf(selectedKey))}
+              cy={CHART_H + 20}
+              r={2.5}
+              fill="var(--accent)"
+            />
+          ) : null}
         </svg>
 
         {/* "No data" sits as an overlay inside the chart area so the day

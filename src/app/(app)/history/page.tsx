@@ -17,13 +17,12 @@ import {
   weekDays,
   weekRangeLabel,
   weekStartFor,
-  shiftWeek,
   type CalendarDay,
   type Metric,
 } from '@/lib/history';
 import { computeFetchRange, loadDailyTotalsRange, pickBestDay } from '@/lib/history.server';
 import { dayScore, bandFor } from '@/lib/dayScore';
-import { isoDate, isDateKey, formatDayLabel } from '@/lib/meals';
+import { isoDate, isDateKey, shiftDay, formatDayLabel } from '@/lib/meals';
 import { cn } from '@/lib/utils';
 
 type SearchParams = { month?: string; week?: string; metric?: string; day?: string };
@@ -33,11 +32,6 @@ function parseMonth(input: string | undefined, fallback: { year: number; month0:
     const [y, m] = input.split('-').map(Number);
     if (m >= 1 && m <= 12) return { year: y, month0: m - 1 };
   }
-  return fallback;
-}
-
-function parseWeek(input: string | undefined, fallback: string): string {
-  if (input && /^\d{4}-\d{2}-\d{2}$/.test(input)) return weekStartFor(input);
   return fallback;
 }
 
@@ -122,9 +116,10 @@ export default async function HistoryPage({
   const monthLastKey = `${year}-${String(month0 + 1).padStart(2, '0')}-${String(
     daysInMonth(year, month0),
   ).padStart(2, '0')}`;
-  const weekStartKey = parseWeek(params.week, weekStartFor(todayKey));
   const metric = parseMetric(params.metric);
   const selectedDay = isDateKey(params.day) ? params.day : todayKey;
+  // The week view follows the selected day.
+  const weekStartKey = weekStartFor(selectedDay);
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -213,15 +208,16 @@ export default async function HistoryPage({
 
   const prevMonth = month0 === 0 ? { y: year - 1, m: 11 } : { y: year, m: month0 - 1 };
   const nextMonth = month0 === 11 ? { y: year + 1, m: 0 } : { y: year, m: month0 + 1 };
+  const monthOf = (key: string) => key.slice(0, 7);
   const baseParams = `metric=${metric}&day=${selectedDay}`;
   const monthQS = (y: number, m: number) =>
-    `?month=${y}-${String(m + 1).padStart(2, '0')}&week=${weekStartKey}&${baseParams}`;
-  const weekQS = (w: string) =>
-    `?month=${year}-${String(month0 + 1).padStart(2, '0')}&week=${w}&${baseParams}`;
-  // Query string for selecting a day in the calendar (keeps month/week/metric).
-  const selectBase = `month=${year}-${String(month0 + 1).padStart(2, '0')}&week=${weekStartKey}&metric=${metric}`;
+    `?month=${y}-${String(m + 1).padStart(2, '0')}&${baseParams}`;
+  // Selecting a day in the calendar — keeps the viewed month + metric.
+  const selectBase = `month=${year}-${String(month0 + 1).padStart(2, '0')}&metric=${metric}`;
+  // Go to a specific day (week nav, best day): also moves the month to that day.
+  const dayHref = (d: string) => `/history?month=${monthOf(d)}&metric=${metric}&day=${d}`;
   const metricQS = (m: Metric) =>
-    `?month=${year}-${String(month0 + 1).padStart(2, '0')}&week=${weekStartKey}&metric=${m}&day=${selectedDay}`;
+    `?month=${year}-${String(month0 + 1).padStart(2, '0')}&metric=${m}&day=${selectedDay}`;
 
   return (
     <main className="space-y-5 px-6 py-10">
@@ -338,14 +334,15 @@ export default async function HistoryPage({
               : null
         }
         isCurrentWeek={weekStartKey === weekStartFor(todayKey)}
-        todayHref={`/history${weekQS(weekStartFor(todayKey))}`}
-        prevHref={`/history${weekQS(shiftWeek(weekStartKey, -1))}`}
-        nextHref={`/history${weekQS(shiftWeek(weekStartKey, 1))}`}
+        todayHref={dayHref(todayKey)}
+        prevHref={dayHref(shiftDay(selectedDay, -7))}
+        nextHref={dayHref(shiftDay(selectedDay, 7))}
         todayKey={todayKey}
+        selectedKey={selectedDay}
       />
 
       {best ? (
-        <Link scroll={false} href={`/history?${selectBase}&day=${best.date}`} className="block">
+        <Link scroll={false} href={dayHref(best.date)} className="block">
           <GlassCard
             noAnimate
             className="flex items-center gap-4 p-5 transition hover:border-white/20"
