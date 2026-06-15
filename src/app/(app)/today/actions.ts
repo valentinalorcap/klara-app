@@ -225,7 +225,7 @@ const createMealBatchSchema = z.object({
  * the same opaque `batchId`; only the last meal carries the AIEvaluation,
  * whose prompt sees the rest of the batch as context.
  */
-export async function createMealBatch(input: unknown): Promise<ActionResult> {
+export async function createMealBatch(input: unknown, returnTo?: string): Promise<ActionResult> {
   const userId = await requireUserId();
   const parsed = createMealBatchSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: flatFirstError(parsed.error) };
@@ -282,7 +282,7 @@ export async function createMealBatch(input: unknown): Promise<ActionResult> {
   }
 
   revalidatePath('/today');
-  redirect('/today');
+  redirect(safeReturnTo(returnTo));
 }
 
 /**

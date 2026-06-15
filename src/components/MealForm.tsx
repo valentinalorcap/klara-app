@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useRef, useTransition } from 'react';
+import { useState, useMemo, useRef, useEffect, useTransition } from 'react';
 import Link from 'next/link';
 import { motion, useMotionValue, useTransform, animate } from 'framer-motion';
 import {
@@ -142,6 +142,8 @@ export function MealForm({
   hideFavoritesButton = false,
   controlledFavoritesOpen,
   onCloseFavorites,
+  onValidChange,
+  hideActions = false,
 }: {
   items: LibraryItem[];
   favorites: FavoriteMeal[];
@@ -169,6 +171,14 @@ export function MealForm({
   controlledFavoritesOpen?: boolean;
   /** Called when the controlled picker should close. */
   onCloseFavorites?: () => void;
+  /**
+   * Builder mode: report the current meal as a payload (or null when it has
+   * no valid entries) whenever it changes, so a parent can stage / save it.
+   * Must be referentially stable (wrap in useCallback).
+   */
+  onValidChange?: (payload: MealFormPayload | null) => void;
+  /** Hide the form's own Save/Cancel buttons — the parent renders actions. */
+  hideActions?: boolean;
 }) {
   const editMode = Boolean(initial?.mealId);
   const batchMode = Boolean(onAddToBatch);
@@ -221,6 +231,36 @@ export function MealForm({
     [rows],
   );
 
+  // The current meal as a save-ready payload, or null when it has no valid
+  // entries. Both the Save button and the builder-mode report use this.
+  const currentPayload = useMemo<MealFormPayload | null>(() => {
+    const entries = rows
+      .filter((r) => r.resolved && r.name.trim() && Number(r.grams) > 0)
+      .map((r) => ({
+        name: r.name.trim(),
+        grams: Number(r.grams),
+        productId: r.productId,
+        recipeId: r.recipeId,
+        kcalPer100g: r.kcalPer100g,
+        proteinPer100g: r.proteinPer100g,
+        carbsPer100g: r.carbsPer100g,
+        fatPer100g: r.fatPer100g,
+      }));
+    if (entries.length === 0) return null;
+    return {
+      // Edit: keep the meal's own day. New: the target day (a navigated past/
+      // future day) or today. Never silently move a meal to today.
+      date: initial?.date ?? defaultDate ?? isoDate(new Date()),
+      type,
+      name: name.trim() || undefined,
+      entries,
+    };
+  }, [rows, type, name, initial?.date, defaultDate]);
+
+  useEffect(() => {
+    onValidChange?.(currentPayload);
+  }, [currentPayload, onValidChange]);
+
   function updateGrams(index: number, grams: string) {
     setRows((prev) => prev.map((r, i) => (i === index ? { ...r, grams } : r)));
   }
@@ -262,30 +302,11 @@ export function MealForm({
 
   function handleSubmit() {
     setError(null);
-    const entries = rows
-      .filter((r) => r.resolved && r.name.trim() && Number(r.grams) > 0)
-      .map((r) => ({
-        name: r.name.trim(),
-        grams: Number(r.grams),
-        productId: r.productId,
-        recipeId: r.recipeId,
-        kcalPer100g: r.kcalPer100g,
-        proteinPer100g: r.proteinPer100g,
-        carbsPer100g: r.carbsPer100g,
-        fatPer100g: r.fatPer100g,
-      }));
-    if (entries.length === 0) {
+    if (!currentPayload) {
       setError('Add at least one ingredient with grams.');
       return;
     }
-    const payload: MealFormPayload = {
-      // Edit: keep the meal's own day. New: the target day (a past day when
-      // adding from a navigated date) or today. Never silently move to today.
-      date: initial?.date ?? defaultDate ?? isoDate(new Date()),
-      type,
-      name: name.trim() || undefined,
-      entries,
-    };
+    const payload = currentPayload;
 
     if (onAddToBatch) {
       onAddToBatch(payload);
@@ -397,25 +418,27 @@ export function MealForm({
         </p>
       ) : null}
 
-      <div className="space-y-2">
-        <button
-          type="button"
-          onClick={handleSubmit}
-          disabled={pending}
-          className="w-full rounded-2xl bg-[var(--accent)] px-4 py-3.5 text-sm font-semibold text-white shadow-[0_8px_24px_-8px_var(--accent-glow)] transition hover:bg-[var(--accent-hover)] active:scale-[0.98] disabled:opacity-50"
-        >
-          {pending
-            ? 'Saving…'
-            : (submitLabel ??
-              (batchMode ? 'Add to batch' : editMode ? 'Save changes' : 'Save meal'))}
-        </button>
-        <Link
-          href={cancelHref ?? returnTo ?? '/today'}
-          className="block w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-center text-sm font-medium text-neutral-300 transition hover:bg-white/[0.08]"
-        >
-          Cancel
-        </Link>
-      </div>
+      {!hideActions ? (
+        <div className="space-y-2">
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={pending}
+            className="w-full rounded-2xl bg-[var(--accent)] px-4 py-3.5 text-sm font-semibold text-white shadow-[0_8px_24px_-8px_var(--accent-glow)] transition hover:bg-[var(--accent-hover)] active:scale-[0.98] disabled:opacity-50"
+          >
+            {pending
+              ? 'Saving…'
+              : (submitLabel ??
+                (batchMode ? 'Add to batch' : editMode ? 'Save changes' : 'Save meal'))}
+          </button>
+          <Link
+            href={cancelHref ?? returnTo ?? '/today'}
+            className="block w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-center text-sm font-medium text-neutral-300 transition hover:bg-white/[0.08]"
+          >
+            Cancel
+          </Link>
+        </div>
+      ) : null}
     </div>
   );
 }
