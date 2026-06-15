@@ -13,6 +13,10 @@ export type ProductOption = {
   proteinPer100g: number;
   carbsPer100g: number;
   fatPer100g: number;
+  /** "One portion" hint in grams from the label, used to prefill grams. */
+  suggestedPortionGrams?: number | null;
+  /** Whether the user marked this product as the one they're currently using. */
+  inUse?: boolean;
 };
 
 export type RecipeOption = {

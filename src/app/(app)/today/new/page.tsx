@@ -29,7 +29,7 @@ export default async function NewMealPage({
         Back
       </Link>
 
-      <h1 className="mt-4 text-2xl font-bold tracking-tight text-white">New meal</h1>
+      <h1 className="mt-4 text-2xl font-bold tracking-tight text-white">Add meals</h1>
 
       <NewMealClient items={items} favorites={favoriteMeals} targetDate={targetDate} />
     </main>

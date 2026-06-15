@@ -44,6 +44,11 @@ yarn-error.log*
 # local design / mockup files (not part of the app)
 /mockups
 
+# local working notes (not part of the app)
+/PR_GUIDELINES.md
+/BUGS.md
+/BACKLOG.md
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
