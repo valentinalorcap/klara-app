@@ -2,7 +2,6 @@ import Link from 'next/link';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { GlassCard } from './GlassCard';
 import { weekDays } from '@/lib/history';
-import { cn } from '@/lib/utils';
 
 const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -20,6 +19,7 @@ export function WeekChart({
   prevHref,
   nextHref,
   todayKey,
+  selectedKey,
 }: {
   weekStartKey: string;
   rangeLabel: string;
@@ -40,6 +40,8 @@ export function WeekChart({
   prevHref: string;
   nextHref: string;
   todayKey: string;
+  /** The day selected in the calendar — marked with an accent dot. */
+  selectedKey: string;
 }) {
   const keys = weekDays(weekStartKey);
   const hasAnyData = dailyValues.some((v) => v > 0);
@@ -72,7 +74,7 @@ export function WeekChart({
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-[10px] font-medium tracking-wider text-neutral-400 uppercase">
-            Average
+            Weekly average
           </p>
           <p className="mt-1 text-3xl font-bold text-white tabular-nums">
             {avgValue ? avgValue.toLocaleString() : '—'}
@@ -150,10 +152,20 @@ export function WeekChart({
               {dailyValues.map((v, i) => {
                 if (v <= 0) return null;
                 const isToday = keys[i] === todayKey;
+                const isSel = keys[i] === selectedKey;
                 return (
                   <g key={i}>
                     {isToday ? (
                       <circle cx={xFor(i)} cy={yFor(v)} r={7} fill={lineColor} fillOpacity={0.3} />
+                    ) : null}
+                    {isSel ? (
+                      <circle
+                        cx={xFor(i)}
+                        cy={yFor(v)}
+                        r={9}
+                        fill="var(--accent)"
+                        fillOpacity={0.35}
+                      />
                     ) : null}
                     <circle cx={xFor(i)} cy={yFor(v)} r={3.5} fill={lineColor} />
                   </g>
@@ -168,7 +180,13 @@ export function WeekChart({
               x={xFor(i)}
               y={CHART_H + 16}
               textAnchor="middle"
-              className={cn('fill-neutral-500', keys[i] === todayKey && 'fill-white font-semibold')}
+              className={
+                keys[i] === selectedKey
+                  ? 'fill-[var(--accent)] font-semibold'
+                  : keys[i] === todayKey
+                    ? 'fill-white font-semibold'
+                    : 'fill-neutral-500'
+              }
               fontSize="10"
             >
               {d}

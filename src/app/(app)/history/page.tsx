@@ -5,12 +5,12 @@ import { prisma } from '@/lib/prisma';
 import { GlassCard } from '@/components/GlassCard';
 import { HistoryCalendar } from '@/components/HistoryCalendar';
 import { WeekChart } from '@/components/WeekChart';
+import { MacroRing, MACRO_COLORS } from '@/components/MacroRing';
 import {
   buildMonthGrid,
   categorizeStatus,
   daysInMonth,
   METRICS,
-  metricShortLabel,
   metricUnit,
   targetFor,
   valueFor,
@@ -22,10 +22,11 @@ import {
   type Metric,
 } from '@/lib/history';
 import { computeFetchRange, loadDailyTotalsRange, pickBestDay } from '@/lib/history.server';
-import { isoDate } from '@/lib/meals';
+import { dayScore, bandFor } from '@/lib/dayScore';
+import { isoDate, isDateKey, formatDayLabel } from '@/lib/meals';
 import { cn } from '@/lib/utils';
 
-type SearchParams = { month?: string; week?: string; metric?: string };
+type SearchParams = { month?: string; week?: string; metric?: string; day?: string };
 
 function parseMonth(input: string | undefined, fallback: { year: number; month0: number }) {
   if (input && /^\d{4}-\d{2}$/.test(input)) {
@@ -35,14 +36,16 @@ function parseMonth(input: string | undefined, fallback: { year: number; month0:
   return fallback;
 }
 
-function parseWeek(input: string | undefined, fallback: string): string {
-  if (input && /^\d{4}-\d{2}-\d{2}$/.test(input)) return weekStartFor(input);
-  return fallback;
-}
-
 function parseMetric(input: string | undefined): Metric {
-  if (input === 'kcal' || input === 'protein' || input === 'carbs' || input === 'fat') return input;
-  return 'kcal';
+  if (
+    input === 'kcal' ||
+    input === 'protein' ||
+    input === 'carbs' ||
+    input === 'fat' ||
+    input === 'score'
+  )
+    return input;
+  return 'score';
 }
 
 const MONTH_NAMES = [
@@ -65,6 +68,7 @@ const METRIC_LONG: Record<Metric, string> = {
   protein: 'Protein',
   carbs: 'Carbs',
   fat: 'Fat',
+  score: 'Score',
 };
 
 /**
@@ -77,6 +81,7 @@ const METRIC_PILL_ACTIVE: Record<Metric, string> = {
   protein: 'border-[var(--macro-protein)] bg-[var(--macro-protein)]/15 text-[var(--macro-protein)]',
   carbs: 'border-[var(--macro-carbs)] bg-[var(--macro-carbs)]/15 text-[var(--macro-carbs)]',
   fat: 'border-[var(--macro-fat)] bg-[var(--macro-fat)]/15 text-[var(--macro-fat)]',
+  score: 'border-[#34d399] bg-[#34d399]/15 text-[#34d399]',
 };
 
 /** CSS variable reference per metric, used as a stroke/fill in SVG. */
@@ -85,6 +90,8 @@ const METRIC_VAR: Record<Metric, string> = {
   protein: 'var(--macro-protein)',
   carbs: 'var(--macro-carbs)',
   fat: 'var(--macro-fat)',
+  // Score colours per-day by band; this is just a fallback accent.
+  score: '#34d399',
 };
 
 function formatValue(value: number, metric: Metric): string {
@@ -110,8 +117,14 @@ export default async function HistoryPage({
   const monthLastKey = `${year}-${String(month0 + 1).padStart(2, '0')}-${String(
     daysInMonth(year, month0),
   ).padStart(2, '0')}`;
-  const weekStartKey = parseWeek(params.week, weekStartFor(todayKey));
   const metric = parseMetric(params.metric);
+  const selectedDay = isDateKey(params.day) ? params.day : todayKey;
+  // The selected day drives the summary and stays put. The week view is
+  // independent (navigable on its own); it just defaults to the selected
+  // day's week until the user navigates weeks.
+  const weekStartKey = isDateKey(params.week)
+    ? weekStartFor(params.week)
+    : weekStartFor(selectedDay);
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -122,7 +135,14 @@ export default async function HistoryPage({
       dailyFatGoal: true,
     },
   });
-  const target = user ? targetFor(user, metric) : null;
+  const goals = {
+    dailyKcalGoal: user?.dailyKcalGoal ?? null,
+    dailyProteinGoal: user?.dailyProteinGoal ?? null,
+    dailyCarbsGoal: user?.dailyCarbsGoal ?? null,
+    dailyFatGoal: user?.dailyFatGoal ?? null,
+  };
+  const isScore = metric === 'score';
+  const target = isScore ? 100 : user ? targetFor(user, metric) : null;
 
   const range = computeFetchRange({
     monthFirstKey,
@@ -131,6 +151,10 @@ export default async function HistoryPage({
     todayKey,
   });
   const totals = await loadDailyTotalsRange(userId, range.fromKey, range.toKey);
+
+  // Selected-day summary (left = score ring, right = the 4 macro rings).
+  const sel = totals.get(selectedDay) ?? { kcal: 0, protein: 0, carbs: 0, fat: 0, mealCount: 0 };
+  const selScore = sel.mealCount > 0 ? dayScore(sel, goals) : null;
 
   const grid = buildMonthGrid(year, month0);
   const cells: Array<CalendarDay | null> = grid.map((cell) => {
@@ -142,61 +166,69 @@ export default async function HistoryPage({
       fat: 0,
       mealCount: 0,
     };
-    const value = valueFor(t, metric);
+    const sc = isScore && t.mealCount > 0 ? dayScore(t, goals) : null;
+    const value = isScore ? (sc?.score ?? 0) : valueFor(t, metric);
+    const pct = isScore ? (sc ? sc.score / 100 : 0) : target && target > 0 ? value / target : 0;
+    const status: CalendarDay['status'] = isScore
+      ? sc
+        ? sc.score >= 75
+          ? 'on-target'
+          : 'under'
+        : 'no-data'
+      : categorizeStatus(value, target);
     return {
       date: cell.date,
       totals: { kcal: t.kcal, protein: t.protein, carbs: t.carbs, fat: t.fat },
       mealCount: t.mealCount,
-      status: categorizeStatus(value, target),
+      status,
       isFuture: cell.date > todayKey,
       isToday: cell.date === todayKey,
-      pct: target && target > 0 ? value / target : 0,
+      pct,
+      value,
+      color: sc?.color,
     };
   });
 
-  const monthCellsWithData = cells.filter(
-    (c): c is CalendarDay => c !== null && valueFor(c.totals, metric) > 0 && !c.isFuture,
-  );
-  const sumMetric = monthCellsWithData.reduce((s, c) => s + valueFor(c.totals, metric), 0);
-  const avgMetric = monthCellsWithData.length
-    ? Math.round(sumMetric / monthCellsWithData.length)
-    : 0;
-  const inTargetCount = monthCellsWithData.filter((c) => c.status === 'on-target').length;
-  const totalDaysInMonth = cells.filter((c): c is CalendarDay => c !== null).length;
+  // Score-aware per-day value (guards empty days in score mode).
+  const dayValueFor = (t: {
+    kcal: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+    mealCount?: number;
+  }) =>
+    isScore ? ((t.mealCount ?? 1) > 0 ? (dayScore(t, goals)?.score ?? 0) : 0) : valueFor(t, metric);
 
   const weekKeys = weekDays(weekStartKey);
   const weekValues = weekKeys.map((k) => {
     const t = totals.get(k);
-    return t ? valueFor(t, metric) : 0;
+    return t ? dayValueFor(t) : 0;
   });
   const weekWithData = weekValues.filter((v) => v > 0);
   const weekAvg = weekWithData.length
     ? Math.round(weekWithData.reduce((s, v) => s + v, 0) / weekWithData.length)
     : 0;
 
-  const best = pickBestDay(totals, weekKeys, target, (t) => valueFor(t, metric));
+  const best = pickBestDay(totals, weekKeys, target, dayValueFor);
 
   const prevMonth = month0 === 0 ? { y: year - 1, m: 11 } : { y: year, m: month0 - 1 };
   const nextMonth = month0 === 11 ? { y: year + 1, m: 0 } : { y: year, m: month0 + 1 };
-  const baseParams = `metric=${metric}`;
+  const monthOf = (key: string) => key.slice(0, 7);
+  const viewedMonth = `${year}-${String(month0 + 1).padStart(2, '0')}`;
+  const baseParams = `metric=${metric}&day=${selectedDay}&week=${weekStartKey}`;
   const monthQS = (y: number, m: number) =>
-    `?month=${y}-${String(m + 1).padStart(2, '0')}&week=${weekStartKey}&${baseParams}`;
-  const weekQS = (w: string) =>
-    `?month=${year}-${String(month0 + 1).padStart(2, '0')}&week=${w}&${baseParams}`;
+    `?month=${y}-${String(m + 1).padStart(2, '0')}&${baseParams}`;
+  // Selecting a day in the calendar — keeps the viewed month + metric; the
+  // calendar appends `&day=` and `&week=` (so picking a day moves the week too).
+  const selectBase = `month=${viewedMonth}&metric=${metric}`;
+  // Jump to a day (best day): sets the day, its week, and its month.
+  const dayHref = (d: string) =>
+    `/history?month=${monthOf(d)}&metric=${metric}&day=${d}&week=${weekStartFor(d)}`;
+  // Week nav is visual only — it changes the viewed week but keeps the day.
+  const weekNavHref = (w: string) =>
+    `/history?month=${viewedMonth}&metric=${metric}&day=${selectedDay}&week=${w}`;
   const metricQS = (m: Metric) =>
-    `?month=${year}-${String(month0 + 1).padStart(2, '0')}&week=${weekStartKey}&metric=${m}`;
-
-  const avgPct = target && target > 0 ? avgMetric / target : 0;
-  const avgIsOver = avgPct > 1.1;
-  const avgUnitShort = metric === 'kcal' ? 'avg kcal/day' : 'avg g/day';
-  const vsGoal: { word: string; value: string | null } = (() => {
-    if (!target || target <= 0 || !avgMetric) return { word: 'No goal', value: null };
-    const diff = avgMetric - target;
-    const unit = metric === 'kcal' ? ' kcal' : 'g';
-    if (Math.abs(diff) <= target * 0.05) return { word: 'On target', value: null };
-    if (diff < 0) return { word: 'Remains', value: `${Math.round(Math.abs(diff))}${unit}` };
-    return { word: 'Over by', value: `${Math.round(diff)}${unit}` };
-  })();
+    `?month=${viewedMonth}&metric=${m}&day=${selectedDay}&week=${weekStartKey}`;
 
   return (
     <main className="space-y-5 px-6 py-10">
@@ -207,8 +239,8 @@ export default async function HistoryPage({
         </p>
       </header>
 
-      {/* Metric selector — each pill in its macro colour. */}
-      <div className="-mx-1 flex gap-2 overflow-x-auto px-1">
+      {/* Metric selector — full-width row of equal pills, each in its colour. */}
+      <div className="grid grid-cols-5 gap-1.5">
         {METRICS.map((m) => {
           const active = m === metric;
           return (
@@ -217,7 +249,7 @@ export default async function HistoryPage({
               scroll={false}
               href={`/history${metricQS(m)}`}
               className={cn(
-                'shrink-0 rounded-full border px-4 py-2 text-xs font-medium transition',
+                'rounded-full border px-1 py-2 text-center text-[11px] font-medium whitespace-nowrap transition',
                 active
                   ? METRIC_PILL_ACTIVE[m]
                   : 'border-white/10 bg-white/[0.04] text-neutral-300 hover:bg-white/[0.08]',
@@ -252,35 +284,49 @@ export default async function HistoryPage({
         </Link>
       </div>
 
-      <HistoryCalendar cells={cells} accentColor={METRIC_VAR[metric]} />
+      <HistoryCalendar
+        cells={cells}
+        accentColor={METRIC_VAR[metric]}
+        selectedDate={selectedDay}
+        selectBase={selectBase}
+      />
 
-      {/* Hero stats — two square cards side by side below the calendar. */}
-      <div className="grid grid-cols-2 gap-3">
-        <GlassCard className="flex aspect-square items-center justify-center p-4">
-          <AvgRing
-            pct={avgPct}
-            isOver={avgIsOver}
-            accentColor={METRIC_VAR[metric]}
-            valueText={avgMetric ? formatValue(avgMetric, metric) : '—'}
-            label={avgUnitShort}
-          />
-        </GlassCard>
+      {/* Selected-day summary — score ring (left) + the four macro rings (right). */}
+      <div>
+        <p className="mb-2 text-xs font-medium tracking-wider text-neutral-400 uppercase">
+          {selectedDay === todayKey ? 'Today' : formatDayLabel(selectedDay)}
+        </p>
+        <div className="grid grid-cols-2 gap-3">
+          <GlassCard className="flex aspect-square items-center justify-center p-4">
+            {isScore ? (
+              <AvgRing
+                pct={selScore ? selScore.score / 100 : 0}
+                isOver={false}
+                accentColor={selScore ? selScore.color : 'var(--macro-kcal)'}
+                valueText={selScore ? String(selScore.score) : '—'}
+                label={selScore ? selScore.label : 'score'}
+              />
+            ) : (
+              <div className="w-32">
+                <MacroRing
+                  size="lg"
+                  current={valueFor(sel, metric)}
+                  target={target}
+                  color={MACRO_COLORS[metric as keyof typeof MACRO_COLORS]}
+                  label={metric === 'kcal' ? 'kcal' : `g ${METRIC_LONG[metric].toLowerCase()}`}
+                  valueText={formatValue(valueFor(sel, metric), metric)}
+                />
+              </div>
+            )}
+          </GlassCard>
 
-        <GlassCard className="grid aspect-square grid-rows-[1fr_auto_1fr] p-4 text-center">
-          <div className="flex flex-col justify-center">
-            <p className="text-sm font-medium text-neutral-400">{vsGoal.word}</p>
-            {vsGoal.value ? (
-              <p className="text-sm font-bold text-white tabular-nums">{vsGoal.value}</p>
-            ) : null}
-          </div>
-          <div className="border-t border-white/5" />
-          <div className="flex flex-col justify-center">
-            <p className="text-sm font-medium text-neutral-400">Days in target</p>
-            <p className="text-sm font-bold text-white tabular-nums">
-              {inTargetCount}/{totalDaysInMonth}
-            </p>
-          </div>
-        </GlassCard>
+          <GlassCard className="flex aspect-square flex-col justify-center gap-3 p-5">
+            <MacroLine label="Calories" value={sel.kcal} goal={goals.dailyKcalGoal} unit="" />
+            <MacroLine label="Protein" value={sel.protein} goal={goals.dailyProteinGoal} unit="g" />
+            <MacroLine label="Carbs" value={sel.carbs} goal={goals.dailyCarbsGoal} unit="g" />
+            <MacroLine label="Fat" value={sel.fat} goal={goals.dailyFatGoal} unit="g" />
+          </GlassCard>
+        </div>
       </div>
 
       <WeekChart
@@ -289,18 +335,25 @@ export default async function HistoryPage({
         dailyValues={weekValues}
         avgValue={weekAvg}
         target={target}
-        lineColor={METRIC_VAR[metric]}
-        unitLabel={metric === 'kcal' ? 'kcal/day' : 'g/day'}
-        targetLabel={target ? `target ${Math.round(target)}${metric === 'kcal' ? '' : 'g'}` : null}
+        lineColor={isScore ? bandFor(weekAvg).color : METRIC_VAR[metric]}
+        unitLabel={isScore ? '/ 100 score' : metric === 'kcal' ? 'kcal/day' : 'g/day'}
+        targetLabel={
+          isScore
+            ? null
+            : target
+              ? `target ${Math.round(target)}${metric === 'kcal' ? '' : 'g'}`
+              : null
+        }
         isCurrentWeek={weekStartKey === weekStartFor(todayKey)}
-        todayHref={`/history${weekQS(weekStartFor(todayKey))}`}
-        prevHref={`/history${weekQS(shiftWeek(weekStartKey, -1))}`}
-        nextHref={`/history${weekQS(shiftWeek(weekStartKey, 1))}`}
+        todayHref={weekNavHref(weekStartFor(todayKey))}
+        prevHref={weekNavHref(shiftWeek(weekStartKey, -1))}
+        nextHref={weekNavHref(shiftWeek(weekStartKey, 1))}
         todayKey={todayKey}
+        selectedKey={selectedDay}
       />
 
       {best ? (
-        <Link href={`/history/${best.date}`} className="block">
+        <Link scroll={false} href={dayHref(best.date)} className="block">
           <GlassCard
             noAnimate
             className="flex items-center gap-4 p-5 transition hover:border-white/20"
@@ -314,8 +367,9 @@ export default async function HistoryPage({
               </p>
               <p className="mt-0.5 text-sm font-semibold text-white">{best.date}</p>
               <p className="mt-0.5 text-xs text-neutral-400 tabular-nums">
-                {formatValue(valueFor(best.totals, metric), metric)}
-                {metricUnit(metric)} · closest to target
+                {isScore
+                  ? `${dayValueFor(best.totals)} · best quality`
+                  : `${formatValue(valueFor(best.totals, metric), metric)}${metricUnit(metric)} · closest to target`}
               </p>
             </div>
             <ChevronRight size={16} className="text-neutral-500" />
@@ -330,6 +384,28 @@ export default async function HistoryPage({
         </GlassCard>
       )}
     </main>
+  );
+}
+
+/** One macro line in the selected-day summary: "Calories  820 / 1700 kcal". */
+function MacroLine({
+  label,
+  value,
+  goal,
+  unit,
+}: {
+  label: string;
+  value: number;
+  goal: number | null;
+  unit: string;
+}) {
+  return (
+    <p className="text-sm">
+      <span className="text-neutral-400">{label}: </span>
+      <span className="font-semibold text-white tabular-nums">{Math.round(value)}</span>
+      {goal != null ? <span className="text-neutral-500"> / {Math.round(goal)}</span> : null}
+      {unit ? <span className="text-neutral-500"> {unit}</span> : null}
+    </p>
   );
 }
 

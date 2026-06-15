@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { GlassCard } from './GlassCard';
-import { type CalendarDay } from '@/lib/history';
+import { type CalendarDay, weekStartFor } from '@/lib/history';
 import { cn } from '@/lib/utils';
 
 const HEADERS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
@@ -11,10 +11,16 @@ const OVER_COLOR = 'var(--danger)';
 export function HistoryCalendar({
   cells,
   accentColor,
+  selectedDate,
+  selectBase,
 }: {
   cells: Array<CalendarDay | null>;
   /** CSS variable string for the macro the user picked, e.g. "var(--macro-protein)". */
   accentColor: string;
+  /** The currently selected day key — highlighted, drives the summary below. */
+  selectedDate: string;
+  /** Query string (month/week/metric) a day link appends `&day=` to. */
+  selectBase: string;
 }) {
   return (
     <GlassCard noAnimate className="p-5">
@@ -33,6 +39,7 @@ export function HistoryCalendar({
         {cells.map((cell, i) => {
           if (!cell) return <div key={`pad-${i}`} aria-hidden />;
           const day = Number(cell.date.slice(8, 10));
+          const isSelected = cell.date === selectedDate;
           const empty = cell.totals.kcal === 0 || cell.status === 'no-data' || cell.isFuture;
           const noGoal = cell.status === 'no-goal' && cell.totals.kcal > 0;
           const showRing = !empty && !noGoal;
@@ -40,7 +47,11 @@ export function HistoryCalendar({
           const cellInner = (
             <div className="relative mx-auto flex h-9 w-9 items-center justify-center">
               {showRing ? (
-                <DayRing pct={cell.pct} isOver={cell.status === 'over'} accentColor={accentColor} />
+                <DayRing
+                  pct={cell.pct}
+                  isOver={cell.status === 'over'}
+                  accentColor={cell.color ?? accentColor}
+                />
               ) : (
                 <div
                   className={cn(
@@ -51,7 +62,12 @@ export function HistoryCalendar({
                   )}
                 />
               )}
-              {cell.isToday ? (
+              {isSelected ? (
+                <span
+                  className="pointer-events-none absolute inset-1.5 rounded-full bg-white/90"
+                  aria-hidden
+                />
+              ) : cell.isToday ? (
                 <span
                   className="pointer-events-none absolute -inset-1 rounded-full border-2 border-white/70"
                   aria-hidden
@@ -60,11 +76,13 @@ export function HistoryCalendar({
               <span
                 className={cn(
                   'relative text-xs tabular-nums',
-                  cell.isFuture
-                    ? 'text-neutral-600'
-                    : empty
-                      ? 'text-neutral-500'
-                      : 'font-semibold text-white',
+                  isSelected
+                    ? 'font-bold text-[#171430]'
+                    : cell.isFuture
+                      ? 'text-neutral-600'
+                      : empty
+                        ? 'text-neutral-500'
+                        : 'font-semibold text-white',
                 )}
               >
                 {day}
@@ -72,14 +90,15 @@ export function HistoryCalendar({
             </div>
           );
 
-          if (empty) {
+          if (cell.isFuture) {
             return <div key={cell.date}>{cellInner}</div>;
           }
           return (
             <Link
               key={cell.date}
-              href={`/history/${cell.date}`}
-              aria-label={`Open ${cell.date}`}
+              scroll={false}
+              href={`/history?${selectBase}&day=${cell.date}&week=${weekStartFor(cell.date)}`}
+              aria-label={`Select ${cell.date}`}
               onMouseDown={(e) => e.preventDefault()}
               className="block transition active:scale-95"
             >
