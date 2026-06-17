@@ -56,7 +56,7 @@ export type EvaluationInput = {
   tone: EvalTone;
 };
 
-const TONE_GUIDANCE: Record<EvalTone, string> = {
+export const TONE_GUIDANCE: Record<EvalTone, string> = {
   DIRECT: [
     'DIRECT tone: concise, no fluff, no exclamation marks. Like a coach',
     'who shoots straight. Example: "Solid protein hit (~32g). Cal a bit',

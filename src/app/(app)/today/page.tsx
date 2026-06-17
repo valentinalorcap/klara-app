@@ -9,6 +9,7 @@ import { EvalPoller } from '@/components/EvalPoller';
 import { KlaraTakeCard } from '@/components/KlaraTakeCard';
 import { DayNav } from '@/components/DayNav';
 import { CopyDayButton } from '@/components/CopyDayButton';
+import { FinishDayCard } from '@/components/FinishDayCard';
 import { EvalStatus } from '@prisma/client';
 import { isoDate, isDateKey, formatDayLabel, sumEntries } from '@/lib/meals';
 import { hasAnyGoal } from '@/lib/goals';
@@ -31,7 +32,7 @@ export default async function TodayPage({
   const returnTo = isToday ? '/today' : `/today?date=${dateKey}`;
   const newMealHref = isToday ? '/today/new' : `/today/new?date=${dateKey}`;
 
-  const [user, meals] = await Promise.all([
+  const [user, meals, dayEval] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -48,6 +49,9 @@ export default async function TodayPage({
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       include: { entries: { orderBy: { createdAt: 'asc' } }, evaluation: true },
     }),
+    prisma.dayEvaluation.findUnique({
+      where: { userId_date: { userId, date: dayDate } },
+    }),
   ]);
 
   const goals = {
@@ -60,7 +64,13 @@ export default async function TodayPage({
 
   const allEntries = meals.flatMap((m) => m.entries);
   const dayTotals = sumEntries(allEntries);
-  const hasPendingEvals = meals.some((m) => m.evaluation?.status === EvalStatus.PENDING);
+  const dayEvalPending = dayEval?.status === EvalStatus.PENDING;
+  const hasPendingEvals =
+    meals.some((m) => m.evaluation?.status === EvalStatus.PENDING) || dayEvalPending;
+  // The day review is stale if a meal changed after it was generated.
+  const lastMealChange = meals.reduce((max, m) => Math.max(max, m.updatedAt.getTime()), 0);
+  const dayEvalStale =
+    dayEval?.status === EvalStatus.DONE && lastMealChange > dayEval.updatedAt.getTime();
   const latestEval =
     meals
       .map((m) => m.evaluation)
@@ -198,6 +208,23 @@ export default async function TodayPage({
           ))}
         </div>
       )}
+
+      {meals.length > 0 ? (
+        <FinishDayCard
+          dateKey={dateKey}
+          stale={dayEvalStale}
+          take={
+            dayEval
+              ? {
+                  status: dayEval.status,
+                  tone: dayEval.tone,
+                  markdown: dayEval.markdown,
+                  errorMessage: dayEval.errorMessage,
+                }
+              : null
+          }
+        />
+      ) : null}
     </main>
   );
 }

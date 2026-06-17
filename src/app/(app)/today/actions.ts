@@ -9,6 +9,7 @@ import { prisma } from '@/lib/prisma';
 import { createMealInputSchema, type CreateMealInput, isoDate, isDateKey } from '@/lib/meals';
 import { evaluateMealById, markEvaluationPending } from '@/lib/evaluations.server';
 import { generateMealName, nameFromEntries } from '@/lib/mealName.server';
+import { markDayEvaluationPending, evaluateDayByDate } from '@/lib/dayEvaluation.server';
 import { estimateMealFromText } from '@/lib/freeTextEstimation.server';
 import type { EstimationResult } from '@/lib/freeTextEstimation';
 import { loadMealFormData } from '@/app/(app)/today/_data';
@@ -372,6 +373,35 @@ export async function copyDayToToday(sourceDateKey: unknown): Promise<ActionResu
 
   revalidatePath('/today');
   redirect('/today');
+}
+
+/**
+ * "Finish day" — the user closes a day so Klara reviews the whole thing.
+ * Queues a day-level evaluation (Sonnet) generated in the background. Safe to
+ * re-run: it overwrites the existing review (e.g. after adding a meal). Works
+ * for today or any past day.
+ */
+export async function finishDay(dateKey: unknown): Promise<ActionResult> {
+  const userId = await requireUserId();
+  if (!isDateKey(dateKey)) return { ok: false, error: 'Invalid date.' };
+
+  const date = new Date(dateKey + 'T00:00:00Z');
+  const mealCount = await prisma.meal.count({ where: { userId, date } });
+  if (mealCount === 0) return { ok: false, error: 'Log a meal before finishing the day.' };
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { defaultEvalTone: true },
+  });
+  if (!user) return { ok: false, error: 'User not found.' };
+
+  await markDayEvaluationPending(userId, dateKey, user.defaultEvalTone);
+  after(async () => {
+    await evaluateDayByDate(userId, dateKey);
+    revalidatePath('/today');
+  });
+  revalidatePath('/today');
+  return { ok: true };
 }
 
 /** Re-trigger the evaluation for a meal — used by the UI retry button. */
