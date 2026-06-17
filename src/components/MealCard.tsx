@@ -3,10 +3,10 @@
 import { useState, useTransition, useRef, useEffect, type MouseEvent } from 'react';
 import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Star, MoreVertical, Pencil, Trash2 } from 'lucide-react';
+import { Star, MoreVertical, Pencil, Trash2, Copy } from 'lucide-react';
 import { GlassCard } from './GlassCard';
 import { ProductIcon } from './ProductIcon';
-import { toggleFavorite, deleteMeal } from '@/app/(app)/today/actions';
+import { toggleFavorite, deleteMeal, copyMealToToday } from '@/app/(app)/today/actions';
 import { MEAL_TYPE_LABELS, type MealType, entryMacros, sumEntries } from '@/lib/meals';
 import { mealIconName } from '@/lib/productIcons';
 import { cn } from '@/lib/utils';
@@ -40,6 +40,8 @@ export function MealCard({
   const [menuOpen, setMenuOpen] = useState(false);
   const [pendingStar, startStar] = useTransition();
   const [pendingDelete, startDelete] = useTransition();
+  const [pendingCopy, startCopy] = useTransition();
+  const [copied, setCopied] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const totals = sumEntries(meal.entries);
 
@@ -62,6 +64,20 @@ export function MealCard({
   function onMenuToggle(e: MouseEvent) {
     e.stopPropagation();
     setMenuOpen((v) => !v);
+  }
+
+  function onCopy(e: MouseEvent) {
+    e.stopPropagation();
+    setMenuOpen(false);
+    startCopy(async () => {
+      const result = await copyMealToToday(meal.id);
+      if (result && !result.ok) {
+        window.alert(result.error);
+        return;
+      }
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    });
   }
 
   function onDelete(e: MouseEvent) {
@@ -125,13 +141,13 @@ export function MealCard({
               <IconButton
                 label="More actions"
                 onClick={onMenuToggle}
-                disabled={pendingDelete}
+                disabled={pendingDelete || pendingCopy}
                 className="text-neutral-400 hover:text-white"
               >
                 <MoreVertical size={18} />
               </IconButton>
               {menuOpen ? (
-                <div className="absolute top-full right-0 z-20 mt-1 w-36 overflow-hidden rounded-2xl border border-white/10 bg-[#1a1633]/95 p-1 shadow-2xl backdrop-blur-xl">
+                <div className="absolute top-full right-0 z-20 mt-1 w-40 overflow-hidden rounded-2xl border border-white/10 bg-[#1a1633]/95 p-1 shadow-2xl backdrop-blur-xl">
                   <Link
                     href={`/today/${meal.id}/edit?from=${encodeURIComponent(returnTo)}`}
                     onClick={(e) => e.stopPropagation()}
@@ -140,6 +156,14 @@ export function MealCard({
                     <Pencil size={14} className="text-neutral-400" />
                     Edit
                   </Link>
+                  <button
+                    type="button"
+                    onClick={onCopy}
+                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-white transition hover:bg-white/5"
+                  >
+                    <Copy size={14} className="text-neutral-400" />
+                    Copy to today
+                  </button>
                   <button
                     type="button"
                     onClick={onDelete}
@@ -189,13 +213,20 @@ export function MealCard({
         ) : null}
       </AnimatePresence>
 
-      <div className="mt-4 flex justify-center" aria-hidden>
-        <span
-          className={cn(
-            'h-[5px] w-12 rounded-full transition-colors',
-            expanded ? 'bg-white/15' : 'bg-white/25',
-          )}
-        />
+      <div className="mt-4 flex justify-center">
+        {copied ? (
+          <span className="rounded-full bg-[var(--accent)]/15 px-3 py-1 text-[11px] font-medium text-[var(--accent)]">
+            Added to today ✓
+          </span>
+        ) : (
+          <span
+            aria-hidden
+            className={cn(
+              'h-[5px] w-12 rounded-full transition-colors',
+              expanded ? 'bg-white/15' : 'bg-white/25',
+            )}
+          />
+        )}
       </div>
     </GlassCard>
   );
