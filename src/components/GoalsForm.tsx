@@ -11,8 +11,17 @@ type Initial = {
   dailyFatGoal: number | null;
 };
 
-export function GoalsForm({ initial }: { initial: Initial }) {
-  const [state, formAction, pending] = useActionState<GoalsFormState, FormData>(updateGoals, {});
+export function GoalsForm({
+  initial,
+  action = updateGoals,
+  submitLabel = 'Save goals',
+}: {
+  initial: Initial;
+  /** Server action handling the submit. Defaults to Settings' updateGoals. */
+  action?: (state: GoalsFormState, formData: FormData) => Promise<GoalsFormState>;
+  submitLabel?: string;
+}) {
+  const [state, formAction, pending] = useActionState<GoalsFormState, FormData>(action, {});
 
   return (
     <form action={formAction} className="space-y-5">
@@ -62,7 +71,7 @@ export function GoalsForm({ initial }: { initial: Initial }) {
         disabled={pending}
         className="w-full rounded-2xl bg-[var(--accent)] px-4 py-3.5 text-sm font-semibold text-white shadow-[0_8px_24px_-8px_var(--accent-glow)] transition hover:bg-[var(--accent-hover)] active:scale-[0.98] disabled:opacity-50"
       >
-        {pending ? 'Saving…' : 'Save goals'}
+        {pending ? 'Saving…' : submitLabel}
       </button>
     </form>
   );
