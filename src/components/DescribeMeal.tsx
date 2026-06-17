@@ -14,9 +14,14 @@ import { cn } from '@/lib/utils';
 export function DescribeMeal({
   onAddEstimate,
   onError,
+  label = 'Describe your meal',
+  placeholder = 'e.g. yogurt with berries and granola',
 }: {
   onAddEstimate: (entries: EstimationEntry[]) => void;
   onError: (message: string) => void;
+  /** Section label — override for non-meal contexts (e.g. recipe ingredients). */
+  label?: string;
+  placeholder?: string;
 }) {
   const [value, setValue] = useState('');
   const [estimating, startEstimate] = useTransition();
@@ -38,13 +43,11 @@ export function DescribeMeal({
 
   return (
     <div className="space-y-2.5">
-      <p className="text-xs font-medium tracking-wider text-neutral-400 uppercase">
-        Describe your meal
-      </p>
+      <p className="text-xs font-medium tracking-wider text-neutral-400 uppercase">{label}</p>
       <textarea
         value={value}
         onChange={(e) => setValue(e.target.value)}
-        placeholder="e.g. yogurt with berries and granola"
+        placeholder={placeholder}
         rows={2}
         maxLength={800}
         className="block w-full resize-none rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm text-white placeholder:text-neutral-500 focus:bg-white/[0.08] focus:ring-2 focus:ring-[var(--accent)]/60 focus:outline-none"
