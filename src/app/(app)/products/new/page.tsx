@@ -16,7 +16,8 @@ export default function NewProductPage() {
 
       <h1 className="mt-4 text-2xl font-bold tracking-tight text-white">New product</h1>
       <p className="mt-1 text-sm text-neutral-400">
-        Type in the nutrition info as it appears on the label (per 100g).
+        Add a photo of the nutrition label and Klara fills it in, or type the values yourself (per
+        100g).
       </p>
 
       <div className="mt-8">

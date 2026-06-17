@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Plus, Package, Camera } from 'lucide-react';
+import { Plus, Package } from 'lucide-react';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { EmptyTab } from '@/components/EmptyTab';
@@ -23,22 +23,13 @@ export default async function ProductsPage() {
           <h1 className="text-2xl font-bold tracking-tight text-white">Products</h1>
           <p className="mt-1 text-sm text-neutral-400">Your food library — macros per 100g.</p>
         </div>
-        <div className="flex items-center gap-2">
-          <Link
-            href="/products/scan"
-            aria-label="Scan label"
-            className="flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/[0.06] text-neutral-200 backdrop-blur-xl transition hover:bg-white/10 active:scale-95"
-          >
-            <Camera size={18} />
-          </Link>
-          <Link
-            href="/products/new"
-            aria-label="Add product"
-            className="flex h-11 w-11 items-center justify-center rounded-full bg-[var(--accent)] text-white shadow-[0_8px_24px_-8px_var(--accent-glow)] transition hover:bg-[var(--accent-hover)] active:scale-95"
-          >
-            <Plus size={20} />
-          </Link>
-        </div>
+        <Link
+          href="/products/new"
+          aria-label="Add product"
+          className="flex h-11 w-11 items-center justify-center rounded-full bg-[var(--accent)] text-white shadow-[0_8px_24px_-8px_var(--accent-glow)] transition hover:bg-[var(--accent-hover)] active:scale-95"
+        >
+          <Plus size={20} />
+        </Link>
       </header>
 
       {products.length === 0 ? (
