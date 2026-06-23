@@ -608,9 +608,10 @@ function IngredientSwipeRow({
             inputMode="decimal"
             value={row.grams}
             onChange={(e) => onGramsChange(e.target.value)}
+            onFocus={(e) => e.target.select()}
             placeholder="100"
             aria-label="Grams"
-            className="w-11 rounded-xl border border-white/10 bg-white/[0.04] px-1.5 py-1 text-right text-sm text-white tabular-nums placeholder:text-neutral-500 focus:bg-white/[0.08] focus:ring-2 focus:ring-[var(--accent)]/60 focus:outline-none"
+            className="w-16 rounded-xl border border-white/10 bg-white/[0.04] px-2.5 py-1.5 text-right text-sm text-white tabular-nums placeholder:text-neutral-500 focus:bg-white/[0.08] focus:ring-2 focus:ring-[var(--accent)]/60 focus:outline-none"
           />
           <span className="text-xs text-neutral-400">g</span>
         </div>

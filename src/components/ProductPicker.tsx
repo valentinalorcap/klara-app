@@ -21,9 +21,11 @@ export function ProductPicker({
   const [value, setValue] = useState('');
   const [focused, setFocused] = useState(false);
   const trimmed = value.trim();
+  // At rest, only the products marked "in use" show; everything else appears
+  // once the user starts typing.
   const filtered = trimmed
     ? items.filter((i) => i.name.toLowerCase().includes(trimmed.toLowerCase())).slice(0, 8)
-    : items.slice(0, 6);
+    : items.filter((i) => i.kind === 'product' && i.inUse);
 
   function pick(item: LibraryItem) {
     let grams = 100;
@@ -40,7 +42,7 @@ export function ProductPicker({
   return (
     <div className="space-y-2.5">
       <p className="text-xs font-medium tracking-wider text-neutral-400 uppercase">
-        Add a saved product
+        Add saved products or recipes
       </p>
       <div className="relative">
         <Search
@@ -64,7 +66,9 @@ export function ProductPicker({
           No saved products yet — add one from the Products tab.
         </p>
       ) : filtered.length === 0 ? (
-        <p className="px-1 py-1 text-xs text-neutral-500">No matches.</p>
+        <p className="px-1 py-1 text-xs text-neutral-500">
+          {trimmed ? 'No matches.' : 'Type to search your products & recipes.'}
+        </p>
       ) : (
         <ul className="max-h-56 space-y-1 overflow-y-auto">
           {filtered.map((item) => (
@@ -83,8 +87,8 @@ export function ProductPicker({
                   )}
                   <span className="truncate">{item.name}</span>
                 </span>
-                <span className="shrink-0 text-[10px] tracking-wider text-neutral-500 uppercase">
-                  {item.kind}
+                <span className="max-w-[40%] shrink-0 truncate text-[10px] tracking-wider text-neutral-500 uppercase">
+                  {item.kind === 'recipe' ? 'recipe' : item.brand || 'product'}
                 </span>
               </button>
             </li>
