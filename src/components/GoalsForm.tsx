@@ -64,21 +64,24 @@ export function GoalsForm({
           label="Protein (g)"
           name="dailyProteinGoal"
           defaultValue={initial.dailyProteinGoal}
-          placeholder={String(sug.protein)}
+          widthClass="w-40"
+          placeholder={`${sug.protein} (suggested)`}
           error={state.fieldErrors?.dailyProteinGoal}
         />
         <Field
           label="Carbs (g)"
           name="dailyCarbsGoal"
           defaultValue={initial.dailyCarbsGoal}
-          placeholder={String(sug.carbs)}
+          widthClass="w-40"
+          placeholder={`${sug.carbs} (suggested)`}
           error={state.fieldErrors?.dailyCarbsGoal}
         />
         <Field
           label="Fat (g)"
           name="dailyFatGoal"
           defaultValue={initial.dailyFatGoal}
-          placeholder={String(sug.fat)}
+          widthClass="w-40"
+          placeholder={`${sug.fat} (suggested)`}
           error={state.fieldErrors?.dailyFatGoal}
         />
       </GlassCard>
@@ -108,6 +111,7 @@ function Field({
   value,
   onChange,
   defaultValue,
+  widthClass = 'w-24',
 }: {
   label: string;
   name: string;
@@ -118,6 +122,8 @@ function Field({
   onChange?: (v: string) => void;
   /** Uncontrolled initial value (macros). */
   defaultValue?: number | null;
+  /** Input width — wider for the "(suggested)" placeholders. */
+  widthClass?: string;
 }) {
   const controlled = value !== undefined;
   return (
@@ -137,7 +143,7 @@ function Field({
                 onChange: (e: React.ChangeEvent<HTMLInputElement>) => onChange?.(e.target.value),
               }
             : { defaultValue: defaultValue ?? '' })}
-          className={`w-24 rounded-2xl border bg-white/[0.04] px-3 py-2 text-right text-sm text-white tabular-nums transition placeholder:text-neutral-500 focus:bg-white/[0.08] focus:ring-2 focus:ring-[var(--accent)]/60 focus:outline-none ${
+          className={`${widthClass} rounded-2xl border bg-white/[0.04] px-3 py-2 text-right text-sm text-white tabular-nums transition placeholder:text-neutral-500 focus:bg-white/[0.08] focus:ring-2 focus:ring-[var(--accent)]/60 focus:outline-none ${
             error ? 'border-[var(--danger)]/60' : 'border-white/10'
           }`}
           aria-invalid={Boolean(error)}
