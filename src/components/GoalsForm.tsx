@@ -38,8 +38,19 @@ export function GoalsForm({
   );
   const sug = suggestedMacros(Number(kcal) || 0);
 
+  // Confirm before saving only if a macro field was left empty.
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    const form = e.currentTarget;
+    const val = (n: string) =>
+      (form.elements.namedItem(n) as HTMLInputElement | null)?.value.trim() ?? '';
+    const missingMacro = !val('dailyProteinGoal') || !val('dailyCarbsGoal') || !val('dailyFatGoal');
+    if (missingMacro && !window.confirm('You left a macro empty. Continue anyway?')) {
+      e.preventDefault();
+    }
+  }
+
   return (
-    <form action={formAction} className="space-y-5">
+    <form action={formAction} onSubmit={handleSubmit} className="space-y-5">
       <GlassCard className="space-y-3 p-5">
         <p className="text-xs font-medium tracking-wider text-neutral-400 uppercase">
           Daily calories
@@ -64,21 +75,21 @@ export function GoalsForm({
           label="Protein (g)"
           name="dailyProteinGoal"
           defaultValue={initial.dailyProteinGoal}
-          placeholder={`${sug.protein} (suggested)`}
+          placeholder={String(sug.protein)}
           error={state.fieldErrors?.dailyProteinGoal}
         />
         <Field
           label="Carbs (g)"
           name="dailyCarbsGoal"
           defaultValue={initial.dailyCarbsGoal}
-          placeholder={`${sug.carbs} (suggested)`}
+          placeholder={String(sug.carbs)}
           error={state.fieldErrors?.dailyCarbsGoal}
         />
         <Field
           label="Fat (g)"
           name="dailyFatGoal"
           defaultValue={initial.dailyFatGoal}
-          placeholder={`${sug.fat} (suggested)`}
+          placeholder={String(sug.fat)}
           error={state.fieldErrors?.dailyFatGoal}
         />
       </GlassCard>
@@ -108,7 +119,7 @@ function Field({
   value,
   onChange,
   defaultValue,
-  widthClass = 'w-36',
+  widthClass = 'w-24',
 }: {
   label: string;
   name: string;
@@ -119,7 +130,7 @@ function Field({
   onChange?: (v: string) => void;
   /** Uncontrolled initial value (macros). */
   defaultValue?: number | null;
-  /** Input width — wider for the "(suggested)" placeholders. */
+  /** Input width. */
   widthClass?: string;
 }) {
   const controlled = value !== undefined;
