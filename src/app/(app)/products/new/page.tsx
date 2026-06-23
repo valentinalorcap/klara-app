@@ -15,10 +15,6 @@ export default function NewProductPage() {
       </Link>
 
       <h1 className="mt-4 text-2xl font-bold tracking-tight text-white">New product</h1>
-      <p className="mt-1 text-sm text-neutral-400">
-        Add a photo of the nutrition label and Klara fills it in, or type the values yourself (per
-        100g).
-      </p>
 
       <div className="mt-8">
         <ProductForm action={createProduct} submitLabel="Create product" />

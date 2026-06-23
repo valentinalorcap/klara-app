@@ -90,10 +90,9 @@ export async function toggleProductInUse(productId: string) {
     select: { userId: true, inUse: true },
   });
   if (!existing || existing.userId !== userId) return;
-  await prisma.product.update({
-    where: { id: productId },
-    data: { inUse: !existing.inUse },
-  });
+  // Raw update so `updatedAt` is NOT bumped — toggling in-use must not reorder
+  // the list (which sorts by updatedAt). Editing a product still bumps it.
+  await prisma.$executeRaw`UPDATE "Product" SET "inUse" = ${!existing.inUse} WHERE "id" = ${productId}`;
   revalidatePath('/products');
 }
 
@@ -104,6 +103,19 @@ export async function deleteProduct(productId: string) {
   await prisma.product.delete({ where: { id: productId } });
   revalidatePath('/products');
   redirect('/products');
+}
+
+/** Delete a product without redirecting — used by the list's swipe-to-delete
+ *  so the row can animate out in place instead of navigating. */
+export async function deleteProductInline(productId: string) {
+  const userId = await requireUserId();
+  const existing = await prisma.product.findUnique({
+    where: { id: productId },
+    select: { userId: true },
+  });
+  if (!existing || existing.userId !== userId) return;
+  await prisma.product.delete({ where: { id: productId } });
+  revalidatePath('/products');
 }
 
 export type ExtractFromLabelResult =
