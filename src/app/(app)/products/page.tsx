@@ -17,7 +17,7 @@ export default async function ProductsPage() {
       <header className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-white">Products</h1>
-          <p className="mt-1 text-sm text-neutral-400">Your food library — macros per 100g.</p>
+          <p className="mt-1 text-sm text-neutral-400">List of saved products</p>
         </div>
         <Link
           href="/products/new"
