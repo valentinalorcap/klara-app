@@ -1,9 +1,15 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useState, useRef, useTransition } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
+import { Camera, Sparkles, RotateCcw } from 'lucide-react';
 import type { ProductFormState } from '@/app/(app)/products/actions';
+import { extractFromLabel } from '@/app/(app)/products/actions';
 import { GlassCard } from './GlassCard';
+import { cn } from '@/lib/utils';
+
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 
 type Product = {
   name: string;
@@ -16,6 +22,8 @@ type Product = {
   icon?: string | null;
 };
 
+const numStr = (n: number | null | undefined) => (n != null ? String(n) : '');
+
 export function ProductForm({
   action,
   initialValues,
@@ -27,15 +35,130 @@ export function ProductForm({
 }) {
   const [state, formAction, pending] = useActionState<ProductFormState, FormData>(action, {});
 
+  // Controlled so a label scan can prefill every field.
+  const [name, setName] = useState(initialValues?.name ?? '');
+  const [brand, setBrand] = useState(initialValues?.brand ?? '');
+  const [kcal, setKcal] = useState(numStr(initialValues?.kcalPer100g));
+  const [protein, setProtein] = useState(numStr(initialValues?.proteinPer100g));
+  const [carbs, setCarbs] = useState(numStr(initialValues?.carbsPer100g));
+  const [fat, setFat] = useState(numStr(initialValues?.fatPer100g));
+  const [portion, setPortion] = useState(numStr(initialValues?.suggestedPortionGrams));
+  const [icon, setIcon] = useState(initialValues?.icon ?? '');
+
+  // Label-scan state.
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [scanError, setScanError] = useState<string | null>(null);
+  const [analyzing, startAnalyze] = useTransition();
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  function onPhoto(e: React.ChangeEvent<HTMLInputElement>) {
+    const picked = e.target.files?.[0];
+    if (fileRef.current) fileRef.current.value = ''; // allow re-picking the same file
+    if (!picked) return;
+    if (picked.size > MAX_IMAGE_BYTES) {
+      const mb = (picked.size / 1024 / 1024).toFixed(1);
+      setScanError(`That photo is ${mb} MB — use one under 5 MB.`);
+      return;
+    }
+    setScanError(null);
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setPreviewUrl(URL.createObjectURL(picked));
+
+    // Analyze immediately — no separate "analyze" step.
+    const formData = new FormData();
+    formData.append('image', picked);
+    startAnalyze(async () => {
+      const result = await extractFromLabel(formData);
+      if (!result.ok) {
+        setScanError(result.error);
+        return;
+      }
+      const d = result.data;
+      setName(d.name ?? '');
+      setBrand(d.brand ?? '');
+      setKcal(numStr(d.kcalPer100g));
+      setProtein(numStr(d.proteinPer100g));
+      setCarbs(numStr(d.carbsPer100g));
+      setFat(numStr(d.fatPer100g));
+      setPortion(numStr(d.suggestedPortionGrams));
+      setIcon(d.icon ?? '');
+    });
+  }
+
   return (
     <form action={formAction} className="space-y-5">
-      {/* Carries Claude's scanned icon (or an existing product's) through
-          to the server action. Not user-editable — icons are automatic. */}
-      <input type="hidden" name="icon" defaultValue={initialValues?.icon ?? ''} />
+      {/* Scanned photo stays pinned at the top (small) so the user can compare
+          it against the values Klara copied in. */}
+      {previewUrl ? (
+        <GlassCard className="relative overflow-hidden p-2">
+          <Image
+            src={previewUrl}
+            alt="Nutrition label"
+            width={400}
+            height={400}
+            unoptimized
+            className={cn(
+              'mx-auto max-h-44 w-auto rounded-xl object-contain transition',
+              analyzing && 'scale-[0.99] blur-[2px] brightness-50',
+            )}
+          />
+          {analyzing ? (
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+              <span className="flex items-center gap-1.5 rounded-full bg-black/40 px-3 py-1 text-xs font-medium text-white backdrop-blur-sm">
+                <Sparkles size={12} className="animate-pulse text-[var(--accent)]" />
+                Reading…
+              </span>
+            </div>
+          ) : null}
+        </GlassCard>
+      ) : null}
+
+      <label className="block">
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          onChange={onPhoto}
+          disabled={analyzing}
+          className="sr-only"
+        />
+        <span
+          aria-disabled={analyzing}
+          className={cn(
+            'flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl border border-[var(--accent)]/30 bg-[var(--accent)]/10 px-4 py-3 text-sm font-semibold text-[var(--accent)] transition hover:bg-[var(--accent)]/15',
+            analyzing && 'pointer-events-none cursor-not-allowed opacity-60',
+          )}
+        >
+          {analyzing ? (
+            <>
+              <Sparkles size={15} className="animate-pulse" /> Klara is reading the label…
+            </>
+          ) : previewUrl ? (
+            <>
+              <RotateCcw size={15} /> Replace photo
+            </>
+          ) : (
+            <>
+              <Camera size={15} /> Add photo of the label
+            </>
+          )}
+        </span>
+      </label>
+      {scanError ? (
+        <p className="text-sm text-[var(--danger)]" role="alert">
+          {scanError}
+        </p>
+      ) : null}
+
+      {/* Carries Claude's scanned icon (or an existing product's) through to the
+          server action. Not user-editable — icons are automatic. */}
+      <input type="hidden" name="icon" value={icon} />
       <Field
         label="Name"
         name="name"
-        defaultValue={initialValues?.name}
+        value={name}
+        onChange={setName}
+        disabled={analyzing}
         placeholder="Skyr yogurt"
         error={state.fieldErrors?.name}
         required
@@ -43,7 +166,9 @@ export function ProductForm({
       <Field
         label="Brand (optional)"
         name="brand"
-        defaultValue={initialValues?.brand ?? ''}
+        value={brand}
+        onChange={setBrand}
+        disabled={analyzing}
         placeholder="Sancor"
         error={state.fieldErrors?.brand}
       />
@@ -55,7 +180,10 @@ export function ProductForm({
           name="kcalPer100g"
           type="number"
           step="0.1"
-          defaultValue={initialValues?.kcalPer100g}
+          row
+          value={kcal}
+          onChange={setKcal}
+          disabled={analyzing}
           error={state.fieldErrors?.kcalPer100g}
           required
         />
@@ -64,7 +192,10 @@ export function ProductForm({
           name="proteinPer100g"
           type="number"
           step="0.1"
-          defaultValue={initialValues?.proteinPer100g}
+          row
+          value={protein}
+          onChange={setProtein}
+          disabled={analyzing}
           error={state.fieldErrors?.proteinPer100g}
           required
         />
@@ -73,7 +204,10 @@ export function ProductForm({
           name="carbsPer100g"
           type="number"
           step="0.1"
-          defaultValue={initialValues?.carbsPer100g}
+          row
+          value={carbs}
+          onChange={setCarbs}
+          disabled={analyzing}
           error={state.fieldErrors?.carbsPer100g}
           required
         />
@@ -82,7 +216,10 @@ export function ProductForm({
           name="fatPer100g"
           type="number"
           step="0.1"
-          defaultValue={initialValues?.fatPer100g}
+          row
+          value={fat}
+          onChange={setFat}
+          disabled={analyzing}
           error={state.fieldErrors?.fatPer100g}
           required
         />
@@ -94,7 +231,9 @@ export function ProductForm({
         type="number"
         step="1"
         placeholder="e.g. 150"
-        defaultValue={initialValues?.suggestedPortionGrams ?? ''}
+        value={portion}
+        onChange={setPortion}
+        disabled={analyzing}
         error={state.fieldErrors?.suggestedPortionGrams}
       />
 
@@ -107,7 +246,7 @@ export function ProductForm({
       <div className="space-y-2">
         <button
           type="submit"
-          disabled={pending}
+          disabled={pending || analyzing}
           className="w-full rounded-2xl bg-[var(--accent)] px-4 py-3.5 text-sm font-semibold text-white shadow-[0_8px_24px_-8px_var(--accent-glow)] transition hover:bg-[var(--accent-hover)] active:scale-[0.98] disabled:opacity-50"
         >
           {pending ? 'Saving…' : submitLabel}
@@ -129,19 +268,56 @@ function Field({
   type = 'text',
   step,
   placeholder,
-  defaultValue,
+  value,
+  onChange,
   error,
   required,
+  row = false,
+  disabled = false,
 }: {
   label: string;
   name: string;
   type?: string;
   step?: string;
   placeholder?: string;
-  defaultValue?: string | number;
+  value: string;
+  onChange: (v: string) => void;
   error?: string;
   required?: boolean;
+  /** Compact row layout (label left, value input right) — like add meal. */
+  row?: boolean;
+  disabled?: boolean;
 }) {
+  const inputBase = cn(
+    'rounded-2xl border bg-white/[0.04] text-sm text-white transition placeholder:text-neutral-500 focus:bg-white/[0.08] focus:ring-2 focus:ring-[var(--accent)]/60 focus:outline-none disabled:opacity-50',
+    error ? 'border-[var(--danger)]/60' : 'border-white/10',
+  );
+
+  if (row) {
+    return (
+      <div className={cn(disabled && 'opacity-60')}>
+        <label className="flex items-center justify-between gap-3">
+          <span className="text-sm text-neutral-300">{label}</span>
+          <input
+            name={name}
+            type={type}
+            step={step}
+            placeholder={placeholder}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            onFocus={(e) => e.target.select()}
+            required={required}
+            disabled={disabled}
+            inputMode={type === 'number' ? 'decimal' : undefined}
+            className={cn('w-24 px-3 py-2 text-right tabular-nums', inputBase)}
+            aria-invalid={Boolean(error)}
+          />
+        </label>
+        {error ? <p className="mt-1 text-right text-xs text-[var(--danger)]">{error}</p> : null}
+      </div>
+    );
+  }
+
   return (
     <label className="block">
       <span className="text-xs font-medium text-neutral-300">{label}</span>
@@ -150,12 +326,12 @@ function Field({
         type={type}
         step={step}
         placeholder={placeholder}
-        defaultValue={defaultValue}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
         required={required}
+        disabled={disabled}
         inputMode={type === 'number' ? 'decimal' : undefined}
-        className={`mt-2 block w-full rounded-2xl border bg-white/[0.04] px-4 py-3 text-sm text-white transition placeholder:text-neutral-500 focus:bg-white/[0.08] focus:ring-2 focus:ring-[var(--accent)]/60 focus:outline-none ${
-          error ? 'border-[var(--danger)]/60' : 'border-white/10'
-        }`}
+        className={cn('mt-2 block w-full px-4 py-3', inputBase)}
         aria-invalid={Boolean(error)}
       />
       {error ? <p className="mt-1.5 text-xs text-[var(--danger)]">{error}</p> : null}
