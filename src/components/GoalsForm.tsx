@@ -64,7 +64,6 @@ export function GoalsForm({
           label="Protein (g)"
           name="dailyProteinGoal"
           defaultValue={initial.dailyProteinGoal}
-          widthClass="w-40"
           placeholder={`${sug.protein} (suggested)`}
           error={state.fieldErrors?.dailyProteinGoal}
         />
@@ -72,7 +71,6 @@ export function GoalsForm({
           label="Carbs (g)"
           name="dailyCarbsGoal"
           defaultValue={initial.dailyCarbsGoal}
-          widthClass="w-40"
           placeholder={`${sug.carbs} (suggested)`}
           error={state.fieldErrors?.dailyCarbsGoal}
         />
@@ -80,7 +78,6 @@ export function GoalsForm({
           label="Fat (g)"
           name="dailyFatGoal"
           defaultValue={initial.dailyFatGoal}
-          widthClass="w-40"
           placeholder={`${sug.fat} (suggested)`}
           error={state.fieldErrors?.dailyFatGoal}
         />
@@ -111,7 +108,7 @@ function Field({
   value,
   onChange,
   defaultValue,
-  widthClass = 'w-24',
+  widthClass = 'w-36',
 }: {
   label: string;
   name: string;
