@@ -19,7 +19,7 @@ export function MealList({ meals, returnTo }: { meals: MealCardMeal[]; returnTo:
             // Deleted card just fades out in place; the rest slide up (layout).
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
+            exit={{ opacity: 0, transition: { duration: 0.12 } }}
             transition={{ type: 'spring', stiffness: 320, damping: 30 }}
           >
             <MealCard meal={meal} returnTo={returnTo} />
