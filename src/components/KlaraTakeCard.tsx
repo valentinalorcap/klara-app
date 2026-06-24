@@ -52,7 +52,7 @@ export function KlaraTakeCard({ take }: { take: KlaraTake }) {
     return (
       <GlassCard className="border-[var(--danger)]/20 bg-[var(--danger)]/[0.04] p-4">
         <div className="flex items-center justify-between gap-3">
-          <p className="text-xs text-[var(--danger)]">Couldn't generate an evaluation.</p>
+          <p className="text-xs text-[var(--danger)]">Couldn&apos;t generate an evaluation.</p>
           <button
             type="button"
             onClick={onRetry}

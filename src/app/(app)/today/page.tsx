@@ -196,7 +196,7 @@ export default async function TodayPage({
           <p className="text-sm text-neutral-300">
             {isToday ? 'No meals logged yet.' : 'No meals logged for this day.'}
           </p>
-          <p className="mt-1 text-xs text-neutral-500">Tap "Add meals" above to log one.</p>
+          <p className="mt-1 text-xs text-neutral-500">Tap &quot;Add meal&quot; above to log one.</p>
         </GlassCard>
       ) : (
         <MealList
