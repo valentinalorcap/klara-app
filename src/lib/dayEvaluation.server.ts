@@ -55,7 +55,7 @@ function buildSystemPrompt(tone: EvalTone): string {
     '   Bad: "protein fell short" / "carbs ran ahead of fat".',
     '   The OVER/UNDER tags help you reason — they must NOT appear in your output.',
     '4. The 🎯 recommendation must name a specific ingredient or product that fits',
-    '   the user\'s actual diet (infer from history — never recommend what they don\'t eat).',
+    "   the user's actual diet (infer from history — never recommend what they don't eat).",
     '5. Recommendation priority — follow this order strictly:',
     '   a. Protein first: if protein is UNDER, always recommend a protein-rich ingredient.',
     '   b. Carbs second: if protein is ON-TRACK or OVER, check carbs — if UNDER,',

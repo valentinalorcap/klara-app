@@ -65,7 +65,7 @@ export const TONE_GUIDANCE: Record<EvalTone, string> = {
   MOTIVATIONAL: [
     'MOTIVATIONAL tone: warm and encouraging. Celebrate a structural win,',
     'then give one concrete ingredient-level next step that fits their eating pattern.',
-    "Example: \"Solid start! Add cottage cheese or an egg to the next slot and you're set.\"",
+    'Example: "Solid start! Add cottage cheese or an egg to the next slot and you\'re set."',
   ].join(' '),
   NEUTRAL: [
     'NEUTRAL tone: honest, no emotional framing. State what the next meal slot needs and',
@@ -96,7 +96,7 @@ export function buildSystemPrompt(tone: EvalTone): string {
     '   Bad: "protein is under target" / "fat ran ahead".',
     '   Never suggest more of an OVER macro. Never mention an UNSET macro.',
     '5. The 🎯 recommendation must name a specific ingredient or product that fits the',
-    '   user\'s actual diet. Infer their dietary pattern from the meal history — if they',
+    "   user's actual diet. Infer their dietary pattern from the meal history — if they",
     '   never log meat, do not recommend meat. Match what they actually eat.',
     '6. Recommendation priority — follow this order strictly:',
     '   a. Protein first: if protein is UNDER, always recommend a protein-rich ingredient.',
