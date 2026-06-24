@@ -30,7 +30,11 @@ const optionalWeight = z
 /** Form input for create/update of a Recipe. */
 export const recipeInputSchema = z.object({
   name: z.string().trim().min(1, 'Name is required').max(120),
-  portions: z.coerce.number().int().positive('Must be at least 1').max(100),
+  // Optional — blank means "1 portion". Auto-derived from weight ÷ suggested
+  // portion in the form, but the user can leave it empty.
+  portions: z
+    .union([z.literal(''), z.coerce.number().int().positive('Must be at least 1').max(100)])
+    .transform((v) => (v === '' ? 1 : v)),
   ingredients: z.array(recipeIngredientSchema).min(1, 'Add at least one ingredient'),
   /** Optional cooked weight — when present, overrides the ingredient sum as the denominator for per-100g macros. */
   totalGrams: optionalWeight,

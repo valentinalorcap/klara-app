@@ -1,11 +1,20 @@
 import { redirect } from 'next/navigation';
 import { auth } from '@/auth';
+import { prisma } from '@/lib/prisma';
 import { BottomNav } from '@/components/BottomNav';
 import { ToastProvider } from '@/components/Toast';
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
-  if (!session?.user) redirect('/login');
+  if (!session?.user?.id) redirect('/login');
+
+  // First-run gate: a user who hasn't been onboarded goes to /welcome (which
+  // lives outside this layout, so there's no redirect loop).
+  const me = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { onboardedAt: true },
+  });
+  if (me && !me.onboardedAt) redirect('/welcome');
 
   return (
     // App-shell: fixed outer container so the document never scrolls; an inner

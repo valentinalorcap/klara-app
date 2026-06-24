@@ -1,38 +1,20 @@
 'use client';
 
-import { useActionState, useState, useMemo } from 'react';
+import { useActionState, useState, useMemo, useRef } from 'react';
 import Link from 'next/link';
-import { Trash2, Plus } from 'lucide-react';
 import { GlassCard } from './GlassCard';
-import { IngredientPicker, type ProductOption, type LibraryItem } from './IngredientPicker';
-import { computeRecipeTotals, perPortion } from '@/lib/recipes';
+import { type ProductOption, type LibraryItem } from './IngredientPicker';
+import { IngredientTabs } from './IngredientTabs';
+import { MacroStats } from './MacroStats';
+import {
+  IngredientSwipeRow,
+  rowFromItem,
+  rowFromEstimate,
+  type IngredientRow,
+} from './IngredientRow';
+import { computeRecipeTotals, perPortion, effectiveTotalGrams } from '@/lib/recipes';
+import type { EstimationEntry } from '@/lib/freeTextEstimation';
 import type { RecipeFormState } from '@/app/(app)/library/recipes/actions';
-
-type IngredientRow = {
-  /** The displayed/typed name. Always present after the user types or picks. */
-  name: string;
-  /** Stored as string while editing so the input can be cleared. */
-  grams: string;
-  /** Whether macros have been filled (by AI or library). */
-  resolved: boolean;
-  productId?: string;
-  kcalPer100g: number;
-  proteinPer100g: number;
-  carbsPer100g: number;
-  fatPer100g: number;
-};
-
-function emptyRow(): IngredientRow {
-  return {
-    name: '',
-    grams: '',
-    resolved: false,
-    kcalPer100g: 0,
-    proteinPer100g: 0,
-    carbsPer100g: 0,
-    fatPer100g: 0,
-  };
-}
 
 type InitialRecipe = {
   name: string;
@@ -63,17 +45,26 @@ export function RecipeForm({
 }) {
   const [state, formAction, pending] = useActionState<RecipeFormState, FormData>(action, {});
   const [name, setName] = useState(initialValues?.name ?? '');
-  const [portions, setPortions] = useState(String(initialValues?.portions ?? 1));
+  // Optional; left blank for a new recipe (auto-fills from weight ÷ portion).
+  const [portions, setPortions] = useState(
+    initialValues?.portions != null ? String(initialValues.portions) : '',
+  );
   const [totalGrams, setTotalGrams] = useState(
     initialValues?.totalGrams != null ? String(initialValues.totalGrams) : '',
   );
   const [suggestedPortionGrams, setSuggestedPortionGrams] = useState(
     initialValues?.suggestedPortionGrams != null ? String(initialValues.suggestedPortionGrams) : '',
   );
-  const [rowError, setRowError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  // Monotonic row-id source; initial rows get deterministic index ids so the
+  // ref is never read during render (hydration-stable).
+  const rowIdSeq = useRef(initialValues?.ingredients.length ?? 0);
+  const nextRowId = () => `row-${rowIdSeq.current++}`;
   const [rows, setRows] = useState<IngredientRow[]>(
     initialValues?.ingredients.length
-      ? initialValues.ingredients.map((i) => ({
+      ? initialValues.ingredients.map((i, idx) => ({
+          id: `row-${idx}`,
           name: i.name,
           grams: String(i.grams),
           resolved: true,
@@ -83,9 +74,10 @@ export function RecipeForm({
           carbsPer100g: i.carbsPer100g,
           fatPer100g: i.fatPer100g,
         }))
-      : [emptyRow()],
+      : [],
   );
 
+  // Recipes can't contain recipes, so the picker only offers products.
   const productsAsItems = useMemo<LibraryItem[]>(
     () => products.map((p) => ({ kind: 'product', ...p })),
     [products],
@@ -107,7 +99,6 @@ export function RecipeForm({
   );
   const totals = useMemo(() => computeRecipeTotals(resolvedRows), [resolvedRows]);
   const portionsNum = Number(portions) || 1;
-  const perPortionMacros = perPortion(totals, portionsNum);
 
   const ingredientSumGrams = useMemo(
     () => resolvedRows.reduce((sum, r) => sum + r.grams, 0),
@@ -115,18 +106,51 @@ export function RecipeForm({
   );
   const totalGramsForDefault = Number(totalGrams) || ingredientSumGrams;
 
-  function updateRow(index: number, patch: Partial<IngredientRow>) {
-    setRows((prev) => prev.map((r, i) => (i === index ? { ...r, ...patch } : r)));
+  // Live preview: per the suggested portion grams when set (recipe scaled to
+  // those grams), else fall back to total ÷ portions.
+  const denom = effectiveTotalGrams({ totalGrams: Number(totalGrams) || null, ingredientSumGrams });
+  const sp = Number(suggestedPortionGrams);
+  const usePortionGrams = sp > 0 && denom > 0;
+  const perPortionMacros = usePortionGrams
+    ? {
+        kcal: (totals.totalKcal * sp) / denom,
+        protein: (totals.totalProtein * sp) / denom,
+        carbs: (totals.totalCarbs * sp) / denom,
+        fat: (totals.totalFat * sp) / denom,
+      }
+    : perPortion(totals, portionsNum);
+
+  // When both cooked weight and a suggested portion are set, derive the number
+  // of portions automatically (weight ÷ portion).
+  function autoPortions(weight: number, portion: number) {
+    if (weight > 0 && portion > 0) setPortions(String(Math.max(1, Math.round(weight / portion))));
   }
-  function addRow() {
-    setRowError(null);
-    setRows((prev) => [...prev, emptyRow()]);
+  function onTotalGrams(v: string) {
+    setTotalGrams(v);
+    autoPortions(Number(v), Number(suggestedPortionGrams));
   }
-  function removeRow(index: number) {
-    setRows((prev) => (prev.length > 1 ? prev.filter((_, i) => i !== index) : prev));
+  function onSuggestedPortion(v: string) {
+    setSuggestedPortionGrams(v);
+    autoPortions(Number(totalGrams), Number(v));
   }
 
-  // Server expects `ingredients` as JSON.
+  function updateGrams(index: number, grams: string) {
+    setRows((prev) => prev.map((r, i) => (i === index ? { ...r, grams } : r)));
+  }
+  function removeRow(index: number) {
+    setRows((prev) => prev.filter((_, i) => i !== index));
+  }
+  function addRowFromItem(item: LibraryItem, grams: number) {
+    setError(null);
+    setRows((prev) => [...prev, rowFromItem(item, grams, nextRowId())]);
+  }
+  function addRowsFromEstimate(entries: EstimationEntry[]) {
+    setError(null);
+    setRows((prev) => [...prev, ...entries.map((e) => rowFromEstimate(e, nextRowId()))]);
+  }
+
+  // Server expects `ingredients` as JSON. Recipe ingredients only link to a
+  // product (no recipe-in-recipe), so a recipeId from a match is dropped here.
   const ingredientsJson = JSON.stringify(
     rows
       .filter((r) => r.resolved && r.name.trim() && Number(r.grams) > 0)
@@ -146,163 +170,107 @@ export function RecipeForm({
       <input type="hidden" name="ingredients" value={ingredientsJson} />
 
       <TextField
-        label="Name"
+        label="Recipe Name"
         name="name"
         value={name}
         onChange={setName}
         placeholder="Banana bread"
         error={state.fieldErrors?.name}
-      />
-      <TextField
-        label="Portions"
-        name="portions"
-        type="number"
-        value={portions}
-        onChange={setPortions}
-        placeholder="8"
-        error={state.fieldErrors?.portions}
+        required
       />
 
-      <GlassCard className="relative z-10 space-y-4 p-5">
-        <p className="text-xs font-medium tracking-wider text-neutral-400 uppercase">Ingredients</p>
+      {rows.length > 0 ? (
+        <GlassCard className="p-5">
+          <ul>
+            {rows.map((row, i) => (
+              <IngredientSwipeRow
+                key={row.id}
+                row={row}
+                isLast={i === rows.length - 1}
+                onGramsChange={(grams) => updateGrams(i, grams)}
+                onRemove={() => removeRow(i)}
+              />
+            ))}
+          </ul>
+        </GlassCard>
+      ) : null}
 
-        {rows.map((row, i) => (
-          <div key={i} className="space-y-2">
-            <div className="flex items-end gap-1.5">
-              <div className="min-w-0 flex-1">
-                <IngredientPicker
-                  value={row.name}
-                  items={productsAsItems}
-                  onNameChange={(name) =>
-                    updateRow(i, { name, resolved: row.resolved && row.name === name })
-                  }
-                  onSelectItem={(item) => {
-                    // Recipes aren't passed in for the recipe form, so this is
-                    // always a product.
-                    if (item.kind !== 'product') return;
-                    updateRow(i, {
-                      name: item.name,
-                      productId: item.id,
-                      resolved: true,
-                      kcalPer100g: item.kcalPer100g,
-                      proteinPer100g: item.proteinPer100g,
-                      carbsPer100g: item.carbsPer100g,
-                      fatPer100g: item.fatPer100g,
-                    });
-                  }}
-                  onAiResolved={(data) =>
-                    updateRow(i, {
-                      name: data.canonicalName,
-                      productId: undefined,
-                      resolved: true,
-                      kcalPer100g: data.kcalPer100g,
-                      proteinPer100g: data.proteinPer100g,
-                      carbsPer100g: data.carbsPer100g,
-                      fatPer100g: data.fatPer100g,
-                      // Only auto-fill grams if the user hasn't typed any yet —
-                      // respect manual input.
-                      grams:
-                        data.estimatedGrams && row.grams.trim() === ''
-                          ? String(data.estimatedGrams)
-                          : row.grams,
-                    })
-                  }
-                  onError={(msg) => setRowError(msg)}
-                />
-              </div>
-              <label className="block w-16 shrink-0">
-                <span className="text-xs text-neutral-400">Grams</span>
-                <input
-                  type="number"
-                  inputMode="decimal"
-                  value={row.grams}
-                  onChange={(e) => updateRow(i, { grams: e.target.value })}
-                  placeholder="100"
-                  className="mt-1 block w-full rounded-2xl border border-white/10 bg-white/[0.04] px-2 py-2.5 text-center text-sm text-white tabular-nums placeholder:text-neutral-500 focus:bg-white/[0.08] focus:ring-2 focus:ring-[var(--accent)]/60 focus:outline-none"
-                />
-              </label>
-              <button
-                type="button"
-                onClick={() => removeRow(i)}
-                aria-label="Remove ingredient"
-                disabled={rows.length === 1}
-                className="-mr-2 flex h-10 w-8 shrink-0 items-center justify-center self-end text-neutral-400 transition hover:text-[var(--danger)] disabled:opacity-30"
-              >
-                <Trash2 size={16} />
-              </button>
-            </div>
-
-            {row.resolved ? (
-              <p className="pl-1 text-[11px] text-neutral-500 tabular-nums">
-                {Math.round(row.kcalPer100g)} kcal · P {row.proteinPer100g.toFixed(1)}g · C{' '}
-                {row.carbsPer100g.toFixed(1)}g · F {row.fatPer100g.toFixed(1)}g · per 100g
-              </p>
-            ) : null}
-          </div>
-        ))}
-
-        {rowError ? (
-          <p className="text-xs text-[var(--danger)]" role="alert">
-            {rowError}
-          </p>
-        ) : null}
-        {state.fieldErrors?.ingredients ? (
-          <p className="text-xs text-[var(--danger)]">{state.fieldErrors.ingredients}</p>
-        ) : null}
-
-        <button
-          type="button"
-          onClick={addRow}
-          className="flex w-full items-center justify-center gap-1.5 rounded-2xl border border-dashed border-white/15 px-4 py-3 text-xs font-medium text-[var(--accent)] transition hover:border-[var(--accent)]/60 hover:bg-[var(--accent)]/5"
-        >
-          <Plus size={14} /> Add ingredient
-        </button>
+      <GlassCard className="p-5">
+        <IngredientTabs
+          items={productsAsItems}
+          onAddItem={addRowFromItem}
+          onAddEstimate={addRowsFromEstimate}
+          onError={(m) => setError(m || null)}
+          describePlaceholder="e.g. 2 cups flour, 3 eggs, 1 banana"
+        />
       </GlassCard>
+
+      {error ? (
+        <p className="text-sm text-[var(--danger)]" role="alert">
+          {error}
+        </p>
+      ) : null}
+      {state.fieldErrors?.ingredients ? (
+        <p className="text-xs text-[var(--danger)]">{state.fieldErrors.ingredients}</p>
+      ) : null}
 
       <GlassCard className="space-y-3 p-5">
         <p className="text-xs font-medium tracking-wider text-neutral-400 uppercase">
-          Optional weight
+          Portions &amp; weight
+          <span className="ml-2 text-[10px] text-neutral-500 normal-case">· optional</span>
         </p>
-        <p className="-mt-1 text-[11px] text-neutral-500">
-          If you weigh the cooked dish, set the total grams here. When logging this recipe to a
-          meal, the suggested portion seeds the grams field.
+        <p className="-mt-2 text-[11px] text-neutral-500">
+          Sets the default serving size when you log this recipe.
         </p>
         <TextField
           label="Total cooked weight (g)"
           name="totalGrams"
           type="number"
+          row
           value={totalGrams}
-          onChange={setTotalGrams}
-          placeholder={ingredientSumGrams ? `e.g. ${Math.round(ingredientSumGrams)}` : 'e.g. 1100'}
+          onChange={onTotalGrams}
+          placeholder={ingredientSumGrams ? String(Math.round(ingredientSumGrams)) : '1100'}
           error={state.fieldErrors?.totalGrams}
         />
         <TextField
           label="Suggested portion (g)"
           name="suggestedPortionGrams"
           type="number"
+          row
           value={suggestedPortionGrams}
-          onChange={setSuggestedPortionGrams}
+          onChange={onSuggestedPortion}
           placeholder={
             totalGramsForDefault && portionsNum > 0
-              ? `e.g. ${Math.round(totalGramsForDefault / portionsNum)}`
-              : 'e.g. 150'
+              ? String(Math.round(totalGramsForDefault / portionsNum))
+              : '150'
           }
           error={state.fieldErrors?.suggestedPortionGrams}
         />
+        <TextField
+          label="Portions"
+          name="portions"
+          type="number"
+          row
+          value={portions}
+          onChange={setPortions}
+          placeholder="1"
+          error={state.fieldErrors?.portions}
+        />
       </GlassCard>
 
-      <GlassCard className="space-y-3 p-5">
-        <p className="text-xs font-medium tracking-wider text-neutral-400 uppercase">
-          Per portion (live)
+      <MacroStats
+        title={usePortionGrams ? `Per portion · ${Math.round(sp)}g (live)` : 'Per portion (live)'}
+        kcal={perPortionMacros.kcal}
+        protein={perPortionMacros.protein}
+        carbs={perPortionMacros.carbs}
+        fat={perPortionMacros.fat}
+      />
+
+      {state.fieldErrors && Object.keys(state.fieldErrors).length > 0 ? (
+        <p className="text-sm text-[var(--danger)]" role="alert">
+          You have fields left to complete.
         </p>
-        <div className="grid grid-cols-4 gap-3 text-center">
-          <Stat label="kcal" value={Math.round(perPortionMacros.kcal)} />
-          <Stat label="P" value={perPortionMacros.protein.toFixed(1) + 'g'} />
-          <Stat label="C" value={perPortionMacros.carbs.toFixed(1) + 'g'} />
-          <Stat label="F" value={perPortionMacros.fat.toFixed(1) + 'g'} />
-        </div>
-      </GlassCard>
-
+      ) : null}
       {state.formError ? (
         <p className="text-sm text-[var(--danger)]" role="alert">
           {state.formError}
@@ -328,15 +296,6 @@ export function RecipeForm({
   );
 }
 
-function Stat({ label, value }: { label: string; value: string | number }) {
-  return (
-    <div>
-      <p className="text-base font-semibold text-white tabular-nums">{value}</p>
-      <p className="mt-0.5 text-[10px] tracking-wider text-neutral-500 uppercase">{label}</p>
-    </div>
-  );
-}
-
 function TextField({
   label,
   name,
@@ -345,6 +304,8 @@ function TextField({
   placeholder,
   type = 'text',
   error,
+  row = false,
+  required = false,
 }: {
   label: string;
   name: string;
@@ -353,10 +314,44 @@ function TextField({
   placeholder?: string;
   type?: string;
   error?: string;
+  /** Compact row layout (label left, value input right) — like other views. */
+  row?: boolean;
+  /** Show a "*" after the label. */
+  required?: boolean;
 }) {
+  const border = error ? 'border-[var(--danger)]/60' : 'border-white/10';
+  const labelNode = (
+    <>
+      {label}
+      {required ? <span className="text-[var(--accent)]"> *</span> : null}
+    </>
+  );
+
+  if (row) {
+    return (
+      <div>
+        <label className="flex items-center justify-between gap-3">
+          <span className="text-sm text-neutral-300">{labelNode}</span>
+          <input
+            name={name}
+            type={type}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            onFocus={(e) => e.target.select()}
+            placeholder={placeholder}
+            inputMode={type === 'number' ? 'numeric' : undefined}
+            className={`w-24 rounded-2xl border bg-white/[0.04] px-3 py-2 text-right text-sm text-white tabular-nums transition placeholder:text-neutral-500 focus:bg-white/[0.08] focus:ring-2 focus:ring-[var(--accent)]/60 focus:outline-none ${border}`}
+            aria-invalid={Boolean(error)}
+          />
+        </label>
+        {error ? <p className="mt-1 text-right text-xs text-[var(--danger)]">{error}</p> : null}
+      </div>
+    );
+  }
+
   return (
     <label className="block">
-      <span className="text-xs font-medium text-neutral-300">{label}</span>
+      <span className="text-xs font-medium text-neutral-300">{labelNode}</span>
       <input
         name={name}
         type={type}
@@ -364,9 +359,7 @@ function TextField({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         inputMode={type === 'number' ? 'numeric' : undefined}
-        className={`mt-2 block w-full rounded-2xl border bg-white/[0.04] px-4 py-3 text-sm text-white transition placeholder:text-neutral-500 focus:bg-white/[0.08] focus:ring-2 focus:ring-[var(--accent)]/60 focus:outline-none ${
-          error ? 'border-[var(--danger)]/60' : 'border-white/10'
-        }`}
+        className={`mt-2 block w-full rounded-2xl border bg-white/[0.04] px-4 py-3 text-sm text-white transition placeholder:text-neutral-500 focus:bg-white/[0.08] focus:ring-2 focus:ring-[var(--accent)]/60 focus:outline-none ${border}`}
         aria-invalid={Boolean(error)}
       />
       {error ? <p className="mt-1.5 text-xs text-[var(--danger)]">{error}</p> : null}
