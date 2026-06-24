@@ -5,10 +5,11 @@ import { Moon } from 'lucide-react';
 import { finishDay } from '@/app/(app)/today/actions';
 import { cn } from '@/lib/utils';
 
-export function FinishDayButton({ dateKey }: { dateKey: string }) {
+export function FinishDayButton({ dateKey, closed }: { dateKey: string; closed?: boolean }) {
   const [pending, start] = useTransition();
 
   function run() {
+    if (closed) return;
     start(async () => {
       const result = await finishDay(dateKey);
       if (result && !result.ok) window.alert(result.error);
@@ -19,15 +20,16 @@ export function FinishDayButton({ dateKey }: { dateKey: string }) {
     <button
       type="button"
       onClick={run}
-      disabled={pending}
+      disabled={pending || closed}
       className={cn(
-        'flex flex-1 items-center justify-center gap-2 rounded-2xl border border-[var(--accent)]/30',
-        'bg-[var(--accent)]/10 px-4 py-3.5 text-sm font-semibold text-[var(--accent)]',
-        'transition hover:bg-[var(--accent)]/15 disabled:opacity-50',
+        'flex flex-1 items-center justify-center gap-2 rounded-2xl border px-4 py-3.5 text-sm font-semibold transition',
+        closed
+          ? 'cursor-default border-white/10 bg-white/[0.04] text-neutral-500'
+          : 'border-[var(--accent)]/30 bg-[var(--accent)]/10 text-[var(--accent)] hover:bg-[var(--accent)]/15 disabled:opacity-50',
       )}
     >
       <Moon size={15} />
-      {pending ? 'Closing…' : 'Finish day'}
+      {pending ? 'Closing…' : closed ? 'Day closed' : 'Finish day'}
     </button>
   );
 }

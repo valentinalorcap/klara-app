@@ -136,6 +136,8 @@ export async function createMeal(input: unknown, returnTo?: string): Promise<Act
   }
 
   const dayDate = new Date(parsed.data.date + 'T00:00:00Z');
+  // Reopen the day if it was already closed
+  await prisma.dayEvaluation.deleteMany({ where: { userId, date: dayDate } });
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: { defaultEvalTone: true },
@@ -196,6 +198,8 @@ export async function updateMeal(
   }
 
   const dayDate = new Date(parsed.data.date + 'T00:00:00Z');
+  // Reopen the day if it was already closed
+  await prisma.dayEvaluation.deleteMany({ where: { userId, date: dayDate } });
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: { defaultEvalTone: true },
@@ -262,6 +266,12 @@ export async function createMealBatch(input: unknown, returnTo?: string): Promis
     where: { id: userId },
     select: { defaultEvalTone: true },
   });
+
+  // Reopen any closed days touched by this batch
+  const batchDates = [...new Set(parsed.data.meals.map((m) => m.date))].map(
+    (d) => new Date(d + 'T00:00:00Z'),
+  );
+  await prisma.dayEvaluation.deleteMany({ where: { userId, date: { in: batchDates } } });
 
   const batchId = crypto.randomUUID();
   const created = await prisma.$transaction(
@@ -331,10 +341,11 @@ export async function copyDayToToday(sourceDateKey: unknown): Promise<ActionResu
 
   const todayDate = new Date(todayKey + 'T00:00:00Z');
   const batchId = crypto.randomUUID();
-  // "Copy day" REPLACES today: wipe whatever is logged today, then copy the
-  // source day in — atomically, so a failure can't leave today half-cleared.
+  // "Copy day" REPLACES today: wipe whatever is logged today (including any
+  // day evaluation), then copy the source day in — atomically.
   const lastMeal = await prisma.$transaction(async (tx) => {
     await tx.meal.deleteMany({ where: { userId, date: todayDate } });
+    await tx.dayEvaluation.deleteMany({ where: { userId, date: todayDate } });
     let last: { id: string } | null = null;
     for (const m of meals) {
       last = await tx.meal.create({
@@ -427,6 +438,8 @@ export async function copyMealToToday(mealId: unknown): Promise<ActionResult> {
     select: { defaultEvalTone: true },
   });
 
+  // Reopen the day if it was already closed
+  await prisma.dayEvaluation.deleteMany({ where: { userId, date: todayDate } });
   const meal = await prisma.meal.create({
     data: {
       userId,
