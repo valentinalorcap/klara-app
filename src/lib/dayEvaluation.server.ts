@@ -59,7 +59,7 @@ function buildSystemPrompt(tone: EvalTone): string {
     '',
     TONE_GUIDANCE[tone],
     '',
-    'Output format — use EXACTLY this structure (emoji inline before each sentence, NO title after the emoji):',
+    'Output format — THREE separate blocks, each on its own line with a blank line between them:',
     '',
     '👀 [what happened structurally today — 1 sentence]',
     '',
@@ -67,8 +67,9 @@ function buildSystemPrompt(tone: EvalTone): string {
     '',
     '🎯 [what to add tomorrow — 1 sentence naming a specific ingredient or product]',
     '',
-    'Max 50 words total across all three sections. Plain text only.',
-    'No greeting, no sign-off. Never recommend skipping meals.',
+    'CRITICAL: never run the sections together. Each must start on a new line.',
+    'Blank line between each block — exactly as shown above.',
+    'Max 50 words total. Plain text only. No greeting, no sign-off.',
   ].join('\n');
 }
 
