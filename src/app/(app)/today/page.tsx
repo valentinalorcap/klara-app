@@ -164,7 +164,18 @@ export default async function TodayPage({
 
       <EvalPoller hasPending={hasPendingEvals} />
 
-      {latestEval ? (
+      {dayEval ? (
+        <FinishDayCard
+          dateKey={dateKey}
+          stale={dayEvalStale}
+          take={{
+            status: dayEval.status,
+            tone: dayEval.tone,
+            markdown: dayEval.markdown,
+            errorMessage: dayEval.errorMessage,
+          }}
+        />
+      ) : latestEval ? (
         <KlaraTakeCard
           take={{
             mealId: latestEval.mealId,
@@ -173,7 +184,10 @@ export default async function TodayPage({
             markdown: latestEval.markdown,
             errorMessage: latestEval.errorMessage,
           }}
+          dateKey={meals.length > 0 ? dateKey : undefined}
         />
+      ) : meals.length > 0 ? (
+        <FinishDayCard dateKey={dateKey} stale={false} take={null} />
       ) : null}
 
       {meals.length === 0 ? (
@@ -181,7 +195,7 @@ export default async function TodayPage({
           <p className="text-sm text-neutral-300">
             {isToday ? 'No meals logged yet.' : 'No meals logged for this day.'}
           </p>
-          <p className="mt-1 text-xs text-neutral-500">Tap “Add meals” above to log one.</p>
+          <p className="mt-1 text-xs text-neutral-500">Tap "Add meals" above to log one.</p>
         </GlassCard>
       ) : (
         <MealList
@@ -203,23 +217,6 @@ export default async function TodayPage({
           }))}
         />
       )}
-
-      {meals.length > 0 ? (
-        <FinishDayCard
-          dateKey={dateKey}
-          stale={dayEvalStale}
-          take={
-            dayEval
-              ? {
-                  status: dayEval.status,
-                  tone: dayEval.tone,
-                  markdown: dayEval.markdown,
-                  errorMessage: dayEval.errorMessage,
-                }
-              : null
-          }
-        />
-      ) : null}
     </main>
   );
 }
