@@ -9,6 +9,7 @@ import { prisma } from '@/lib/prisma';
 import { createMealInputSchema, type CreateMealInput, isoDate, isDateKey } from '@/lib/meals';
 import { evaluateMealById, markEvaluationPending } from '@/lib/evaluations.server';
 import { generateMealName, nameFromEntries } from '@/lib/mealName.server';
+import { markDayEvaluationPending, evaluateDayByDate } from '@/lib/dayEvaluation.server';
 import { estimateMealFromText } from '@/lib/freeTextEstimation.server';
 import type { EstimationResult } from '@/lib/freeTextEstimation';
 import { loadMealFormData } from '@/app/(app)/today/_data';
@@ -135,6 +136,8 @@ export async function createMeal(input: unknown, returnTo?: string): Promise<Act
   }
 
   const dayDate = new Date(parsed.data.date + 'T00:00:00Z');
+  // Reopen the day if it was already closed
+  await prisma.dayEvaluation.deleteMany({ where: { userId, date: dayDate } });
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: { defaultEvalTone: true },
@@ -195,6 +198,8 @@ export async function updateMeal(
   }
 
   const dayDate = new Date(parsed.data.date + 'T00:00:00Z');
+  // Reopen the day if it was already closed
+  await prisma.dayEvaluation.deleteMany({ where: { userId, date: dayDate } });
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: { defaultEvalTone: true },
@@ -261,6 +266,12 @@ export async function createMealBatch(input: unknown, returnTo?: string): Promis
     where: { id: userId },
     select: { defaultEvalTone: true },
   });
+
+  // Reopen any closed days touched by this batch
+  const batchDates = [...new Set(parsed.data.meals.map((m) => m.date))].map(
+    (d) => new Date(d + 'T00:00:00Z'),
+  );
+  await prisma.dayEvaluation.deleteMany({ where: { userId, date: { in: batchDates } } });
 
   const batchId = crypto.randomUUID();
   const created = await prisma.$transaction(
@@ -330,10 +341,11 @@ export async function copyDayToToday(sourceDateKey: unknown): Promise<ActionResu
 
   const todayDate = new Date(todayKey + 'T00:00:00Z');
   const batchId = crypto.randomUUID();
-  // "Copy day" REPLACES today: wipe whatever is logged today, then copy the
-  // source day in — atomically, so a failure can't leave today half-cleared.
+  // "Copy day" REPLACES today: wipe whatever is logged today (including any
+  // day evaluation), then copy the source day in — atomically.
   const lastMeal = await prisma.$transaction(async (tx) => {
     await tx.meal.deleteMany({ where: { userId, date: todayDate } });
+    await tx.dayEvaluation.deleteMany({ where: { userId, date: todayDate } });
     let last: { id: string } | null = null;
     for (const m of meals) {
       last = await tx.meal.create({
@@ -375,6 +387,35 @@ export async function copyDayToToday(sourceDateKey: unknown): Promise<ActionResu
 }
 
 /**
+ * "Finish day" — the user closes a day so Klara reviews the whole thing.
+ * Queues a day-level evaluation (Sonnet) generated in the background. Safe to
+ * re-run: it overwrites the existing review (e.g. after adding a meal). Works
+ * for today or any past day.
+ */
+export async function finishDay(dateKey: unknown): Promise<ActionResult> {
+  const userId = await requireUserId();
+  if (!isDateKey(dateKey)) return { ok: false, error: 'Invalid date.' };
+
+  const date = new Date(dateKey + 'T00:00:00Z');
+  const mealCount = await prisma.meal.count({ where: { userId, date } });
+  if (mealCount === 0) return { ok: false, error: 'Log a meal before finishing the day.' };
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { defaultEvalTone: true },
+  });
+  if (!user) return { ok: false, error: 'User not found.' };
+
+  await markDayEvaluationPending(userId, dateKey, user.defaultEvalTone);
+  after(async () => {
+    await evaluateDayByDate(userId, dateKey);
+    revalidatePath('/today');
+  });
+  revalidatePath('/today');
+  return { ok: true };
+}
+
+/**
  * Copy a single meal into today as a fresh log. Unlike copyDayToToday this
  * ADDS the meal (no wiping) so the user can reuse one specific meal. Entries
  * are snapshotted; the new meal gets its own evaluation. No redirect — the
@@ -397,6 +438,8 @@ export async function copyMealToToday(mealId: unknown): Promise<ActionResult> {
     select: { defaultEvalTone: true },
   });
 
+  // Reopen the day if it was already closed
+  await prisma.dayEvaluation.deleteMany({ where: { userId, date: todayDate } });
   const meal = await prisma.meal.create({
     data: {
       userId,

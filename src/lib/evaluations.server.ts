@@ -13,6 +13,7 @@ import {
   type EvaluationInput,
   type MacroSum,
 } from './evaluations';
+import { fetchWeeklyContext } from './weeklyContext.server';
 
 /**
  * Ensure a PENDING evaluation row exists for the meal — called right after
@@ -62,6 +63,13 @@ export async function evaluateMealById(mealId: string): Promise<void> {
       include: { entries: true },
     });
     const dayTotals = sumEntries(dayMeals.flatMap((m) => m.entries));
+
+    const weeklyContext = await fetchWeeklyContext(meal.userId, meal.date, {
+      dailyKcalGoal: meal.user.dailyKcalGoal,
+      dailyProteinGoal: meal.user.dailyProteinGoal,
+      dailyCarbsGoal: meal.user.dailyCarbsGoal,
+      dailyFatGoal: meal.user.dailyFatGoal,
+    });
 
     const targets: DailyTargets = {
       kcal: meal.user.dailyKcalGoal,
@@ -121,6 +129,15 @@ export async function evaluateMealById(mealId: string): Promise<void> {
           text: buildSystemPrompt(meal.user.defaultEvalTone),
           cache_control: { type: 'ephemeral' },
         },
+        ...(weeklyContext
+          ? [
+              {
+                type: 'text' as const,
+                text: weeklyContext,
+                cache_control: { type: 'ephemeral' as const },
+              },
+            ]
+          : []),
       ],
       messages: [{ role: 'user', content: userMessage }],
     });

@@ -42,6 +42,7 @@ model User {
   meals         Meal[]
   mealTemplates MealTemplate[]
   aiEvaluations AIEvaluation[]
+  dayEvaluations DayEvaluation[]
   chatMessages  ChatMessage[]
 
   createdAt DateTime @default(now())
@@ -337,6 +338,35 @@ model AIEvaluation {
   updatedAt DateTime @updatedAt
 
   @@index([userId])
+}
+
+/// Klara's holistic evaluation of a whole day, generated when the user
+/// "finishes" the day. One per (user, date); re-finishing overwrites it.
+model DayEvaluation {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// The day this evaluation covers (UTC midnight, like Meal.date).
+  date DateTime @db.Date
+
+  tone   EvalTone
+  status EvalStatus @default(PENDING)
+
+  /// Final text shown in the card. Null until status = DONE.
+  markdown String?
+  /// Surfaced when status = ERROR.
+  errorMessage String?
+
+  model     String?
+  tokensIn  Int?
+  tokensOut Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, date])
+  @@index([userId, date])
 }
 
 /// A single food line logged inside a meal. Per-100g macros are stored

@@ -5,7 +5,6 @@ import { Sparkles, RefreshCw, ChevronDown } from 'lucide-react';
 import { EvalStatus, EvalTone } from '@prisma/client';
 import { GlassCard } from './GlassCard';
 import { retryEvaluation } from '@/app/(app)/today/actions';
-import { TONE_LABELS } from '@/lib/evaluations';
 import { cn } from '@/lib/utils';
 
 export type KlaraTake = {
@@ -20,10 +19,12 @@ export type KlaraTake = {
  * Surfaces Klara's evaluation of the most recent meal logged today.
  * Collapsed by default — two-line preview with a chevron; tap expands
  * to the full text. PENDING and ERROR states stay compact (no toggle).
+ * When `dateKey` is provided, shows a "Finish day" button at the bottom
+ * so the user can close the day from the same card.
  */
 export function KlaraTakeCard({ take }: { take: KlaraTake }) {
   const [expanded, setExpanded] = useState(false);
-  const [pending, startRetry] = useTransition();
+  const [pendingRetry, startRetry] = useTransition();
 
   function onRetry(e: MouseEvent) {
     e.stopPropagation();
@@ -51,14 +52,14 @@ export function KlaraTakeCard({ take }: { take: KlaraTake }) {
     return (
       <GlassCard className="border-[var(--danger)]/20 bg-[var(--danger)]/[0.04] p-4">
         <div className="flex items-center justify-between gap-3">
-          <p className="text-xs text-[var(--danger)]">Couldn’t generate an evaluation.</p>
+          <p className="text-xs text-[var(--danger)]">Couldn&apos;t generate an evaluation.</p>
           <button
             type="button"
             onClick={onRetry}
-            disabled={pending}
+            disabled={pendingRetry}
             className="flex items-center gap-1.5 rounded-full border border-white/10 px-3 py-1 text-xs text-neutral-200 transition hover:border-white/25 disabled:opacity-30"
           >
-            <RefreshCw size={11} className={cn(pending && 'animate-spin')} />
+            <RefreshCw size={11} className={cn(pendingRetry && 'animate-spin')} />
             Retry
           </button>
         </div>
@@ -69,13 +70,13 @@ export function KlaraTakeCard({ take }: { take: KlaraTake }) {
   // DONE
   return (
     <GlassCard
-      className="cursor-pointer border-[var(--accent)]/20 bg-[var(--accent)]/[0.04] p-4 transition hover:border-[var(--accent)]/35 active:scale-[0.995]"
+      className="border-[var(--accent)]/20 bg-[var(--accent)]/[0.04] p-4"
       onClick={() => setExpanded((v) => !v)}
     >
-      <div className="mb-1.5 flex items-center gap-2">
+      <div className="mb-1.5 flex cursor-pointer items-center gap-2">
         <Sparkles size={13} className="text-[var(--accent)]" />
         <span className="text-[10px] font-medium tracking-wider text-[var(--accent)] uppercase">
-          {TONE_LABELS[take.tone]} take
+          Klara
         </span>
         <ChevronDown
           size={14}
@@ -86,7 +87,12 @@ export function KlaraTakeCard({ take }: { take: KlaraTake }) {
           aria-hidden
         />
       </div>
-      <p className={cn('text-xs leading-relaxed text-neutral-200', !expanded && 'line-clamp-2')}>
+      <p
+        className={cn(
+          'text-xs leading-relaxed whitespace-pre-line text-neutral-200',
+          !expanded && 'line-clamp-3',
+        )}
+      >
         {take.markdown}
       </p>
     </GlassCard>
