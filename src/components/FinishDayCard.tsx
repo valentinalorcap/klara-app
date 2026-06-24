@@ -120,7 +120,7 @@ export function FinishDayCard({
         {take.markdown}
       </p>
       {stale ? (
-        <p className="mt-2 text-[11px] text-amber-300/80">This day changed since the review.</p>
+        <p className="mt-2 text-[11px] text-amber-300/80">This day changed since this review.</p>
       ) : null}
       <button
         type="button"
