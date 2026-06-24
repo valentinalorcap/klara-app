@@ -11,7 +11,7 @@ export default async function LoginPage() {
       <GlassCard className="w-full max-w-sm p-8">
         <div className="text-center">
           <h1 className="text-3xl font-bold tracking-tight text-white">Klara</h1>
-          <p className="mt-2 text-sm text-neutral-400">Your nutrition assistant.</p>
+          <p className="mt-2 text-sm text-neutral-400">Nutrition assistant.</p>
         </div>
 
         <form

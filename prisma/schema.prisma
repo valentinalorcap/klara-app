@@ -31,6 +31,10 @@ model User {
   /// user switch between direct, motivational, or neutral.
   defaultEvalTone EvalTone @default(MOTIVATIONAL)
 
+  /// When the first-run onboarding was completed (or skipped). Null means
+  /// the user hasn't been onboarded yet → the app sends them to /welcome.
+  onboardedAt DateTime?
+
   accounts      Account[]
   sessions      Session[]
   products      Product[]
