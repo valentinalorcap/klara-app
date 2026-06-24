@@ -1,10 +1,10 @@
 'use client';
 
 import { useState, useTransition, type MouseEvent } from 'react';
-import { Sparkles, RefreshCw, ChevronDown, Moon } from 'lucide-react';
+import { Sparkles, RefreshCw, ChevronDown } from 'lucide-react';
 import { EvalStatus, EvalTone } from '@prisma/client';
 import { GlassCard } from './GlassCard';
-import { retryEvaluation, finishDay } from '@/app/(app)/today/actions';
+import { retryEvaluation } from '@/app/(app)/today/actions';
 import { cn } from '@/lib/utils';
 
 export type KlaraTake = {
@@ -22,24 +22,14 @@ export type KlaraTake = {
  * When `dateKey` is provided, shows a "Finish day" button at the bottom
  * so the user can close the day from the same card.
  */
-export function KlaraTakeCard({ take, dateKey }: { take: KlaraTake; dateKey?: string }) {
+export function KlaraTakeCard({ take }: { take: KlaraTake }) {
   const [expanded, setExpanded] = useState(false);
   const [pendingRetry, startRetry] = useTransition();
-  const [pendingFinish, startFinish] = useTransition();
 
   function onRetry(e: MouseEvent) {
     e.stopPropagation();
     startRetry(async () => {
       await retryEvaluation(take.mealId);
-    });
-  }
-
-  function onFinishDay(e: MouseEvent) {
-    e.stopPropagation();
-    if (!dateKey) return;
-    startFinish(async () => {
-      const result = await finishDay(dateKey);
-      if (result && !result.ok) window.alert(result.error);
     });
   }
 
@@ -105,20 +95,6 @@ export function KlaraTakeCard({ take, dateKey }: { take: KlaraTake; dateKey?: st
       >
         {take.markdown}
       </p>
-      {dateKey ? (
-        <>
-          <div className="mt-3 h-px bg-white/5" />
-          <button
-            type="button"
-            onClick={onFinishDay}
-            disabled={pendingFinish}
-            className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-[var(--accent)]/30 bg-[var(--accent)]/10 px-4 py-2.5 text-xs font-semibold text-[var(--accent)] transition hover:bg-[var(--accent)]/15 disabled:opacity-50"
-          >
-            <Moon size={13} />
-            {pendingFinish ? 'Closing the day…' : 'Finish day'}
-          </button>
-        </>
-      ) : null}
     </GlassCard>
   );
 }

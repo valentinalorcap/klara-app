@@ -10,6 +10,7 @@ import { KlaraTakeCard } from '@/components/KlaraTakeCard';
 import { DayNav } from '@/components/DayNav';
 import { CopyDayButton } from '@/components/CopyDayButton';
 import { FinishDayCard } from '@/components/FinishDayCard';
+import { FinishDayButton } from '@/components/FinishDayButton';
 import { EvalStatus } from '@prisma/client';
 import { isoDate, isDateKey, formatDayLabel, sumEntries } from '@/lib/meals';
 import { hasAnyGoal } from '@/lib/goals';
@@ -154,13 +155,16 @@ export default async function TodayPage({
         ) : null}
       </GlassCard>
 
-      <Link
-        href={newMealHref}
-        className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--accent)] px-4 py-3.5 text-sm font-semibold text-white shadow-[0_8px_24px_-8px_var(--accent-glow)] transition hover:bg-[var(--accent-hover)] active:scale-[0.98]"
-      >
-        <Plus size={18} />
-        Add meals
-      </Link>
+      <div className="flex gap-3">
+        {meals.length > 0 && !dayEval ? <FinishDayButton dateKey={dateKey} /> : null}
+        <Link
+          href={newMealHref}
+          className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-[var(--accent)] px-4 py-3.5 text-sm font-semibold text-white shadow-[0_8px_24px_-8px_var(--accent-glow)] transition hover:bg-[var(--accent-hover)] active:scale-[0.98]"
+        >
+          <Plus size={18} />
+          Add meals
+        </Link>
+      </div>
 
       <EvalPoller hasPending={hasPendingEvals} />
 
@@ -184,10 +188,7 @@ export default async function TodayPage({
             markdown: latestEval.markdown,
             errorMessage: latestEval.errorMessage,
           }}
-          dateKey={meals.length > 0 ? dateKey : undefined}
         />
-      ) : meals.length > 0 ? (
-        <FinishDayCard dateKey={dateKey} stale={false} take={null} />
       ) : null}
 
       {meals.length === 0 ? (
