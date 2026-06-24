@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { GlassCard } from './GlassCard';
 import { type ProductOption, type LibraryItem } from './IngredientPicker';
 import { IngredientTabs } from './IngredientTabs';
+import { MacroStats } from './MacroStats';
 import {
   IngredientSwipeRow,
   rowFromItem,
@@ -257,17 +258,13 @@ export function RecipeForm({
         />
       </GlassCard>
 
-      <GlassCard className="space-y-3 p-5">
-        <p className="text-xs font-medium tracking-wider text-neutral-400 uppercase">
-          {usePortionGrams ? `Per portion · ${Math.round(sp)}g (live)` : 'Per portion (live)'}
-        </p>
-        <div className="grid grid-cols-4 gap-3 text-center">
-          <Stat label="kcal" value={Math.round(perPortionMacros.kcal)} />
-          <Stat label="P" value={perPortionMacros.protein.toFixed(1) + 'g'} />
-          <Stat label="C" value={perPortionMacros.carbs.toFixed(1) + 'g'} />
-          <Stat label="F" value={perPortionMacros.fat.toFixed(1) + 'g'} />
-        </div>
-      </GlassCard>
+      <MacroStats
+        title={usePortionGrams ? `Per portion · ${Math.round(sp)}g (live)` : 'Per portion (live)'}
+        kcal={perPortionMacros.kcal}
+        protein={perPortionMacros.protein}
+        carbs={perPortionMacros.carbs}
+        fat={perPortionMacros.fat}
+      />
 
       {state.fieldErrors && Object.keys(state.fieldErrors).length > 0 ? (
         <p className="text-sm text-[var(--danger)]" role="alert">
@@ -296,15 +293,6 @@ export function RecipeForm({
         </Link>
       </div>
     </form>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: string | number }) {
-  return (
-    <div>
-      <p className="text-base font-semibold text-white tabular-nums">{value}</p>
-      <p className="mt-0.5 text-[10px] tracking-wider text-neutral-500 uppercase">{label}</p>
-    </div>
   );
 }
 
