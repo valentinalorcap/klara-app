@@ -5,6 +5,7 @@ import { prisma } from './prisma';
 import { TONE_GUIDANCE } from './evaluations';
 import { dayScore } from './dayScore';
 import { MEAL_TYPE_LABELS, sumEntries, type Totals } from './meals';
+import { fetchWeeklyContext } from './weeklyContext.server';
 
 type DailyTargets = {
   kcal: number | null;
@@ -42,26 +43,25 @@ function buildDayStatusBlock(totals: Totals, targets: DailyTargets): string[] {
 
 function buildSystemPrompt(tone: EvalTone): string {
   return [
-    "You are Klara, the user's nutrition coach. The user just CLOSED their day,",
-    'so write a short end-of-day review of the whole day (2–4 sentences, plain',
-    'text, no markdown, no bullets, no greeting or sign-off).',
+    "You are Klara, the user's personal nutrition coach. The user just closed",
+    'their day. Write a short end-of-day reflection (2–4 sentences, plain text,',
+    'no bullets, no headers).',
     '',
-    'How to write it:',
-    '1. The user message has a Day status block (actual vs target per macro,',
-    '   tagged OVER / UNDER / ON-TRACK / UNSET) and a 0–100 day score. Anchor',
-    '   your review on those numbers.',
-    '2. Call out what went well and what to adjust TOMORROW. Only mention macros',
-    '   that have a target; never mention an UNSET macro. Never suggest more of a',
-    '   macro that is OVER.',
-    '3. This is a finished day — frame it as a wrap-up/reflection, never as',
-    '   "the rest of your day". You may note the overall pattern (e.g. protein',
-    '   spread across meals, a heavy dinner), not just one meal.',
-    '4. Be specific with numbers, honest, and never recommend skipping meals or',
-    '   extreme restriction.',
+    'CRITICAL — read this before writing:',
+    '1. The user can see all their numbers in the app. NEVER narrate their data',
+    '   back ("you logged X of your Y kcal" is forbidden). Skip the scorekeeping.',
+    '2. The system context includes their recent meal history. USE IT — reference',
+    '   specific meals by name, call out patterns across the week.',
+    '3. Give an honest, direct verdict. If it was a bad day, say so and WHY.',
+    '   If they are consistently missing a macro, name the pattern.',
+    '4. Suggest ONE concrete, specific action for tomorrow — ideally a meal they',
+    '   have actually eaten before (from the history). No generic advice.',
+    '5. This is a closed day — frame it as a wrap-up/lesson, not a pep talk.',
     '',
     TONE_GUIDANCE[tone],
     '',
-    'Output: plain text, English, 2–4 sentences.',
+    'Output: plain text, English, 2–4 sentences, no greeting, no sign-off.',
+    'Never recommend skipping meals or extreme restriction.',
   ].join('\n');
 }
 
@@ -120,8 +120,15 @@ export async function evaluateDayByDate(userId: string, dateKey: string): Promis
       )}g · F ${t.fat.toFixed(0)}g`;
     });
 
+    const weeklyContext = await fetchWeeklyContext(userId, date, {
+      dailyKcalGoal: user.dailyKcalGoal,
+      dailyProteinGoal: user.dailyProteinGoal,
+      dailyCarbsGoal: user.dailyCarbsGoal,
+      dailyFatGoal: user.dailyFatGoal,
+    });
+
     const userMessage = [
-      'The user closed this day. Write your end-of-day review.',
+      'The user closed this day.',
       '',
       score
         ? `Day score: ${score.score}/100 (${score.label}).`
@@ -145,6 +152,15 @@ export async function evaluateDayByDate(userId: string, dateKey: string): Promis
           text: buildSystemPrompt(user.defaultEvalTone),
           cache_control: { type: 'ephemeral' },
         },
+        ...(weeklyContext
+          ? [
+              {
+                type: 'text' as const,
+                text: weeklyContext,
+                cache_control: { type: 'ephemeral' as const },
+              },
+            ]
+          : []),
       ],
       messages: [{ role: 'user', content: userMessage }],
     });
