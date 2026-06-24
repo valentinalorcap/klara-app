@@ -5,7 +5,6 @@ import { Sparkles, RefreshCw, ChevronDown, Moon } from 'lucide-react';
 import { EvalStatus, EvalTone } from '@prisma/client';
 import { GlassCard } from './GlassCard';
 import { finishDay } from '@/app/(app)/today/actions';
-import { TONE_LABELS } from '@/lib/evaluations';
 import { cn } from '@/lib/utils';
 
 export type DayTake = {
@@ -42,15 +41,17 @@ export function FinishDayCard({
 
   if (!take) {
     return (
-      <button
-        type="button"
-        onClick={run}
-        disabled={pending}
-        className="flex w-full items-center justify-center gap-2 rounded-2xl border border-[var(--accent)]/30 bg-[var(--accent)]/10 px-4 py-3 text-sm font-semibold text-[var(--accent)] transition hover:bg-[var(--accent)]/15 disabled:opacity-50"
-      >
-        <Moon size={15} />
-        {pending ? 'Closing the day…' : 'Finish day'}
-      </button>
+      <GlassCard className="p-4">
+        <button
+          type="button"
+          onClick={run}
+          disabled={pending}
+          className="flex w-full items-center justify-center gap-2 rounded-2xl border border-[var(--accent)]/30 bg-[var(--accent)]/10 px-4 py-3 text-sm font-semibold text-[var(--accent)] transition hover:bg-[var(--accent)]/15 disabled:opacity-50"
+        >
+          <Moon size={15} />
+          {pending ? 'Closing the day…' : 'Finish day'}
+        </button>
+      </GlassCard>
     );
   }
 
@@ -99,7 +100,7 @@ export function FinishDayCard({
       >
         <Moon size={13} className="text-[var(--accent)]" />
         <span className="text-[10px] font-medium tracking-wider text-[var(--accent)] uppercase">
-          Day review · {TONE_LABELS[take.tone]}
+          Klara
         </span>
         <ChevronDown
           size={14}
@@ -112,8 +113,8 @@ export function FinishDayCard({
       </button>
       <p
         className={cn(
-          'mt-1.5 text-xs leading-relaxed text-neutral-200',
-          !expanded && 'line-clamp-3',
+          'mt-1.5 text-xs leading-relaxed whitespace-pre-line text-neutral-200',
+          !expanded && 'line-clamp-4',
         )}
       >
         {take.markdown}
