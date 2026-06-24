@@ -29,7 +29,7 @@ export function FinishDayCard({
   take: DayTake;
   stale: boolean;
 }) {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(true);
   const [pending, start] = useTransition();
 
   function run() {
