@@ -106,8 +106,13 @@ export function IngredientSwipeRow({
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-medium text-white">{row.name}</p>
           <p className="mt-0.5 text-xs text-neutral-400 tabular-nums">
-            {Math.round(m.kcal)} kcal · P {m.protein.toFixed(1)}g · C {m.carbs.toFixed(1)}g · F{' '}
-            {m.fat.toFixed(1)}g
+            <span className="text-white">{Math.round(m.kcal)}</span> kcal
+            <span className="mx-1 text-neutral-500">·</span>P{' '}
+            <span className="text-white">{Math.round(m.protein)}g</span>
+            <span className="mx-1 text-neutral-500">·</span>C{' '}
+            <span className="text-white">{Math.round(m.carbs)}g</span>
+            <span className="mx-1 text-neutral-500">·</span>F{' '}
+            <span className="text-white">{Math.round(m.fat)}g</span>
           </p>
         </div>
         <div className="flex shrink-0 items-baseline gap-1">

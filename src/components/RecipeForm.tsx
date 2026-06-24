@@ -4,15 +4,14 @@ import { useActionState, useState, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import { GlassCard } from './GlassCard';
 import { type ProductOption, type LibraryItem } from './IngredientPicker';
-import { DescribeMeal } from './DescribeMeal';
-import { ProductPicker } from './ProductPicker';
+import { IngredientTabs } from './IngredientTabs';
 import {
   IngredientSwipeRow,
   rowFromItem,
   rowFromEstimate,
   type IngredientRow,
 } from './IngredientRow';
-import { computeRecipeTotals, perPortion } from '@/lib/recipes';
+import { computeRecipeTotals, perPortion, effectiveTotalGrams } from '@/lib/recipes';
 import type { EstimationEntry } from '@/lib/freeTextEstimation';
 import type { RecipeFormState } from '@/app/(app)/library/recipes/actions';
 
@@ -45,7 +44,10 @@ export function RecipeForm({
 }) {
   const [state, formAction, pending] = useActionState<RecipeFormState, FormData>(action, {});
   const [name, setName] = useState(initialValues?.name ?? '');
-  const [portions, setPortions] = useState(String(initialValues?.portions ?? 1));
+  // Optional; left blank for a new recipe (auto-fills from weight ÷ portion).
+  const [portions, setPortions] = useState(
+    initialValues?.portions != null ? String(initialValues.portions) : '',
+  );
   const [totalGrams, setTotalGrams] = useState(
     initialValues?.totalGrams != null ? String(initialValues.totalGrams) : '',
   );
@@ -96,13 +98,40 @@ export function RecipeForm({
   );
   const totals = useMemo(() => computeRecipeTotals(resolvedRows), [resolvedRows]);
   const portionsNum = Number(portions) || 1;
-  const perPortionMacros = perPortion(totals, portionsNum);
 
   const ingredientSumGrams = useMemo(
     () => resolvedRows.reduce((sum, r) => sum + r.grams, 0),
     [resolvedRows],
   );
   const totalGramsForDefault = Number(totalGrams) || ingredientSumGrams;
+
+  // Live preview: per the suggested portion grams when set (recipe scaled to
+  // those grams), else fall back to total ÷ portions.
+  const denom = effectiveTotalGrams({ totalGrams: Number(totalGrams) || null, ingredientSumGrams });
+  const sp = Number(suggestedPortionGrams);
+  const usePortionGrams = sp > 0 && denom > 0;
+  const perPortionMacros = usePortionGrams
+    ? {
+        kcal: (totals.totalKcal * sp) / denom,
+        protein: (totals.totalProtein * sp) / denom,
+        carbs: (totals.totalCarbs * sp) / denom,
+        fat: (totals.totalFat * sp) / denom,
+      }
+    : perPortion(totals, portionsNum);
+
+  // When both cooked weight and a suggested portion are set, derive the number
+  // of portions automatically (weight ÷ portion).
+  function autoPortions(weight: number, portion: number) {
+    if (weight > 0 && portion > 0) setPortions(String(Math.max(1, Math.round(weight / portion))));
+  }
+  function onTotalGrams(v: string) {
+    setTotalGrams(v);
+    autoPortions(Number(v), Number(suggestedPortionGrams));
+  }
+  function onSuggestedPortion(v: string) {
+    setSuggestedPortionGrams(v);
+    autoPortions(Number(totalGrams), Number(v));
+  }
 
   function updateGrams(index: number, grams: string) {
     setRows((prev) => prev.map((r, i) => (i === index ? { ...r, grams } : r)));
@@ -146,15 +175,7 @@ export function RecipeForm({
         onChange={setName}
         placeholder="Banana bread"
         error={state.fieldErrors?.name}
-      />
-      <TextField
-        label="Portions"
-        name="portions"
-        type="number"
-        value={portions}
-        onChange={setPortions}
-        placeholder="8"
-        error={state.fieldErrors?.portions}
+        required
       />
 
       {rows.length > 0 ? (
@@ -174,16 +195,13 @@ export function RecipeForm({
       ) : null}
 
       <GlassCard className="p-5">
-        <DescribeMeal
-          label="Describe the ingredients"
-          placeholder="e.g. 2 cups flour, 3 eggs, 1 banana"
+        <IngredientTabs
+          items={productsAsItems}
+          onAddItem={addRowFromItem}
           onAddEstimate={addRowsFromEstimate}
           onError={(m) => setError(m || null)}
+          describePlaceholder="e.g. 2 cups flour, 3 eggs, 1 banana"
         />
-      </GlassCard>
-
-      <GlassCard className="p-5">
-        <ProductPicker items={productsAsItems} onAddItem={addRowFromItem} />
       </GlassCard>
 
       {error ? (
@@ -197,39 +215,50 @@ export function RecipeForm({
 
       <GlassCard className="space-y-3 p-5">
         <p className="text-xs font-medium tracking-wider text-neutral-400 uppercase">
-          Optional weight
+          Portions &amp; weight
         </p>
         <p className="-mt-1 text-[11px] text-neutral-500">
-          If you weigh the cooked dish, set the total grams here. When logging this recipe to a
-          meal, the suggested portion seeds the grams field.
+          Optional — sets the default serving size when you log this recipe.
         </p>
         <TextField
           label="Total cooked weight (g)"
           name="totalGrams"
           type="number"
+          row
           value={totalGrams}
-          onChange={setTotalGrams}
-          placeholder={ingredientSumGrams ? `e.g. ${Math.round(ingredientSumGrams)}` : 'e.g. 1100'}
+          onChange={onTotalGrams}
+          placeholder={ingredientSumGrams ? String(Math.round(ingredientSumGrams)) : '1100'}
           error={state.fieldErrors?.totalGrams}
         />
         <TextField
           label="Suggested portion (g)"
           name="suggestedPortionGrams"
           type="number"
+          row
           value={suggestedPortionGrams}
-          onChange={setSuggestedPortionGrams}
+          onChange={onSuggestedPortion}
           placeholder={
             totalGramsForDefault && portionsNum > 0
-              ? `e.g. ${Math.round(totalGramsForDefault / portionsNum)}`
-              : 'e.g. 150'
+              ? String(Math.round(totalGramsForDefault / portionsNum))
+              : '150'
           }
           error={state.fieldErrors?.suggestedPortionGrams}
+        />
+        <TextField
+          label="Portions"
+          name="portions"
+          type="number"
+          row
+          value={portions}
+          onChange={setPortions}
+          placeholder="1"
+          error={state.fieldErrors?.portions}
         />
       </GlassCard>
 
       <GlassCard className="space-y-3 p-5">
         <p className="text-xs font-medium tracking-wider text-neutral-400 uppercase">
-          Per portion (live)
+          {usePortionGrams ? `Per portion · ${Math.round(sp)}g (live)` : 'Per portion (live)'}
         </p>
         <div className="grid grid-cols-4 gap-3 text-center">
           <Stat label="kcal" value={Math.round(perPortionMacros.kcal)} />
@@ -239,6 +268,11 @@ export function RecipeForm({
         </div>
       </GlassCard>
 
+      {state.fieldErrors && Object.keys(state.fieldErrors).length > 0 ? (
+        <p className="text-sm text-[var(--danger)]" role="alert">
+          You have fields left to complete.
+        </p>
+      ) : null}
       {state.formError ? (
         <p className="text-sm text-[var(--danger)]" role="alert">
           {state.formError}
@@ -281,6 +315,8 @@ function TextField({
   placeholder,
   type = 'text',
   error,
+  row = false,
+  required = false,
 }: {
   label: string;
   name: string;
@@ -289,10 +325,44 @@ function TextField({
   placeholder?: string;
   type?: string;
   error?: string;
+  /** Compact row layout (label left, value input right) — like other views. */
+  row?: boolean;
+  /** Show a "*" after the label. */
+  required?: boolean;
 }) {
+  const border = error ? 'border-[var(--danger)]/60' : 'border-white/10';
+  const labelNode = (
+    <>
+      {label}
+      {required ? <span className="text-[var(--accent)]"> *</span> : null}
+    </>
+  );
+
+  if (row) {
+    return (
+      <div>
+        <label className="flex items-center justify-between gap-3">
+          <span className="text-sm text-neutral-300">{labelNode}</span>
+          <input
+            name={name}
+            type={type}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            onFocus={(e) => e.target.select()}
+            placeholder={placeholder}
+            inputMode={type === 'number' ? 'numeric' : undefined}
+            className={`w-24 rounded-2xl border bg-white/[0.04] px-3 py-2 text-right text-sm text-white tabular-nums transition placeholder:text-neutral-500 focus:bg-white/[0.08] focus:ring-2 focus:ring-[var(--accent)]/60 focus:outline-none ${border}`}
+            aria-invalid={Boolean(error)}
+          />
+        </label>
+        {error ? <p className="mt-1 text-right text-xs text-[var(--danger)]">{error}</p> : null}
+      </div>
+    );
+  }
+
   return (
     <label className="block">
-      <span className="text-xs font-medium text-neutral-300">{label}</span>
+      <span className="text-xs font-medium text-neutral-300">{labelNode}</span>
       <input
         name={name}
         type={type}
@@ -300,9 +370,7 @@ function TextField({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         inputMode={type === 'number' ? 'numeric' : undefined}
-        className={`mt-2 block w-full rounded-2xl border bg-white/[0.04] px-4 py-3 text-sm text-white transition placeholder:text-neutral-500 focus:bg-white/[0.08] focus:ring-2 focus:ring-[var(--accent)]/60 focus:outline-none ${
-          error ? 'border-[var(--danger)]/60' : 'border-white/10'
-        }`}
+        className={`mt-2 block w-full rounded-2xl border bg-white/[0.04] px-4 py-3 text-sm text-white transition placeholder:text-neutral-500 focus:bg-white/[0.08] focus:ring-2 focus:ring-[var(--accent)]/60 focus:outline-none ${border}`}
         aria-invalid={Boolean(error)}
       />
       {error ? <p className="mt-1.5 text-xs text-[var(--danger)]">{error}</p> : null}

@@ -18,6 +18,8 @@ export default async function NewRecipePage() {
       proteinPer100g: true,
       carbsPer100g: true,
       fatPer100g: true,
+      suggestedPortionGrams: true,
+      inUse: true,
     },
   });
 
