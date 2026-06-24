@@ -11,14 +11,15 @@ import { MealCard, type MealCardMeal } from './MealCard';
 export function MealList({ meals, returnTo }: { meals: MealCardMeal[]; returnTo: string }) {
   return (
     <ul className="flex flex-col gap-3">
-      <AnimatePresence mode="popLayout" initial={false}>
+      <AnimatePresence initial={false}>
         {meals.map((meal) => (
           <motion.li
             key={meal.id}
             layout
+            // Deleted card just fades out in place; the rest slide up (layout).
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.92 }}
+            exit={{ opacity: 0 }}
             transition={{ type: 'spring', stiffness: 320, damping: 30 }}
           >
             <MealCard meal={meal} returnTo={returnTo} />
