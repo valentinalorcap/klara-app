@@ -14,7 +14,7 @@ export function useToast(): ToastContextValue {
   return ctx;
 }
 
-const AUTO_DISMISS_MS = 5000;
+const AUTO_DISMISS_MS = 4000;
 
 /**
  * Design-system toast: a pill that slides up from the bottom, auto-dismisses

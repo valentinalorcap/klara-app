@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useRef, useEffect, useTransition } from 'react';
 import Link from 'next/link';
+import { AnimatePresence } from 'framer-motion';
 import {
   Star,
   Sunrise,
@@ -343,15 +344,17 @@ export function MealForm({
       {rows.length > 0 ? (
         <GlassCard className="p-5">
           <ul>
-            {rows.map((row, i) => (
-              <IngredientSwipeRow
-                key={row.id}
-                row={row}
-                isLast={i === rows.length - 1}
-                onGramsChange={(grams) => updateGrams(i, grams)}
-                onRemove={() => removeRow(i)}
-              />
-            ))}
+            <AnimatePresence initial={false}>
+              {rows.map((row, i) => (
+                <IngredientSwipeRow
+                  key={row.id}
+                  row={row}
+                  isLast={i === rows.length - 1}
+                  onGramsChange={(grams) => updateGrams(i, grams)}
+                  onRemove={() => removeRow(i)}
+                />
+              ))}
+            </AnimatePresence>
           </ul>
         </GlassCard>
       ) : null}

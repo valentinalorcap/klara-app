@@ -82,7 +82,14 @@ export function IngredientSwipeRow({
   });
 
   return (
-    <li className={cn('relative overflow-hidden', !isLast && 'border-b border-white/5')}>
+    <motion.li
+      layout
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0 }}
+      transition={{ type: 'spring', stiffness: 360, damping: 30 }}
+      className={cn('relative overflow-hidden', !isLast && 'border-b border-white/5')}
+    >
       <motion.button
         type="button"
         style={{ opacity: trashOpacity }}
@@ -129,6 +136,6 @@ export function IngredientSwipeRow({
           <span className="text-xs text-neutral-400">g</span>
         </div>
       </motion.div>
-    </li>
+    </motion.li>
   );
 }
