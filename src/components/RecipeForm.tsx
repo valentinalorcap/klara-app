@@ -169,7 +169,7 @@ export function RecipeForm({
       <input type="hidden" name="ingredients" value={ingredientsJson} />
 
       <TextField
-        label="Name"
+        label="Recipe Name"
         name="name"
         value={name}
         onChange={setName}
@@ -216,9 +216,10 @@ export function RecipeForm({
       <GlassCard className="space-y-3 p-5">
         <p className="text-xs font-medium tracking-wider text-neutral-400 uppercase">
           Portions &amp; weight
+          <span className="ml-2 text-[10px] text-neutral-500 normal-case">· optional</span>
         </p>
-        <p className="-mt-1 text-[11px] text-neutral-500">
-          Optional — sets the default serving size when you log this recipe.
+        <p className="-mt-2 text-[11px] text-neutral-500">
+          Sets the default serving size when you log this recipe.
         </p>
         <TextField
           label="Total cooked weight (g)"
