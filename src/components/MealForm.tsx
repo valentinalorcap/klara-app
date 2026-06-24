@@ -14,8 +14,8 @@ import {
 } from 'lucide-react';
 import { GlassCard } from './GlassCard';
 import { type LibraryItem } from './IngredientPicker';
-import { DescribeMeal } from './DescribeMeal';
-import { ProductPicker } from './ProductPicker';
+import { IngredientTabs } from './IngredientTabs';
+import { MacroStats } from './MacroStats';
 import {
   IngredientSwipeRow,
   rowFromItem,
@@ -357,24 +357,21 @@ export function MealForm({
       ) : null}
 
       <GlassCard className="p-5">
-        <DescribeMeal onAddEstimate={addRowsFromEstimate} onError={setError} />
+        <IngredientTabs
+          items={items}
+          onAddItem={addRowFromItem}
+          onAddEstimate={addRowsFromEstimate}
+          onError={setError}
+        />
       </GlassCard>
 
-      <GlassCard className="p-5">
-        <ProductPicker items={items} onAddItem={addRowFromItem} />
-      </GlassCard>
-
-      <GlassCard className="space-y-3 p-5">
-        <p className="text-xs font-medium tracking-wider text-neutral-400 uppercase">
-          Total (live)
-        </p>
-        <div className="grid grid-cols-4 gap-3 text-center">
-          <Stat label="kcal" value={Math.round(totals.kcal)} />
-          <Stat label="P" value={totals.protein.toFixed(1) + 'g'} />
-          <Stat label="C" value={totals.carbs.toFixed(1) + 'g'} />
-          <Stat label="F" value={totals.fat.toFixed(1) + 'g'} />
-        </div>
-      </GlassCard>
+      <MacroStats
+        title="Total (live)"
+        kcal={totals.kcal}
+        protein={totals.protein}
+        carbs={totals.carbs}
+        fat={totals.fat}
+      />
 
       {error ? (
         <p className="text-sm text-[var(--danger)]" role="alert">
@@ -403,15 +400,6 @@ export function MealForm({
           </Link>
         </div>
       ) : null}
-    </div>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: string | number }) {
-  return (
-    <div>
-      <p className="text-base font-semibold text-white tabular-nums">{value}</p>
-      <p className="mt-0.5 text-[10px] tracking-wider text-neutral-500 uppercase">{label}</p>
     </div>
   );
 }
