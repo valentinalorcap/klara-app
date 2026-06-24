@@ -27,6 +27,8 @@ export default async function EditRecipePage({ params }: { params: Promise<{ id:
         proteinPer100g: true,
         carbsPer100g: true,
         fatPer100g: true,
+        suggestedPortionGrams: true,
+        inUse: true,
       },
     }),
   ]);

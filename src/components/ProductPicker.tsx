@@ -6,26 +6,53 @@ import { type LibraryItem } from './IngredientPicker';
 
 type RecipeWithDefaultGrams = LibraryItem & { kind: 'recipe'; defaultGrams: number };
 
+/** Lowercase + strip accents so "platano" matches "plátano". */
+function norm(s: string): string {
+  return s
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+}
+
 /**
- * Add a saved product or recipe to the meal, one at a time. Picking a
- * product prefills grams with its suggested portion (else 100g); a recipe
- * prefills with its default portion.
+ * Add a saved product or recipe, one at a time. The results open on focus; at
+ * rest only products marked "in use" show, the rest appear once you type.
+ * Picking a product prefills grams from its suggested portion (else 100g).
  */
 export function ProductPicker({
   items,
   onAddItem,
+  hideLabel = false,
+  alwaysShowList = false,
 }: {
   items: LibraryItem[];
   onAddItem: (item: LibraryItem, grams: number) => void;
+  /** Hide the label (e.g. when a tab already names the section). */
+  hideLabel?: boolean;
+  /** Always render the list (default in-use); else it only opens on focus. */
+  alwaysShowList?: boolean;
 }) {
   const [value, setValue] = useState('');
   const [focused, setFocused] = useState(false);
   const trimmed = value.trim();
-  // At rest, only the products marked "in use" show; everything else appears
-  // once the user starts typing.
-  const filtered = trimmed
-    ? items.filter((i) => i.name.toLowerCase().includes(trimmed.toLowerCase())).slice(0, 8)
-    : items.filter((i) => i.kind === 'product' && i.inUse);
+  const showList = alwaysShowList || focused;
+  // At rest, show the products marked "in use"; if none are marked, fall back
+  // to the first few so the list isn't empty. Typing searches everything.
+  const inUse = items.filter((i) => i.kind === 'product' && i.inUse);
+  // Each typed word must be the START of some word in the (accent-stripped)
+  // name, in any order — so "yogurt p" matches "yogurt de plátano" and "yogurt
+  // proteico", but not "Coconut Yogurt Alpro" (no word starts with "p").
+  const tokens = norm(trimmed).split(/\s+/).filter(Boolean);
+  const filtered = tokens.length
+    ? items
+        .filter((i) => {
+          const words = norm(i.name).split(/\s+/);
+          return tokens.every((t) => words.some((w) => w.startsWith(t)));
+        })
+        .slice(0, 8)
+    : inUse.length > 0
+      ? inUse
+      : items.slice(0, 8);
 
   function pick(item: LibraryItem) {
     let grams = 100;
@@ -41,9 +68,11 @@ export function ProductPicker({
 
   return (
     <div className="space-y-2.5">
-      <p className="text-xs font-medium tracking-wider text-neutral-400 uppercase">
-        Add saved products or recipes
-      </p>
+      {hideLabel ? null : (
+        <p className="text-xs font-medium tracking-wider text-neutral-400 uppercase">
+          Add saved products or recipes
+        </p>
+      )}
       <div className="relative">
         <Search
           size={14}
@@ -61,7 +90,7 @@ export function ProductPicker({
         />
       </div>
 
-      {!focused ? null : items.length === 0 ? (
+      {!showList ? null : items.length === 0 ? (
         <p className="px-1 py-1 text-xs text-neutral-500">
           No saved products yet — add one from the Products tab.
         </p>
