@@ -62,7 +62,7 @@ export async function fetchWeeklyContext(
 
   // Most recent first
   const lines: string[] = [
-    'User meal history — past days (use this to personalize; reference meal names directly):',
+    'User meal history — past days (use this to spot structural patterns only; do NOT repeat full meal names as recommendations):',
     '',
   ];
 
