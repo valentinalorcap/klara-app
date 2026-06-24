@@ -14,8 +14,7 @@ import {
 } from 'lucide-react';
 import { GlassCard } from './GlassCard';
 import { type LibraryItem } from './IngredientPicker';
-import { DescribeMeal } from './DescribeMeal';
-import { ProductPicker } from './ProductPicker';
+import { IngredientTabs } from './IngredientTabs';
 import {
   IngredientSwipeRow,
   rowFromItem,
@@ -357,11 +356,12 @@ export function MealForm({
       ) : null}
 
       <GlassCard className="p-5">
-        <DescribeMeal onAddEstimate={addRowsFromEstimate} onError={setError} />
-      </GlassCard>
-
-      <GlassCard className="p-5">
-        <ProductPicker items={items} onAddItem={addRowFromItem} />
+        <IngredientTabs
+          items={items}
+          onAddItem={addRowFromItem}
+          onAddEstimate={addRowsFromEstimate}
+          onError={setError}
+        />
       </GlassCard>
 
       <GlassCard className="space-y-3 p-5">
