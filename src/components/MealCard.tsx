@@ -9,6 +9,7 @@ import { ProductIcon } from './ProductIcon';
 import { toggleFavorite, deleteMeal, copyMealToToday } from '@/app/(app)/today/actions';
 import { MEAL_TYPE_LABELS, type MealType, entryMacros, sumEntries } from '@/lib/meals';
 import { mealIconName } from '@/lib/productIcons';
+import { useToast } from './Toast';
 import { cn } from '@/lib/utils';
 
 export type MealCardEntry = {
@@ -21,18 +22,20 @@ export type MealCardEntry = {
   fatPer100g: number;
 };
 
+export type MealCardMeal = {
+  id: string;
+  type: MealType;
+  name: string | null;
+  isFavorite: boolean;
+  entries: MealCardEntry[];
+};
+
 export function MealCard({
   meal,
   returnTo = '/today',
   showDelete = true,
 }: {
-  meal: {
-    id: string;
-    type: MealType;
-    name: string | null;
-    isFavorite: boolean;
-    entries: MealCardEntry[];
-  };
+  meal: MealCardMeal;
   returnTo?: string;
   showDelete?: boolean;
 }) {
@@ -41,8 +44,8 @@ export function MealCard({
   const [pendingStar, startStar] = useTransition();
   const [pendingDelete, startDelete] = useTransition();
   const [pendingCopy, startCopy] = useTransition();
-  const [copied, setCopied] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const { show } = useToast();
   const totals = sumEntries(meal.entries);
 
   useEffect(() => {
@@ -75,8 +78,7 @@ export function MealCard({
         window.alert(result.error);
         return;
       }
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 2000);
+      show('Added to today');
     });
   }
 
@@ -94,6 +96,9 @@ export function MealCard({
     <GlassCard
       className={cn(
         'cursor-pointer p-5 transition active:scale-[0.995]',
+        // Lift above sibling cards while the actions menu is open so the
+        // dropdown isn't covered by the next card.
+        menuOpen && 'relative z-30',
         expanded
           ? 'border-white/15'
           : 'border-white/10 shadow-[0_1px_0_rgba(255,255,255,0.06)_inset,0_8px_32px_-12px_rgba(0,0,0,0.4)] hover:border-white/20',
@@ -214,19 +219,13 @@ export function MealCard({
       </AnimatePresence>
 
       <div className="mt-4 flex justify-center">
-        {copied ? (
-          <span className="rounded-full bg-[var(--accent)]/15 px-3 py-1 text-[11px] font-medium text-[var(--accent)]">
-            Added to today ✓
-          </span>
-        ) : (
-          <span
-            aria-hidden
-            className={cn(
-              'h-[5px] w-12 rounded-full transition-colors',
-              expanded ? 'bg-white/15' : 'bg-white/25',
-            )}
-          />
-        )}
+        <span
+          aria-hidden
+          className={cn(
+            'h-[5px] w-12 rounded-full transition-colors',
+            expanded ? 'bg-white/15' : 'bg-white/25',
+          )}
+        />
       </div>
     </GlassCard>
   );
