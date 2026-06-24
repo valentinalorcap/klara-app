@@ -82,7 +82,15 @@ export function IngredientSwipeRow({
   });
 
   return (
-    <li className={cn('relative overflow-hidden', !isLast && 'border-b border-white/5')}>
+    <motion.li
+      // Collapse the row's height on remove so the surrounding card shrinks in
+      // sync with the rows sliding up (overflow-hidden clips during collapse).
+      initial={{ opacity: 0, height: 0 }}
+      animate={{ opacity: 1, height: 'auto' }}
+      exit={{ opacity: 0, height: 0 }}
+      transition={{ type: 'spring', stiffness: 360, damping: 32 }}
+      className={cn('relative overflow-hidden', !isLast && 'border-b border-white/5')}
+    >
       <motion.button
         type="button"
         style={{ opacity: trashOpacity }}
@@ -129,6 +137,6 @@ export function IngredientSwipeRow({
           <span className="text-xs text-neutral-400">g</span>
         </div>
       </motion.div>
-    </li>
+    </motion.li>
   );
 }

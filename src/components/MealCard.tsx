@@ -3,12 +3,13 @@
 import { useState, useTransition, useRef, useEffect, type MouseEvent } from 'react';
 import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Star, MoreVertical, Pencil, Trash2 } from 'lucide-react';
+import { Star, MoreVertical, Pencil, Trash2, Copy } from 'lucide-react';
 import { GlassCard } from './GlassCard';
 import { ProductIcon } from './ProductIcon';
-import { toggleFavorite, deleteMeal } from '@/app/(app)/today/actions';
+import { toggleFavorite, deleteMeal, copyMealToToday } from '@/app/(app)/today/actions';
 import { MEAL_TYPE_LABELS, type MealType, entryMacros, sumEntries } from '@/lib/meals';
 import { mealIconName } from '@/lib/productIcons';
+import { useToast } from './Toast';
 import { cn } from '@/lib/utils';
 
 export type MealCardEntry = {
@@ -21,18 +22,20 @@ export type MealCardEntry = {
   fatPer100g: number;
 };
 
+export type MealCardMeal = {
+  id: string;
+  type: MealType;
+  name: string | null;
+  isFavorite: boolean;
+  entries: MealCardEntry[];
+};
+
 export function MealCard({
   meal,
   returnTo = '/today',
   showDelete = true,
 }: {
-  meal: {
-    id: string;
-    type: MealType;
-    name: string | null;
-    isFavorite: boolean;
-    entries: MealCardEntry[];
-  };
+  meal: MealCardMeal;
   returnTo?: string;
   showDelete?: boolean;
 }) {
@@ -40,7 +43,9 @@ export function MealCard({
   const [menuOpen, setMenuOpen] = useState(false);
   const [pendingStar, startStar] = useTransition();
   const [pendingDelete, startDelete] = useTransition();
+  const [pendingCopy, startCopy] = useTransition();
   const menuRef = useRef<HTMLDivElement>(null);
+  const { show } = useToast();
   const totals = sumEntries(meal.entries);
 
   useEffect(() => {
@@ -64,6 +69,19 @@ export function MealCard({
     setMenuOpen((v) => !v);
   }
 
+  function onCopy(e: MouseEvent) {
+    e.stopPropagation();
+    setMenuOpen(false);
+    startCopy(async () => {
+      const result = await copyMealToToday(meal.id);
+      if (result && !result.ok) {
+        window.alert(result.error);
+        return;
+      }
+      show('Added to today');
+    });
+  }
+
   function onDelete(e: MouseEvent) {
     e.stopPropagation();
     setMenuOpen(false);
@@ -78,6 +96,9 @@ export function MealCard({
     <GlassCard
       className={cn(
         'cursor-pointer p-5 transition active:scale-[0.995]',
+        // Lift above sibling cards while the actions menu is open so the
+        // dropdown isn't covered by the next card.
+        menuOpen && 'relative z-30',
         expanded
           ? 'border-white/15'
           : 'border-white/10 shadow-[0_1px_0_rgba(255,255,255,0.06)_inset,0_8px_32px_-12px_rgba(0,0,0,0.4)] hover:border-white/20',
@@ -125,13 +146,13 @@ export function MealCard({
               <IconButton
                 label="More actions"
                 onClick={onMenuToggle}
-                disabled={pendingDelete}
+                disabled={pendingDelete || pendingCopy}
                 className="text-neutral-400 hover:text-white"
               >
                 <MoreVertical size={18} />
               </IconButton>
               {menuOpen ? (
-                <div className="absolute top-full right-0 z-20 mt-1 w-36 overflow-hidden rounded-2xl border border-white/10 bg-[#1a1633]/95 p-1 shadow-2xl backdrop-blur-xl">
+                <div className="absolute top-full right-0 z-20 mt-1 w-40 overflow-hidden rounded-2xl border border-white/10 bg-[#1a1633]/95 p-1 shadow-2xl backdrop-blur-xl">
                   <Link
                     href={`/today/${meal.id}/edit?from=${encodeURIComponent(returnTo)}`}
                     onClick={(e) => e.stopPropagation()}
@@ -140,6 +161,14 @@ export function MealCard({
                     <Pencil size={14} className="text-neutral-400" />
                     Edit
                   </Link>
+                  <button
+                    type="button"
+                    onClick={onCopy}
+                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-white transition hover:bg-white/5"
+                  >
+                    <Copy size={14} className="text-neutral-400" />
+                    Copy to today
+                  </button>
                   <button
                     type="button"
                     onClick={onDelete}
@@ -189,8 +218,9 @@ export function MealCard({
         ) : null}
       </AnimatePresence>
 
-      <div className="mt-4 flex justify-center" aria-hidden>
+      <div className="mt-4 flex justify-center">
         <span
+          aria-hidden
           className={cn(
             'h-[5px] w-12 rounded-full transition-colors',
             expanded ? 'bg-white/15' : 'bg-white/25',

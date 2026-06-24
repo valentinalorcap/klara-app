@@ -2,6 +2,7 @@
 
 import { useActionState, useState, useMemo, useRef } from 'react';
 import Link from 'next/link';
+import { AnimatePresence } from 'framer-motion';
 import { GlassCard } from './GlassCard';
 import { type ProductOption, type LibraryItem } from './IngredientPicker';
 import { IngredientTabs } from './IngredientTabs';
@@ -182,15 +183,17 @@ export function RecipeForm({
       {rows.length > 0 ? (
         <GlassCard className="p-5">
           <ul>
-            {rows.map((row, i) => (
-              <IngredientSwipeRow
-                key={row.id}
-                row={row}
-                isLast={i === rows.length - 1}
-                onGramsChange={(grams) => updateGrams(i, grams)}
-                onRemove={() => removeRow(i)}
-              />
-            ))}
+            <AnimatePresence initial={false}>
+              {rows.map((row, i) => (
+                <IngredientSwipeRow
+                  key={row.id}
+                  row={row}
+                  isLast={i === rows.length - 1}
+                  onGramsChange={(grams) => updateGrams(i, grams)}
+                  onRemove={() => removeRow(i)}
+                />
+              ))}
+            </AnimatePresence>
           </ul>
         </GlassCard>
       ) : null}

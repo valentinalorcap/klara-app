@@ -374,6 +374,62 @@ export async function copyDayToToday(sourceDateKey: unknown): Promise<ActionResu
   redirect('/today');
 }
 
+/**
+ * Copy a single meal into today as a fresh log. Unlike copyDayToToday this
+ * ADDS the meal (no wiping) so the user can reuse one specific meal. Entries
+ * are snapshotted; the new meal gets its own evaluation. No redirect — the
+ * caller stays where they are.
+ */
+export async function copyMealToToday(mealId: unknown): Promise<ActionResult> {
+  const userId = await requireUserId();
+  if (typeof mealId !== 'string' || !mealId) return { ok: false, error: 'Invalid meal.' };
+
+  const source = await prisma.meal.findFirst({
+    where: { id: mealId, userId },
+    include: { entries: true },
+  });
+  if (!source) return { ok: false, error: 'Meal not found.' };
+  if (source.entries.length === 0) return { ok: false, error: 'That meal has no items to copy.' };
+
+  const todayDate = new Date(isoDate(new Date()) + 'T00:00:00Z');
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { defaultEvalTone: true },
+  });
+
+  const meal = await prisma.meal.create({
+    data: {
+      userId,
+      date: todayDate,
+      type: source.type,
+      name: source.name,
+      entries: {
+        create: source.entries.map((e) => ({
+          name: e.name,
+          grams: e.grams,
+          kcalPer100g: e.kcalPer100g,
+          proteinPer100g: e.proteinPer100g,
+          carbsPer100g: e.carbsPer100g,
+          fatPer100g: e.fatPer100g,
+          productId: e.productId,
+          recipeId: e.recipeId,
+        })),
+      },
+    },
+  });
+
+  if (user) {
+    await markEvaluationPending(meal.id, user.defaultEvalTone, userId);
+    after(async () => {
+      await generateMealName(meal.id);
+      await evaluateMealById(meal.id);
+      revalidatePath('/today');
+    });
+  }
+  revalidatePath('/today');
+  return { ok: true };
+}
+
 /** Re-trigger the evaluation for a meal — used by the UI retry button. */
 export async function retryEvaluation(mealId: string): Promise<ActionResult> {
   const userId = await requireUserId();

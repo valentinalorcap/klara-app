@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { DescribeMeal } from './DescribeMeal';
 import { ProductPicker } from './ProductPicker';
 import { SegmentedControl } from './SegmentedControl';
@@ -37,16 +38,36 @@ export function IngredientTabs({
         ]}
       />
 
-      {tab === 'describe' ? (
-        <DescribeMeal
-          hideLabel
-          placeholder={describePlaceholder}
-          onAddEstimate={onAddEstimate}
-          onError={onError}
-        />
-      ) : (
-        <ProductPicker hideLabel alwaysShowList items={items} onAddItem={onAddItem} />
-      )}
+      <motion.div layout transition={{ type: 'spring', stiffness: 380, damping: 34 }}>
+        <AnimatePresence mode="wait" initial={false}>
+          {tab === 'describe' ? (
+            <motion.div
+              key="describe"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+            >
+              <DescribeMeal
+                hideLabel
+                placeholder={describePlaceholder}
+                onAddEstimate={onAddEstimate}
+                onError={onError}
+              />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="products"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+            >
+              <ProductPicker hideLabel alwaysShowList items={items} onAddItem={onAddItem} />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
     </div>
   );
 }
