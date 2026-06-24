@@ -3,7 +3,7 @@ import { Plus, Settings } from 'lucide-react';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { GlassCard } from '@/components/GlassCard';
-import { MealCard } from '@/components/MealCard';
+import { MealList } from '@/components/MealList';
 import { MacroRing, MACRO_COLORS } from '@/components/MacroRing';
 import { EvalPoller } from '@/components/EvalPoller';
 import { KlaraTakeCard } from '@/components/KlaraTakeCard';
@@ -184,29 +184,24 @@ export default async function TodayPage({
           <p className="mt-1 text-xs text-neutral-500">Tap “Add meals” above to log one.</p>
         </GlassCard>
       ) : (
-        <div className="space-y-3">
-          {meals.map((m) => (
-            <MealCard
-              key={m.id}
-              returnTo={returnTo}
-              meal={{
-                id: m.id,
-                type: m.type,
-                name: m.name,
-                isFavorite: m.templateId !== null,
-                entries: m.entries.map((e) => ({
-                  id: e.id,
-                  name: e.name,
-                  grams: e.grams,
-                  kcalPer100g: e.kcalPer100g,
-                  proteinPer100g: e.proteinPer100g,
-                  carbsPer100g: e.carbsPer100g,
-                  fatPer100g: e.fatPer100g,
-                })),
-              }}
-            />
-          ))}
-        </div>
+        <MealList
+          returnTo={returnTo}
+          meals={meals.map((m) => ({
+            id: m.id,
+            type: m.type,
+            name: m.name,
+            isFavorite: m.templateId !== null,
+            entries: m.entries.map((e) => ({
+              id: e.id,
+              name: e.name,
+              grams: e.grams,
+              kcalPer100g: e.kcalPer100g,
+              proteinPer100g: e.proteinPer100g,
+              carbsPer100g: e.carbsPer100g,
+              fatPer100g: e.fatPer100g,
+            })),
+          }))}
+        />
       )}
 
       {meals.length > 0 ? (
