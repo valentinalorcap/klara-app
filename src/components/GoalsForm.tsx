@@ -21,7 +21,6 @@ function suggestedMacros(kcal: number) {
   };
 }
 
-
 export function GoalsForm({
   initial,
   action = updateGoals,
