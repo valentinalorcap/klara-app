@@ -7,11 +7,7 @@ import { EditFavoriteForm } from '@/components/EditFavoriteForm';
 import { loadMealFormData } from '@/app/(app)/today/_data';
 import type { MealInitialValues } from '@/components/MealForm';
 
-export default async function EditFavoritePage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default async function EditFavoritePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const session = await auth();
   const userId = session!.user.id;

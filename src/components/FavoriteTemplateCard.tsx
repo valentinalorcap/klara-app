@@ -133,7 +133,7 @@ export function FavoriteTemplateCard({
                   }
                 }}
                 onBlur={saveRename}
-                className="mt-0.5 w-full bg-transparent text-sm font-semibold text-white outline-none border-b border-[var(--accent)]/50 focus:border-[var(--accent)]"
+                className="mt-0.5 w-full border-b border-[var(--accent)]/50 bg-transparent text-sm font-semibold text-white outline-none focus:border-[var(--accent)]"
               />
             ) : template.name ? (
               <h3

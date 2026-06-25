@@ -48,7 +48,11 @@ export default async function TodayPage({
       // Tiebreaker by id so meals saved in the same transaction (batch)
       // always render in a stable order across refreshes.
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-      include: { entries: { orderBy: { createdAt: 'asc' } }, evaluation: true, template: { include: { entries: true } } },
+      include: {
+        entries: { orderBy: { createdAt: 'asc' } },
+        evaluation: true,
+        template: { include: { entries: true } },
+      },
     }),
     prisma.dayEvaluation.findUnique({
       where: { userId_date: { userId, date: dayDate } },

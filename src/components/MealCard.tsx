@@ -170,14 +170,27 @@ export function MealCard({
                 onChange={(e) => setRenameValue(e.target.value)}
                 onClick={(e) => e.stopPropagation()}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') { e.preventDefault(); saveRename(); }
-                  if (e.key === 'Escape') { e.preventDefault(); setRenaming(false); }
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    saveRename();
+                  }
+                  if (e.key === 'Escape') {
+                    e.preventDefault();
+                    setRenaming(false);
+                  }
                 }}
                 onBlur={saveRename}
-                className="mt-0.5 w-full bg-transparent text-sm font-semibold text-white outline-none border-b border-[var(--accent)]/50 focus:border-[var(--accent)]"
+                className="mt-0.5 w-full border-b border-[var(--accent)]/50 bg-transparent text-sm font-semibold text-white outline-none focus:border-[var(--accent)]"
               />
             ) : meal.name ? (
-              <h3 className={cn('mt-0.5 truncate text-sm font-semibold text-white', pendingRename && 'opacity-50')}>{meal.name}</h3>
+              <h3
+                className={cn(
+                  'mt-0.5 truncate text-sm font-semibold text-white',
+                  pendingRename && 'opacity-50',
+                )}
+              >
+                {meal.name}
+              </h3>
             ) : null}
             <p className="mt-2 text-sm font-medium whitespace-nowrap text-white tabular-nums">
               {Math.round(totals.kcal)}

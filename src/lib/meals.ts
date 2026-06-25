@@ -131,7 +131,12 @@ const MONTH_NAMES = [
   'December',
 ];
 
-type EntryForMatch = { productId: string | null; recipeId: string | null; name: string; grams: number };
+type EntryForMatch = {
+  productId: string | null;
+  recipeId: string | null;
+  name: string;
+  grams: number;
+};
 
 /**
  * Returns true only when the meal's entries are an exact match for the
@@ -147,8 +152,10 @@ export function mealMatchesTemplate(
   const round = (g: number) => Math.round(g * 10) / 10;
   for (const me of mealEntries) {
     const found = templateEntries.some((te) => {
-      if (me.productId && te.productId) return me.productId === te.productId && round(me.grams) === round(te.grams);
-      if (me.recipeId && te.recipeId) return me.recipeId === te.recipeId && round(me.grams) === round(te.grams);
+      if (me.productId && te.productId)
+        return me.productId === te.productId && round(me.grams) === round(te.grams);
+      if (me.recipeId && te.recipeId)
+        return me.recipeId === te.recipeId && round(me.grams) === round(te.grams);
       return me.name === te.name && round(me.grams) === round(te.grams);
     });
     if (!found) return false;
