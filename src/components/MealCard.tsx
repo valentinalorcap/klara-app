@@ -250,7 +250,7 @@ export function MealCard({
                     className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-white transition hover:bg-white/5"
                   >
                     <Copy size={14} className="text-neutral-400" />
-                    Copy to today
+                    Add to today
                   </button>
                   <button
                     type="button"
