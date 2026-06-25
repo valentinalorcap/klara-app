@@ -241,7 +241,7 @@ export async function updateMeal(
 }
 
 const createMealBatchSchema = z.object({
-  meals: z.array(createMealInputSchema).min(1).max(8),
+  meals: z.array(createMealWithSourceSchema).min(1).max(8),
 });
 
 /**
@@ -283,6 +283,7 @@ export async function createMealBatch(input: unknown, returnTo?: string): Promis
           date: new Date(m.date + 'T00:00:00Z'),
           type: m.type,
           name: m.name ?? null,
+          templateId: m.templateId ?? null,
           entries: {
             create: m.entries.map((e) => ({
               name: e.name,
