@@ -473,6 +473,27 @@ export async function copyMealToToday(mealId: unknown): Promise<ActionResult> {
   return { ok: true };
 }
 
+/** Rename a meal (and its linked favorite template, if any). */
+export async function renameMeal(mealId: string, name: string): Promise<ActionResult> {
+  const userId = await requireUserId();
+  const meal = await prisma.meal.findFirst({
+    where: { id: mealId, userId },
+    select: { id: true, templateId: true },
+  });
+  if (!meal) return { ok: false, error: 'Meal not found.' };
+
+  const trimmed = name.trim() || null;
+  await prisma.$transaction([
+    prisma.meal.update({ where: { id: mealId }, data: { name: trimmed } }),
+    ...(meal.templateId
+      ? [prisma.mealTemplate.update({ where: { id: meal.templateId }, data: { name: trimmed } })]
+      : []),
+  ]);
+  revalidatePath('/today');
+  revalidatePath('/library');
+  return { ok: true };
+}
+
 /** Re-trigger the evaluation for a meal — used by the UI retry button. */
 export async function retryEvaluation(mealId: string): Promise<ActionResult> {
   const userId = await requireUserId();
