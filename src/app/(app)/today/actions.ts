@@ -241,7 +241,7 @@ export async function updateMeal(
 }
 
 const createMealBatchSchema = z.object({
-  meals: z.array(createMealInputSchema).min(1).max(8),
+  meals: z.array(createMealWithSourceSchema).min(1).max(8),
 });
 
 /**
@@ -283,6 +283,7 @@ export async function createMealBatch(input: unknown, returnTo?: string): Promis
           date: new Date(m.date + 'T00:00:00Z'),
           type: m.type,
           name: m.name ?? null,
+          templateId: m.templateId ?? null,
           entries: {
             create: m.entries.map((e) => ({
               name: e.name,
@@ -473,6 +474,27 @@ export async function copyMealToToday(mealId: unknown): Promise<ActionResult> {
   return { ok: true };
 }
 
+/** Rename a meal (and its linked favorite template, if any). */
+export async function renameMeal(mealId: string, name: string): Promise<ActionResult> {
+  const userId = await requireUserId();
+  const meal = await prisma.meal.findFirst({
+    where: { id: mealId, userId },
+    select: { id: true, templateId: true },
+  });
+  if (!meal) return { ok: false, error: 'Meal not found.' };
+
+  const trimmed = name.trim() || null;
+  await prisma.$transaction([
+    prisma.meal.update({ where: { id: mealId }, data: { name: trimmed } }),
+    ...(meal.templateId
+      ? [prisma.mealTemplate.update({ where: { id: meal.templateId }, data: { name: trimmed } })]
+      : []),
+  ]);
+  revalidatePath('/today');
+  revalidatePath('/library');
+  return { ok: true };
+}
+
 /** Re-trigger the evaluation for a meal — used by the UI retry button. */
 export async function retryEvaluation(mealId: string): Promise<ActionResult> {
   const userId = await requireUserId();
@@ -539,6 +561,70 @@ export async function toggleFavorite(mealId: string): Promise<ActionResult> {
   revalidatePath('/today');
   revalidatePath('/library');
   return { ok: true };
+}
+
+/** Rename a favorite template directly (used from the Library). */
+export async function renameFavorite(templateId: string, name: string): Promise<ActionResult> {
+  const userId = await requireUserId();
+  const template = await prisma.mealTemplate.findFirst({
+    where: { id: templateId, userId },
+    select: { id: true },
+  });
+  if (!template) return { ok: false, error: 'Favorite not found.' };
+  const trimmed = name.trim() || null;
+  await prisma.mealTemplate.update({ where: { id: templateId }, data: { name: trimmed } });
+  revalidatePath('/library');
+  return { ok: true };
+}
+
+/** Replace a template's metadata + entries atomically (used from Library edit). */
+export async function updateMealTemplate(
+  templateId: string,
+  input: unknown,
+  returnTo?: string,
+): Promise<ActionResult> {
+  const userId = await requireUserId();
+  const parsed = createMealInputSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: flatFirstError(parsed.error) };
+
+  const existing = await prisma.mealTemplate.findFirst({
+    where: { id: templateId, userId },
+    select: { id: true },
+  });
+  if (!existing) return { ok: false, error: 'Favorite not found.' };
+
+  try {
+    await assertOwnership(userId, parsed.data.entries);
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'Could not save.' };
+  }
+
+  await prisma.$transaction([
+    prisma.mealTemplateEntry.deleteMany({ where: { templateId } }),
+    prisma.mealTemplate.update({
+      where: { id: templateId },
+      data: {
+        type: parsed.data.type,
+        name: parsed.data.name ?? null,
+        entries: {
+          create: parsed.data.entries.map((e) => ({
+            name: e.name,
+            grams: e.grams,
+            kcalPer100g: e.kcalPer100g,
+            proteinPer100g: e.proteinPer100g,
+            carbsPer100g: e.carbsPer100g,
+            fatPer100g: e.fatPer100g,
+            productId: e.productId ?? null,
+            recipeId: e.recipeId ?? null,
+          })),
+        },
+      },
+    }),
+  ]);
+
+  revalidatePath('/library');
+  revalidatePath('/today');
+  redirect(safeReturnTo(returnTo));
 }
 
 /** Remove a favorite template directly (used from the Library). */

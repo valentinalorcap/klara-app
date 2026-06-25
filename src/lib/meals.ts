@@ -131,6 +131,38 @@ const MONTH_NAMES = [
   'December',
 ];
 
+type EntryForMatch = {
+  productId: string | null;
+  recipeId: string | null;
+  name: string;
+  grams: number;
+};
+
+/**
+ * Returns true only when the meal's entries are an exact match for the
+ * template's entries — same ingredients (by productId/recipeId, or name for
+ * custom entries) and same grams (to 1 decimal). Used to decide whether to
+ * show the star on a meal card.
+ */
+export function mealMatchesTemplate(
+  mealEntries: EntryForMatch[],
+  templateEntries: EntryForMatch[],
+): boolean {
+  if (mealEntries.length !== templateEntries.length) return false;
+  const round = (g: number) => Math.round(g * 10) / 10;
+  for (const me of mealEntries) {
+    const found = templateEntries.some((te) => {
+      if (me.productId && te.productId)
+        return me.productId === te.productId && round(me.grams) === round(te.grams);
+      if (me.recipeId && te.recipeId)
+        return me.recipeId === te.recipeId && round(me.grams) === round(te.grams);
+      return me.name === te.name && round(me.grams) === round(te.grams);
+    });
+    if (!found) return false;
+  }
+  return true;
+}
+
 /** Human label for a day key, e.g. "Friday, June 12" (parsed in UTC). */
 export function formatDayLabel(dateKey: string): string {
   const [y, m, d] = dateKey.split('-').map(Number);

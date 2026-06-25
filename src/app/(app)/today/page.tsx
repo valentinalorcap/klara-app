@@ -12,7 +12,7 @@ import { CopyDayButton } from '@/components/CopyDayButton';
 import { FinishDayCard } from '@/components/FinishDayCard';
 import { FinishDayButton } from '@/components/FinishDayButton';
 import { EvalStatus } from '@prisma/client';
-import { isoDate, isDateKey, formatDayLabel, sumEntries } from '@/lib/meals';
+import { isoDate, isDateKey, formatDayLabel, sumEntries, mealMatchesTemplate } from '@/lib/meals';
 import { hasAnyGoal } from '@/lib/goals';
 
 export default async function TodayPage({
@@ -48,7 +48,11 @@ export default async function TodayPage({
       // Tiebreaker by id so meals saved in the same transaction (batch)
       // always render in a stable order across refreshes.
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-      include: { entries: { orderBy: { createdAt: 'asc' } }, evaluation: true },
+      include: {
+        entries: { orderBy: { createdAt: 'asc' } },
+        evaluation: true,
+        template: { include: { entries: true } },
+      },
     }),
     prisma.dayEvaluation.findUnique({
       where: { userId_date: { userId, date: dayDate } },
@@ -207,7 +211,7 @@ export default async function TodayPage({
             id: m.id,
             type: m.type,
             name: m.name,
-            isFavorite: m.templateId !== null,
+            isFavorite: m.template ? mealMatchesTemplate(m.entries, m.template.entries) : false,
             entries: m.entries.map((e) => ({
               id: e.id,
               name: e.name,

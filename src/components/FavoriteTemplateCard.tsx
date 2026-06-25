@@ -1,14 +1,35 @@
 'use client';
 
-import { useState, useTransition, type MouseEvent } from 'react';
+import { useState, useTransition, useRef, useEffect, type MouseEvent } from 'react';
+import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Star } from 'lucide-react';
+import {
+  MoreVertical,
+  Pencil,
+  PenLine,
+  Sunrise,
+  Dumbbell,
+  Sandwich,
+  Cookie,
+  Moon,
+  Utensils,
+  type LucideIcon,
+} from 'lucide-react';
 import { GlassCard } from './GlassCard';
 import { ProductIcon } from './ProductIcon';
-import { removeFavorite } from '@/app/(app)/today/actions';
+import { renameFavorite } from '@/app/(app)/today/actions';
 import { MEAL_TYPE_LABELS, type MealType, entryMacros, sumEntries } from '@/lib/meals';
 import { mealIconName } from '@/lib/productIcons';
 import { cn } from '@/lib/utils';
+
+const MEAL_TYPE_ICONS: Record<MealType, LucideIcon> = {
+  BREAKFAST: Sunrise,
+  PREWORKOUT: Dumbbell,
+  LUNCH: Sandwich,
+  SNACK: Cookie,
+  DINNER: Moon,
+  OTHER: Utensils,
+};
 
 export type FavoriteTemplateEntry = {
   id: string;
@@ -30,17 +51,47 @@ export function FavoriteTemplateCard({
     entries: FavoriteTemplateEntry[];
   };
 }) {
+  const TypeIcon = MEAL_TYPE_ICONS[template.type];
   const [expanded, setExpanded] = useState(false);
-  const [pending, startTransition] = useTransition();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [renaming, setRenaming] = useState(false);
+  const [renameValue, setRenameValue] = useState(template.name ?? '');
+  const [pendingRename, startRename] = useTransition();
+  const menuRef = useRef<HTMLDivElement>(null);
+  const renameInputRef = useRef<HTMLInputElement>(null);
   const totals = sumEntries(template.entries);
 
-  function onUnstar(e: MouseEvent) {
+  useEffect(() => {
+    if (!menuOpen) return;
+    function onDocClick(e: globalThis.MouseEvent) {
+      if (!menuRef.current?.contains(e.target as Node)) setMenuOpen(false);
+    }
+    document.addEventListener('mousedown', onDocClick);
+    return () => document.removeEventListener('mousedown', onDocClick);
+  }, [menuOpen]);
+
+  useEffect(() => {
+    if (renaming) renameInputRef.current?.focus();
+  }, [renaming]);
+
+  function onMenuToggle(e: MouseEvent) {
     e.stopPropagation();
-    e.preventDefault();
-    const label = template.name ?? MEAL_TYPE_LABELS[template.type];
-    if (!confirm(`Remove "${label}" from favorites?`)) return;
-    startTransition(async () => {
-      await removeFavorite(template.id);
+    setMenuOpen((v) => !v);
+  }
+
+  function onRename(e: MouseEvent) {
+    e.stopPropagation();
+    setMenuOpen(false);
+    setRenameValue(template.name ?? '');
+    setRenaming(true);
+  }
+
+  function saveRename() {
+    setRenaming(false);
+    const trimmed = renameValue.trim();
+    if (trimmed === (template.name ?? '')) return;
+    startRename(async () => {
+      await renameFavorite(template.id, trimmed);
     });
   }
 
@@ -48,6 +99,7 @@ export function FavoriteTemplateCard({
     <GlassCard
       className={cn(
         'cursor-pointer p-5 transition active:scale-[0.995]',
+        menuOpen && 'relative z-30',
         expanded
           ? 'border-white/15'
           : 'border-white/10 shadow-[0_1px_0_rgba(255,255,255,0.06)_inset,0_8px_32px_-12px_rgba(0,0,0,0.4)] hover:border-white/20',
@@ -60,11 +112,38 @@ export function FavoriteTemplateCard({
             <ProductIcon name={mealIconName(template)} size={26} />
           </span>
           <div className="min-w-0 flex-1">
-            <p className="text-[10px] font-medium tracking-wider text-[var(--accent)] uppercase">
+            <p className="flex items-center gap-1 text-[10px] font-medium tracking-wider text-[var(--accent)] uppercase">
+              <TypeIcon size={11} />
               {MEAL_TYPE_LABELS[template.type]}
             </p>
-            {template.name ? (
-              <h3 className="mt-0.5 truncate text-sm font-semibold text-white">{template.name}</h3>
+            {renaming ? (
+              <input
+                ref={renameInputRef}
+                value={renameValue}
+                onChange={(e) => setRenameValue(e.target.value)}
+                onClick={(e) => e.stopPropagation()}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    saveRename();
+                  }
+                  if (e.key === 'Escape') {
+                    e.preventDefault();
+                    setRenaming(false);
+                  }
+                }}
+                onBlur={saveRename}
+                className="mt-0.5 w-full border-b border-[var(--accent)]/50 bg-transparent text-sm font-semibold text-white outline-none focus:border-[var(--accent)]"
+              />
+            ) : template.name ? (
+              <h3
+                className={cn(
+                  'mt-0.5 truncate text-sm font-semibold text-white',
+                  pendingRename && 'opacity-50',
+                )}
+              >
+                {template.name}
+              </h3>
             ) : null}
             <p className="mt-2 text-sm font-medium whitespace-nowrap text-white tabular-nums">
               {Math.round(totals.kcal)}
@@ -79,15 +158,36 @@ export function FavoriteTemplateCard({
             </p>
           </div>
         </div>
-        <button
-          type="button"
-          aria-label="Remove from favorites"
-          onClick={onUnstar}
-          disabled={pending}
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-yellow-400 transition disabled:opacity-30"
-        >
-          <Star size={16} fill="currentColor" />
-        </button>
+        <div ref={menuRef} className="relative shrink-0">
+          <button
+            type="button"
+            aria-label="More actions"
+            onClick={onMenuToggle}
+            className="flex h-8 w-8 items-center justify-center rounded-full text-neutral-400 transition hover:text-white"
+          >
+            <MoreVertical size={18} />
+          </button>
+          {menuOpen ? (
+            <div className="absolute top-full right-0 z-20 mt-1 w-40 overflow-hidden rounded-2xl border border-white/10 bg-[#1a1633]/95 p-1 shadow-2xl backdrop-blur-xl">
+              <Link
+                href={`/library/favorites/${template.id}/edit`}
+                onClick={(e) => e.stopPropagation()}
+                className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-white transition hover:bg-white/5"
+              >
+                <Pencil size={14} className="text-neutral-400" />
+                Edit
+              </Link>
+              <button
+                type="button"
+                onClick={onRename}
+                className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-white transition hover:bg-white/5"
+              >
+                <PenLine size={14} className="text-neutral-400" />
+                Rename
+              </button>
+            </div>
+          ) : null}
+        </div>
       </div>
 
       <AnimatePresence initial={false}>

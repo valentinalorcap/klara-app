@@ -3,14 +3,37 @@
 import { useState, useTransition, useRef, useEffect, type MouseEvent } from 'react';
 import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Star, MoreVertical, Pencil, Trash2, Copy } from 'lucide-react';
+import {
+  Star,
+  MoreVertical,
+  Pencil,
+  PenLine,
+  Trash2,
+  Copy,
+  Sunrise,
+  Dumbbell,
+  Sandwich,
+  Cookie,
+  Moon,
+  Utensils,
+  type LucideIcon,
+} from 'lucide-react';
 import { GlassCard } from './GlassCard';
 import { ProductIcon } from './ProductIcon';
-import { toggleFavorite, deleteMeal, copyMealToToday } from '@/app/(app)/today/actions';
+import { toggleFavorite, deleteMeal, copyMealToToday, renameMeal } from '@/app/(app)/today/actions';
 import { MEAL_TYPE_LABELS, type MealType, entryMacros, sumEntries } from '@/lib/meals';
 import { mealIconName } from '@/lib/productIcons';
 import { useToast } from './Toast';
 import { cn } from '@/lib/utils';
+
+const MEAL_TYPE_ICONS: Record<MealType, LucideIcon> = {
+  BREAKFAST: Sunrise,
+  PREWORKOUT: Dumbbell,
+  LUNCH: Sandwich,
+  SNACK: Cookie,
+  DINNER: Moon,
+  OTHER: Utensils,
+};
 
 export type MealCardEntry = {
   id: string;
@@ -39,12 +62,17 @@ export function MealCard({
   returnTo?: string;
   showDelete?: boolean;
 }) {
+  const TypeIcon = MEAL_TYPE_ICONS[meal.type];
   const [expanded, setExpanded] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [renaming, setRenaming] = useState(false);
+  const [renameValue, setRenameValue] = useState(meal.name ?? '');
   const [pendingStar, startStar] = useTransition();
   const [pendingDelete, startDelete] = useTransition();
   const [pendingCopy, startCopy] = useTransition();
+  const [pendingRename, startRename] = useTransition();
   const menuRef = useRef<HTMLDivElement>(null);
+  const renameInputRef = useRef<HTMLInputElement>(null);
   const { show } = useToast();
   const totals = sumEntries(meal.entries);
 
@@ -82,6 +110,26 @@ export function MealCard({
     });
   }
 
+  useEffect(() => {
+    if (renaming) renameInputRef.current?.focus();
+  }, [renaming]);
+
+  function onRename(e: MouseEvent) {
+    e.stopPropagation();
+    setMenuOpen(false);
+    setRenameValue(meal.name ?? '');
+    setRenaming(true);
+  }
+
+  function saveRename() {
+    setRenaming(false);
+    const trimmed = renameValue.trim();
+    if (trimmed === (meal.name ?? '')) return;
+    startRename(async () => {
+      await renameMeal(meal.id, trimmed);
+    });
+  }
+
   function onDelete(e: MouseEvent) {
     e.stopPropagation();
     setMenuOpen(false);
@@ -111,11 +159,38 @@ export function MealCard({
             <ProductIcon name={mealIconName(meal)} size={26} />
           </span>
           <div className="min-w-0 flex-1">
-            <p className="text-[10px] font-medium tracking-wider text-[var(--accent)] uppercase">
+            <p className="flex items-center gap-1 text-[10px] font-medium tracking-wider text-[var(--accent)] uppercase">
+              <TypeIcon size={11} />
               {MEAL_TYPE_LABELS[meal.type]}
             </p>
-            {meal.name ? (
-              <h3 className="mt-0.5 truncate text-sm font-semibold text-white">{meal.name}</h3>
+            {renaming ? (
+              <input
+                ref={renameInputRef}
+                value={renameValue}
+                onChange={(e) => setRenameValue(e.target.value)}
+                onClick={(e) => e.stopPropagation()}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    saveRename();
+                  }
+                  if (e.key === 'Escape') {
+                    e.preventDefault();
+                    setRenaming(false);
+                  }
+                }}
+                onBlur={saveRename}
+                className="mt-0.5 w-full border-b border-[var(--accent)]/50 bg-transparent text-sm font-semibold text-white outline-none focus:border-[var(--accent)]"
+              />
+            ) : meal.name ? (
+              <h3
+                className={cn(
+                  'mt-0.5 truncate text-sm font-semibold text-white',
+                  pendingRename && 'opacity-50',
+                )}
+              >
+                {meal.name}
+              </h3>
             ) : null}
             <p className="mt-2 text-sm font-medium whitespace-nowrap text-white tabular-nums">
               {Math.round(totals.kcal)}
@@ -163,11 +238,19 @@ export function MealCard({
                   </Link>
                   <button
                     type="button"
+                    onClick={onRename}
+                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-white transition hover:bg-white/5"
+                  >
+                    <PenLine size={14} className="text-neutral-400" />
+                    Rename
+                  </button>
+                  <button
+                    type="button"
                     onClick={onCopy}
                     className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-white transition hover:bg-white/5"
                   >
                     <Copy size={14} className="text-neutral-400" />
-                    Copy to today
+                    Add to today
                   </button>
                   <button
                     type="button"
