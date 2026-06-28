@@ -254,6 +254,7 @@ model Meal {
   batchId String?
 
   notes String?
+  icon  String?
 
   entries    MealEntry[]
   evaluation AIEvaluation?

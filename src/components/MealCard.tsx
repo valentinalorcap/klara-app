@@ -1,39 +1,21 @@
 'use client';
 
-import { useState, useTransition, useRef, useEffect, type MouseEvent } from 'react';
+import { useState, useTransition, useRef, useEffect, useCallback, type MouseEvent } from 'react';
 import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
-import {
-  Star,
-  MoreVertical,
-  Pencil,
-  PenLine,
-  Trash2,
-  Copy,
-  Sunrise,
-  Dumbbell,
-  Sandwich,
-  Cookie,
-  Moon,
-  Utensils,
-  type LucideIcon,
-} from 'lucide-react';
+import { Star, MoreVertical, Pencil, PenLine, Trash2, Copy, Smile } from 'lucide-react';
 import { GlassCard } from './GlassCard';
-import { ProductIcon } from './ProductIcon';
-import { toggleFavorite, deleteMeal, copyMealToToday, renameMeal } from '@/app/(app)/today/actions';
+import {
+  toggleFavorite,
+  deleteMeal,
+  copyMealToToday,
+  renameMeal,
+  updateMealIcon,
+} from '@/app/(app)/today/actions';
 import { MEAL_TYPE_LABELS, type MealType, entryMacros, sumEntries } from '@/lib/meals';
 import { mealIconName } from '@/lib/productIcons';
 import { useToast } from './Toast';
 import { cn } from '@/lib/utils';
-
-const MEAL_TYPE_ICONS: Record<MealType, LucideIcon> = {
-  BREAKFAST: Sunrise,
-  PREWORKOUT: Dumbbell,
-  LUNCH: Sandwich,
-  SNACK: Cookie,
-  DINNER: Moon,
-  OTHER: Utensils,
-};
 
 export type MealCardEntry = {
   id: string;
@@ -49,9 +31,79 @@ export type MealCardMeal = {
   id: string;
   type: MealType;
   name: string | null;
+  icon: string | null;
   isFavorite: boolean;
   entries: MealCardEntry[];
 };
+
+// Maps vector icon names → closest emoji equivalent
+const ICON_TO_EMOJI: Record<string, string> = {
+  'tabler:coffee': '☕',
+  'lucide:drumstick': '🍗',
+  'lucide:ham': '🥩',
+  'tabler:sausage': '🌭',
+  'lucide:shrimp': '🦐',
+  'tabler:fish': '🐟',
+  'tabler:eggs': '🥚',
+  'tabler:egg': '🥚',
+  'lucide:bean': '🫘',
+  'tabler:nut': '🥜',
+  'lucide:vegan': '🌱',
+  'tabler:barbell': '💪',
+  'lucide:croissant': '🥐',
+  'tabler:baguette': '🥖',
+  'tabler:bread': '🍞',
+  'tabler:pizza': '🍕',
+  'tabler:burger': '🍔',
+  'lucide:sandwich': '🥪',
+  'tabler:dumpling': '🥟',
+  'lucide:popcorn': '🍿',
+  'tabler:soup': '🍲',
+  'tabler:salad': '🥗',
+  'tabler:bowl-spoon': '🍝',
+  'tabler:grain': '🌾',
+  'tabler:wheat': '🌾',
+  'tabler:avocado': '🥑',
+  'tabler:apple': '🍎',
+  'tabler:banana': '🍌',
+  'tabler:grape': '🍇',
+  'tabler:cherry': '🍒',
+  'tabler:lemon': '🍋',
+  'tabler:carrot': '🥕',
+  'tabler:pepper': '🌶️',
+  'tabler:mushroom': '🍄',
+  'tabler:chocolate': '🍫',
+  'tabler:cookie': '🍪',
+  'tabler:ice-cream': '🍦',
+  'lucide:donut': '🍩',
+  'tabler:cake': '🎂',
+  'lucide:dessert': '🍮',
+  'tabler:candy': '🍬',
+  'tabler:teapot': '🍵',
+  'lucide:glass-water': '💧',
+  'lucide:cup-soda': '🥤',
+  'tabler:beer': '🍺',
+  'tabler:glass-champagne': '🥂',
+  'lucide:wine': '🍷',
+  'lucide:martini': '🍸',
+  'tabler:glass-cocktail': '🍹',
+  'tabler:milk': '🥛',
+  'lucide:utensils-crossed': '🍽️',
+};
+
+function mealDefaultEmoji(meal: {
+  name?: string | null;
+  entries: ReadonlyArray<{ name: string; grams: number; kcalPer100g: number }>;
+}): string {
+  const iconName = mealIconName(meal);
+  return ICON_TO_EMOJI[iconName] ?? '🍽️';
+}
+
+// Detect a single emoji from text typed into the native keyboard
+function extractEmoji(text: string): string | null {
+  const match = text.match(/\p{Emoji_Presentation}/u);
+  return match?.[0] ?? null;
+}
 
 export function MealCard({
   meal,
@@ -62,19 +114,24 @@ export function MealCard({
   returnTo?: string;
   showDelete?: boolean;
 }) {
-  const TypeIcon = MEAL_TYPE_ICONS[meal.type];
   const [expanded, setExpanded] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [renaming, setRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState(meal.name ?? '');
+  const [pendingRename, startRename] = useTransition();
+  const [iconPickerOpen, setIconPickerOpen] = useState(false);
+  const [currentIcon, setCurrentIcon] = useState(meal.icon);
   const [pendingStar, startStar] = useTransition();
   const [pendingDelete, startDelete] = useTransition();
   const [pendingCopy, startCopy] = useTransition();
-  const [pendingRename, startRename] = useTransition();
+  const [pendingIcon, startIcon] = useTransition();
   const menuRef = useRef<HTMLDivElement>(null);
   const renameInputRef = useRef<HTMLInputElement>(null);
+  const emojiInputRef = useRef<HTMLInputElement>(null);
   const { show } = useToast();
   const totals = sumEntries(meal.entries);
+
+  const displayEmoji = currentIcon ?? mealDefaultEmoji(meal);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -84,6 +141,14 @@ export function MealCard({
     document.addEventListener('mousedown', onDocClick);
     return () => document.removeEventListener('mousedown', onDocClick);
   }, [menuOpen]);
+
+  useEffect(() => {
+    if (renaming) renameInputRef.current?.focus();
+  }, [renaming]);
+
+  useEffect(() => {
+    if (iconPickerOpen) emojiInputRef.current?.focus();
+  }, [iconPickerOpen]);
 
   function onStar(e: MouseEvent) {
     e.stopPropagation();
@@ -110,26 +175,6 @@ export function MealCard({
     });
   }
 
-  useEffect(() => {
-    if (renaming) renameInputRef.current?.focus();
-  }, [renaming]);
-
-  function onRename(e: MouseEvent) {
-    e.stopPropagation();
-    setMenuOpen(false);
-    setRenameValue(meal.name ?? '');
-    setRenaming(true);
-  }
-
-  function saveRename() {
-    setRenaming(false);
-    const trimmed = renameValue.trim();
-    if (trimmed === (meal.name ?? '')) return;
-    startRename(async () => {
-      await renameMeal(meal.id, trimmed);
-    });
-  }
-
   function onDelete(e: MouseEvent) {
     e.stopPropagation();
     setMenuOpen(false);
@@ -140,27 +185,88 @@ export function MealCard({
     });
   }
 
+  function onStartRename(e: MouseEvent) {
+    e.stopPropagation();
+    setMenuOpen(false);
+    setRenameValue(meal.name ?? '');
+    setRenaming(true);
+  }
+
+  function onRenameKeyDown(e: React.KeyboardEvent) {
+    if (e.key === 'Enter') commitRename();
+    if (e.key === 'Escape') setRenaming(false);
+  }
+
+  function commitRename() {
+    setRenaming(false);
+    startRename(async () => {
+      await renameMeal(meal.id, renameValue);
+    });
+  }
+
+  function onOpenIconPicker(e: MouseEvent) {
+    e.stopPropagation();
+    setMenuOpen(false);
+    setIconPickerOpen(true);
+  }
+
+  const onEmojiInput = useCallback(
+    (e: React.FormEvent<HTMLInputElement>) => {
+      const raw = e.currentTarget.value;
+      const emoji = extractEmoji(raw);
+      e.currentTarget.value = '';
+      if (emoji) {
+        setCurrentIcon(emoji);
+        startIcon(async () => {
+          await updateMealIcon(meal.id, emoji);
+        });
+      }
+    },
+    [meal.id],
+  );
+
   return (
     <GlassCard
       className={cn(
-        'cursor-pointer p-5 transition active:scale-[0.995]',
-        // Lift above sibling cards while the actions menu is open so the
-        // dropdown isn't covered by the next card.
+        'cursor-pointer p-4 transition active:scale-[0.995]',
         menuOpen && 'relative z-30',
         expanded
           ? 'border-white/15'
           : 'border-white/10 shadow-[0_1px_0_rgba(255,255,255,0.06)_inset,0_8px_32px_-12px_rgba(0,0,0,0.4)] hover:border-white/20',
       )}
-      onClick={() => setExpanded((v) => !v)}
+      onClick={() => {
+        if (!renaming && !iconPickerOpen) setExpanded((v) => !v);
+      }}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 flex-1 gap-3">
-          <span className="mt-4 flex h-12 w-12 shrink-0 items-center justify-center rounded-[15px] border border-white/10 bg-white/[0.06] text-[var(--accent)]">
-            <ProductIcon name={mealIconName(meal)} size={26} />
+          <span
+            className={cn(
+              'relative mt-4 flex h-12 w-12 shrink-0 items-center justify-center rounded-[15px] border bg-white/[0.06] text-2xl leading-none transition select-none',
+              iconPickerOpen
+                ? 'border-[var(--accent)]/70 ring-2 ring-[var(--accent)]/25'
+                : 'border-white/10',
+              pendingIcon && 'opacity-50',
+            )}
+            onClick={(e) => {
+              if (iconPickerOpen) e.stopPropagation();
+            }}
+          >
+            {displayEmoji}
+            {/* Transparent input overlaid on the emoji — focuses the native keyboard */}
+            {iconPickerOpen ? (
+              <input
+                ref={emojiInputRef}
+                type="text"
+                onInput={onEmojiInput}
+                onBlur={() => setIconPickerOpen(false)}
+                onClick={(e) => e.stopPropagation()}
+                className="absolute inset-0 cursor-pointer rounded-[15px] opacity-0"
+              />
+            ) : null}
           </span>
           <div className="min-w-0 flex-1">
-            <p className="flex items-center gap-1 text-[10px] font-medium tracking-wider text-[var(--accent)] uppercase">
-              <TypeIcon size={11} />
+            <p className="text-[10px] font-medium tracking-wider text-[var(--accent)] uppercase">
               {MEAL_TYPE_LABELS[meal.type]}
             </p>
             {renaming ? (
@@ -168,29 +274,15 @@ export function MealCard({
                 ref={renameInputRef}
                 value={renameValue}
                 onChange={(e) => setRenameValue(e.target.value)}
+                onKeyDown={onRenameKeyDown}
+                onBlur={commitRename}
                 onClick={(e) => e.stopPropagation()}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    saveRename();
-                  }
-                  if (e.key === 'Escape') {
-                    e.preventDefault();
-                    setRenaming(false);
-                  }
-                }}
-                onBlur={saveRename}
-                className="mt-0.5 w-full border-b border-[var(--accent)]/50 bg-transparent text-sm font-semibold text-white outline-none focus:border-[var(--accent)]"
+                placeholder={MEAL_TYPE_LABELS[meal.type]}
+                disabled={pendingRename}
+                className="mt-0.5 w-full rounded-lg bg-white/10 px-2 py-0.5 text-sm font-semibold text-white outline-none placeholder:text-neutral-500 focus:ring-1 focus:ring-[var(--accent)]/60"
               />
             ) : meal.name ? (
-              <h3
-                className={cn(
-                  'mt-0.5 truncate text-sm font-semibold text-white',
-                  pendingRename && 'opacity-50',
-                )}
-              >
-                {meal.name}
-              </h3>
+              <h3 className="mt-0.5 line-clamp-2 text-sm font-semibold text-white">{meal.name}</h3>
             ) : null}
             <p className="mt-2 text-sm font-medium whitespace-nowrap text-white tabular-nums">
               {Math.round(totals.kcal)}
@@ -227,7 +319,7 @@ export function MealCard({
                 <MoreVertical size={18} />
               </IconButton>
               {menuOpen ? (
-                <div className="absolute top-full right-0 z-20 mt-1 w-40 overflow-hidden rounded-2xl border border-white/10 bg-[#1a1633]/95 p-1 shadow-2xl backdrop-blur-xl">
+                <div className="absolute top-full right-0 z-20 mt-1 w-44 overflow-hidden rounded-2xl border border-white/10 bg-[#1a1633]/95 p-1 shadow-2xl backdrop-blur-xl">
                   <Link
                     href={`/today/${meal.id}/edit?from=${encodeURIComponent(returnTo)}`}
                     onClick={(e) => e.stopPropagation()}
@@ -238,7 +330,7 @@ export function MealCard({
                   </Link>
                   <button
                     type="button"
-                    onClick={onRename}
+                    onClick={onStartRename}
                     className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-white transition hover:bg-white/5"
                   >
                     <PenLine size={14} className="text-neutral-400" />
@@ -246,11 +338,19 @@ export function MealCard({
                   </button>
                   <button
                     type="button"
+                    onClick={onOpenIconPicker}
+                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-white transition hover:bg-white/5"
+                  >
+                    <Smile size={14} className="text-neutral-400" />
+                    Change icon
+                  </button>
+                  <button
+                    type="button"
                     onClick={onCopy}
                     className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-white transition hover:bg-white/5"
                   >
                     <Copy size={14} className="text-neutral-400" />
-                    Add to today
+                    Copy to today
                   </button>
                   <button
                     type="button"
@@ -267,6 +367,7 @@ export function MealCard({
         </div>
       </div>
 
+      {/* Expanded ingredient list */}
       <AnimatePresence initial={false}>
         {expanded ? (
           <motion.div

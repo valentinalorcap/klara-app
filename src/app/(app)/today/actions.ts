@@ -653,3 +653,19 @@ export async function deleteMeal(mealId: string): Promise<ActionResult> {
   revalidatePath('/today');
   return { ok: true };
 }
+
+export async function updateMealIcon(mealId: string, emoji: string): Promise<ActionResult> {
+  const userId = await requireUserId();
+  const meal = await prisma.meal.findFirst({
+    where: { id: mealId, userId },
+    select: { id: true },
+  });
+  if (!meal) return { ok: false, error: 'Meal not found.' };
+  await prisma.meal.update({
+    where: { id: mealId },
+    data: { icon: emoji.trim() || null },
+  });
+  revalidatePath('/today');
+  revalidatePath('/history');
+  return { ok: true };
+}

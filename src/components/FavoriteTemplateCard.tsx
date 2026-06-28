@@ -98,7 +98,7 @@ export function FavoriteTemplateCard({
   return (
     <GlassCard
       className={cn(
-        'cursor-pointer p-5 transition active:scale-[0.995]',
+        'cursor-pointer p-4 transition active:scale-[0.995]',
         menuOpen && 'relative z-30',
         expanded
           ? 'border-white/15'
@@ -138,7 +138,7 @@ export function FavoriteTemplateCard({
             ) : template.name ? (
               <h3
                 className={cn(
-                  'mt-0.5 truncate text-sm font-semibold text-white',
+                  'mt-0.5 line-clamp-2 text-sm font-semibold text-white',
                   pendingRename && 'opacity-50',
                 )}
               >
