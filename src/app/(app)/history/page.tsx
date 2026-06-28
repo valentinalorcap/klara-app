@@ -234,9 +234,6 @@ export default async function HistoryPage({
     <main className="space-y-5 px-4 py-10">
       <header>
         <h1 className="text-2xl font-bold tracking-tight text-white">History</h1>
-        <p className="mt-1 text-sm text-neutral-400">
-          Your month at a glance, plus a week-by-week trend.
-        </p>
       </header>
 
       {/* Metric selector — full-width row of equal pills, each in its colour. */}

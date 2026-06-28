@@ -6,7 +6,13 @@ import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
-import { createMealInputSchema, type CreateMealInput, isoDate, isDateKey } from '@/lib/meals';
+import {
+  createMealInputSchema,
+  type CreateMealInput,
+  isoDate,
+  isDateKey,
+  mealMatchesTemplate,
+} from '@/lib/meals';
 import { evaluateMealById, markEvaluationPending } from '@/lib/evaluations.server';
 import { generateMealName, nameFromEntries } from '@/lib/mealName.server';
 import { markDayEvaluationPending, evaluateDayByDate } from '@/lib/dayEvaluation.server';
@@ -187,7 +193,17 @@ export async function updateMeal(
 
   const existing = await prisma.meal.findFirst({
     where: { id: mealId, userId },
-    select: { id: true },
+    select: {
+      id: true,
+      templateId: true,
+      template: {
+        select: {
+          entries: {
+            select: { productId: true, recipeId: true, name: true, grams: true },
+          },
+        },
+      },
+    },
   });
   if (!existing) return { ok: false, error: 'Meal not found.' };
 
@@ -196,6 +212,21 @@ export async function updateMeal(
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'Could not save.' };
   }
+
+  // If this meal came from a favorite but the edited ingredients no longer
+  // match that template, break the link so the two are independent: the star
+  // turns off, renaming won't touch the original favorite, and starring again
+  // creates a brand-new favorite instead of editing the source one.
+  const matchEntries = parsed.data.entries.map((e) => ({
+    productId: e.productId ?? null,
+    recipeId: e.recipeId ?? null,
+    name: e.name,
+    grams: e.grams,
+  }));
+  const templateId =
+    existing.template && mealMatchesTemplate(matchEntries, existing.template.entries)
+      ? existing.templateId
+      : null;
 
   const dayDate = new Date(parsed.data.date + 'T00:00:00Z');
   // Reopen the day if it was already closed
@@ -212,6 +243,7 @@ export async function updateMeal(
         date: dayDate,
         type: parsed.data.type,
         name: parsed.data.name ?? null,
+        templateId,
         entries: {
           create: parsed.data.entries.map((e) => ({
             name: e.name,

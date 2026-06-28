@@ -22,7 +22,7 @@ export function BottomNav() {
       className="fixed inset-x-0 bottom-0 z-50 flex justify-center pb-[max(env(safe-area-inset-bottom),1rem)]"
       aria-label="Primary navigation"
     >
-      <div className="relative mx-auto flex w-full max-w-md items-end justify-center px-6">
+      <div className="relative mx-auto flex w-full max-w-md items-end justify-center px-4">
         <div className="relative flex w-full items-center justify-around rounded-full border border-white/10 bg-black/40 px-4 py-3 backdrop-blur-2xl">
           <NavLink tab={sideTabs[0]} active={isActive(pathname, sideTabs[0].href)} />
           <NavLink tab={sideTabs[1]} active={isActive(pathname, sideTabs[1].href)} />
