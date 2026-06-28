@@ -181,7 +181,7 @@ export function RecipeForm({
       />
 
       {rows.length > 0 ? (
-        <GlassCard className="p-5">
+        <GlassCard className="p-4">
           <ul>
             <AnimatePresence initial={false}>
               {rows.map((row, i) => (
@@ -198,7 +198,7 @@ export function RecipeForm({
         </GlassCard>
       ) : null}
 
-      <GlassCard className="p-5">
+      <GlassCard className="p-4">
         <IngredientTabs
           items={productsAsItems}
           onAddItem={addRowFromItem}
@@ -217,7 +217,7 @@ export function RecipeForm({
         <p className="text-xs text-[var(--danger)]">{state.fieldErrors.ingredients}</p>
       ) : null}
 
-      <GlassCard className="space-y-3 p-5">
+      <GlassCard className="space-y-3 p-4">
         <p className="text-xs font-medium tracking-wider text-neutral-400 uppercase">
           Portions &amp; weight
           <span className="ml-2 text-[10px] text-neutral-500 normal-case">· optional</span>

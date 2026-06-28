@@ -23,7 +23,7 @@ export function HistoryCalendar({
   selectBase: string;
 }) {
   return (
-    <GlassCard noAnimate className="p-5">
+    <GlassCard noAnimate className="p-4">
       <div className="mb-3 grid grid-cols-7 gap-0 text-center">
         {HEADERS.map((h, i) => (
           <p

@@ -22,7 +22,7 @@ export default async function SettingsPage() {
   });
 
   return (
-    <main className="space-y-6 px-6 py-10">
+    <main className="space-y-6 px-4 py-10">
       <Link
         href="/today"
         className="-ml-2 inline-flex items-center gap-1 text-sm text-neutral-400 transition hover:text-neutral-200"
@@ -44,7 +44,7 @@ export default async function SettingsPage() {
         }}
       />
 
-      <GlassCard className="space-y-3 p-5">
+      <GlassCard className="space-y-3 p-4">
         <p className="text-xs font-medium tracking-wider text-neutral-400 uppercase">Account</p>
         <p className="text-sm text-white">{user?.name ?? 'You'}</p>
         <p className="text-xs text-neutral-500">{user?.email}</p>

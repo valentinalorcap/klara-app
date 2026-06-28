@@ -231,7 +231,7 @@ export default async function HistoryPage({
     `?month=${viewedMonth}&metric=${m}&day=${selectedDay}&week=${weekStartKey}`;
 
   return (
-    <main className="space-y-5 px-6 py-10">
+    <main className="space-y-5 px-4 py-10">
       <header>
         <h1 className="text-2xl font-bold tracking-tight text-white">History</h1>
         <p className="mt-1 text-sm text-neutral-400">
@@ -296,7 +296,7 @@ export default async function HistoryPage({
         <p className="mb-2 text-xs font-medium tracking-wider text-neutral-400 uppercase">
           {selectedDay === todayKey ? 'Today' : formatDayLabel(selectedDay)}
         </p>
-        <GlassCard className="flex items-center gap-8 p-5">
+        <GlassCard className="flex items-center gap-8 p-4">
           <div className="shrink-0">
             {isScore ? (
               <AvgRing
@@ -356,7 +356,7 @@ export default async function HistoryPage({
         <Link scroll={false} href={dayHref(best.date)} className="block">
           <GlassCard
             noAnimate
-            className="flex items-center gap-4 p-5 transition hover:border-white/20"
+            className="flex items-center gap-4 p-4 transition hover:border-white/20"
           >
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-yellow-400/15 text-yellow-400">
               <Star size={18} fill="currentColor" />

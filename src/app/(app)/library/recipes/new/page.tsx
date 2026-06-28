@@ -24,7 +24,7 @@ export default async function NewRecipePage() {
   });
 
   return (
-    <main className="px-6 py-10">
+    <main className="px-4 py-10">
       <Link
         href="/library"
         className="-ml-2 inline-flex items-center gap-1 text-sm text-neutral-400 transition hover:text-neutral-200"

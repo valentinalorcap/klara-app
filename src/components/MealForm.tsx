@@ -298,7 +298,7 @@ export function MealForm({
 
   return (
     <div className="space-y-5">
-      <GlassCard className="space-y-3 p-5">
+      <GlassCard className="space-y-3 p-4">
         <div className="grid grid-cols-3 gap-2">
           {MEAL_TYPE_OPTIONS.map((opt) => {
             const Icon = MEAL_TYPE_ICONS[opt.value];
@@ -350,7 +350,7 @@ export function MealForm({
       ) : null}
 
       {rows.length > 0 ? (
-        <GlassCard className="p-5">
+        <GlassCard className="p-4">
           <ul>
             <AnimatePresence initial={false}>
               {rows.map((row, i) => (
@@ -367,7 +367,7 @@ export function MealForm({
         </GlassCard>
       ) : null}
 
-      <GlassCard className="p-5">
+      <GlassCard className="p-4">
         <IngredientTabs
           items={items}
           onAddItem={addRowFromItem}

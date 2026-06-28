@@ -19,7 +19,7 @@ export function MacroStats({
   fat: number;
 }) {
   return (
-    <GlassCard className="space-y-3 p-5">
+    <GlassCard className="space-y-3 p-4">
       <p className="text-xs font-medium tracking-wider text-neutral-400 uppercase">{title}</p>
       <div className="grid grid-cols-4 gap-3 text-center">
         <Stat label="kcal" value={Math.round(kcal)} />

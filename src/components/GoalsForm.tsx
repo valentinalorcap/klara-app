@@ -51,7 +51,7 @@ export function GoalsForm({
 
   return (
     <form action={formAction} onSubmit={handleSubmit} className="space-y-5">
-      <GlassCard className="space-y-3 p-5">
+      <GlassCard className="space-y-3 p-4">
         <p className="text-xs font-medium tracking-wider text-neutral-400 uppercase">
           Daily calories
         </p>
@@ -65,7 +65,7 @@ export function GoalsForm({
         />
       </GlassCard>
 
-      <GlassCard className="space-y-3 p-5">
+      <GlassCard className="space-y-3 p-4">
         <p className="text-xs font-medium tracking-wider text-neutral-400 uppercase">Macros</p>
         <p className="-mt-1 text-[11px] text-neutral-500">
           Placeholders are a suggested split for your calories — type your own, or leave a field

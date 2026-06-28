@@ -83,7 +83,7 @@ export default async function TodayPage({
       .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime())[0] ?? null;
 
   return (
-    <main className="space-y-5 px-6 py-10">
+    <main className="space-y-5 px-4 py-10">
       <header className="space-y-4">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold tracking-tight text-white">Hi {firstName} 👋</h1>
