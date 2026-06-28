@@ -19,7 +19,7 @@ export function BottomNav() {
 
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-50 flex justify-center pb-[max(env(safe-area-inset-bottom),1rem)]"
+      className="fixed inset-x-0 bottom-0 z-50 flex justify-center pb-[max(calc(env(safe-area-inset-bottom)-0.5rem),0.5rem)]"
       aria-label="Primary navigation"
     >
       <div className="relative mx-auto flex w-full max-w-md items-end justify-center px-4">
