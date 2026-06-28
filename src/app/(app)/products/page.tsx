@@ -14,11 +14,8 @@ export default async function ProductsPage() {
 
   return (
     <main className="px-4 py-10">
-      <header className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-white">Products</h1>
-          <p className="mt-1 text-sm text-neutral-400">Your list of pre-saved products</p>
-        </div>
+      <header className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold tracking-tight text-white">Products</h1>
         <Link
           href="/products/new"
           aria-label="Add product"
