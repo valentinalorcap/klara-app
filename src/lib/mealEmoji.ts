@@ -64,8 +64,17 @@ export function mealDefaultEmoji(meal: {
   return ICON_TO_EMOJI[iconName] ?? '🍽️';
 }
 
-/** Detect a single emoji from text typed into the native keyboard. */
+/**
+ * Extract a single emoji from text typed into the native keyboard, ignoring
+ * anything that isn't one (letters, digits, punctuation → null). Handles full
+ * emoji graphemes: a pictographic base plus its modifiers (skin tone U+1F3FB–FF,
+ * variation selector U+FE0F, keycap U+20E3, ZWJ U+200D sequences) as well as
+ * flags (two regional indicators). `\p{Extended_Pictographic}` excludes letters
+ * and digits, so a stray keystroke is rejected.
+ */
 export function extractEmoji(text: string): string | null {
-  const match = text.match(/\p{Emoji_Presentation}/u);
+  const match = text.match(
+    /\p{Regional_Indicator}\p{Regional_Indicator}|\p{Extended_Pictographic}(?:‍\p{Extended_Pictographic}|[\u{1F3FB}-\u{1F3FF}️⃣])*/u,
+  );
   return match?.[0] ?? null;
 }
