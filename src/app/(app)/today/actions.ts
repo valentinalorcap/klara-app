@@ -447,6 +447,8 @@ export async function copyMealToToday(mealId: unknown): Promise<ActionResult> {
       date: todayDate,
       type: source.type,
       name: source.name,
+      icon: source.icon,
+      templateId: source.templateId,
       entries: {
         create: source.entries.map((e) => ({
           name: e.name,
