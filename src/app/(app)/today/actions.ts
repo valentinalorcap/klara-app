@@ -573,6 +573,7 @@ export async function toggleFavorite(mealId: string): Promise<ActionResult> {
         userId,
         type: meal.type,
         name: meal.name,
+        icon: meal.icon,
         entries: {
           create: meal.entries.map((e) => ({
             name: e.name,
