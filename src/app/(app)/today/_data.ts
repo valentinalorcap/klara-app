@@ -84,6 +84,7 @@ export async function loadMealFormData(userId: string): Promise<{
     id: f.id,
     type: f.type,
     name: f.name,
+    icon: f.icon,
     entries: f.entries.map((e) => ({
       name: e.name,
       grams: e.grams,

@@ -11,6 +11,7 @@ import {
   Cookie,
   Moon,
   Utensils,
+  ChevronDown,
   type LucideIcon,
 } from 'lucide-react';
 import { GlassCard } from './GlassCard';
@@ -26,6 +27,7 @@ import {
 import { MEAL_TYPE_OPTIONS, type MealType, sumEntries, isoDate } from '@/lib/meals';
 import { createMeal, updateMeal } from '@/app/(app)/today/actions';
 import type { EstimationEntry } from '@/lib/freeTextEstimation';
+import { mealDefaultEmoji } from '@/lib/mealEmoji';
 import { cn } from '@/lib/utils';
 
 /** Per-type icon so each meal-type chip is recognizable at a glance. */
@@ -42,6 +44,7 @@ export type FavoriteMeal = {
   id: string;
   type: MealType;
   name: string | null;
+  icon: string | null;
   entries: {
     name: string;
     grams: number;
@@ -421,6 +424,17 @@ function FavoritesPicker({
   onClose: () => void;
   onPick: (fav: FavoriteMeal) => void;
 }) {
+  // Every meal-type section starts collapsed so the list is easy to scan by
+  // type; tapping a header expands just that one.
+  const [expanded, setExpanded] = useState<Set<MealType>>(new Set());
+  const toggle = (type: MealType) =>
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(type)) next.delete(type);
+      else next.add(type);
+      return next;
+    });
+
   return (
     <div
       role="dialog"
@@ -428,7 +442,7 @@ function FavoritesPicker({
       aria-label="Pick a favorite meal"
       className="fixed inset-0 z-50 flex flex-col bg-[var(--background-bottom)]/95 backdrop-blur-xl"
     >
-      <header className="flex items-center justify-between border-b border-white/10 px-6 py-4">
+      <header className="flex items-center justify-between border-b border-white/10 px-6 pt-[max(3rem,env(safe-area-inset-top))] pb-4">
         <h2 className="text-base font-semibold text-white">Favorites</h2>
         <button
           type="button"
@@ -439,61 +453,82 @@ function FavoritesPicker({
           Cancel
         </button>
       </header>
-      <div className="flex-1 space-y-5 overflow-y-auto px-6 py-4">
+      <div className="flex-1 space-y-3 overflow-y-auto px-6 py-4 pb-[max(env(safe-area-inset-bottom),7rem)]">
         {MEAL_TYPE_OPTIONS.map((opt) => {
           const group = favorites.filter((f) => f.type === opt.value);
           if (group.length === 0) return null;
           const Icon = MEAL_TYPE_ICONS[opt.value];
+          const isOpen = expanded.has(opt.value);
           return (
-            <section key={opt.value} className="space-y-2">
-              <h3 className="flex items-center gap-1.5 text-[11px] font-semibold tracking-wider text-neutral-400 uppercase">
+            <section key={opt.value}>
+              <button
+                type="button"
+                onClick={() => toggle(opt.value)}
+                aria-expanded={isOpen}
+                className="flex w-full items-center gap-1.5 rounded-xl py-2 text-[11px] font-semibold tracking-wider text-neutral-400 uppercase transition hover:text-neutral-200"
+              >
                 <Icon size={13} className="text-neutral-500" />
                 {opt.label}
                 <span className="text-neutral-600">· {group.length}</span>
-              </h3>
-              <ul className="space-y-2">
-                {group.map((f) => {
-                  const totals = f.entries.reduce(
-                    (acc, e) => {
-                      const factor = e.grams / 100;
-                      acc.kcal += e.kcalPer100g * factor;
-                      acc.protein += e.proteinPer100g * factor;
-                      acc.carbs += e.carbsPer100g * factor;
-                      acc.fat += e.fatPer100g * factor;
-                      return acc;
-                    },
-                    { kcal: 0, protein: 0, carbs: 0, fat: 0 },
-                  );
-                  return (
-                    <li key={f.id}>
-                      <button
-                        type="button"
-                        onClick={() => onPick(f)}
-                        className="flex w-full flex-col gap-1 rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-left transition hover:border-white/20 hover:bg-white/[0.08] active:scale-[0.99]"
-                      >
-                        {f.name ? (
-                          <span className="truncate text-sm font-semibold text-white">
-                            {f.name}
+                <ChevronDown
+                  size={15}
+                  className={cn(
+                    'ml-auto text-neutral-500 transition-transform',
+                    isOpen && 'rotate-180',
+                  )}
+                />
+              </button>
+              {isOpen ? (
+                <ul className="mt-2 space-y-2">
+                  {group.map((f) => {
+                    const totals = f.entries.reduce(
+                      (acc, e) => {
+                        const factor = e.grams / 100;
+                        acc.kcal += e.kcalPer100g * factor;
+                        acc.protein += e.proteinPer100g * factor;
+                        acc.carbs += e.carbsPer100g * factor;
+                        acc.fat += e.fatPer100g * factor;
+                        return acc;
+                      },
+                      { kcal: 0, protein: 0, carbs: 0, fat: 0 },
+                    );
+                    const emoji = f.icon ?? mealDefaultEmoji(f);
+                    return (
+                      <li key={f.id}>
+                        <button
+                          type="button"
+                          onClick={() => onPick(f)}
+                          className="flex w-full items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-left transition hover:border-white/20 hover:bg-white/[0.08] active:scale-[0.99]"
+                        >
+                          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/[0.06] text-xl">
+                            {emoji}
                           </span>
-                        ) : null}
-                        <span className="text-xs text-white tabular-nums">
-                          {Math.round(totals.kcal)}
-                          <span className="text-neutral-400"> kcal</span>
-                          <span className="mx-1.5 text-neutral-500">·</span>
-                          <span className="text-neutral-400">P </span>
-                          {totals.protein.toFixed(0)}g
-                          <span className="mx-1.5 text-neutral-500">·</span>
-                          <span className="text-neutral-400">C </span>
-                          {totals.carbs.toFixed(0)}g
-                          <span className="mx-1.5 text-neutral-500">·</span>
-                          <span className="text-neutral-400">F </span>
-                          {totals.fat.toFixed(0)}g
-                        </span>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
+                          <span className="flex min-w-0 flex-col gap-1">
+                            {f.name ? (
+                              <span className="truncate text-sm font-semibold text-white">
+                                {f.name}
+                              </span>
+                            ) : null}
+                            <span className="text-xs text-white tabular-nums">
+                              {Math.round(totals.kcal)}
+                              <span className="text-neutral-400"> kcal</span>
+                              <span className="mx-1.5 text-neutral-500">·</span>
+                              <span className="text-neutral-400">P </span>
+                              {totals.protein.toFixed(0)}g
+                              <span className="mx-1.5 text-neutral-500">·</span>
+                              <span className="text-neutral-400">C </span>
+                              {totals.carbs.toFixed(0)}g
+                              <span className="mx-1.5 text-neutral-500">·</span>
+                              <span className="text-neutral-400">F </span>
+                              {totals.fat.toFixed(0)}g
+                            </span>
+                          </span>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              ) : null}
             </section>
           );
         })}
