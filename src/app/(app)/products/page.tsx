@@ -13,7 +13,7 @@ export default async function ProductsPage() {
   });
 
   return (
-    <main className="px-6 py-10">
+    <main className="px-4 py-10">
       <header className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-white">Products</h1>

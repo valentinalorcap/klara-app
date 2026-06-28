@@ -88,7 +88,7 @@ export default async function HistoryDayPage({ params }: { params: Promise<Param
   const returnTo = `/history/${dateKey}`;
 
   return (
-    <main className="space-y-5 px-6 py-10">
+    <main className="space-y-5 px-4 py-10">
       <Link
         href="/history"
         className="-ml-2 inline-flex items-center gap-1 text-sm text-neutral-400 transition hover:text-neutral-200"
