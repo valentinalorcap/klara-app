@@ -184,6 +184,7 @@ export default async function HistoryDayPage({ params }: { params: Promise<Param
             id: m.id,
             type: m.type,
             name: m.name,
+            icon: m.icon,
             isFavorite: m.templateId !== null,
             entries: m.entries.map((e) => ({
               id: e.id,

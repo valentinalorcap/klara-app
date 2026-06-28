@@ -211,6 +211,7 @@ export default async function TodayPage({
             id: m.id,
             type: m.type,
             name: m.name,
+            icon: m.icon,
             isFavorite: m.template ? mealMatchesTemplate(m.entries, m.template.entries) : false,
             entries: m.entries.map((e) => ({
               id: e.id,

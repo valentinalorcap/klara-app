@@ -1,12 +1,15 @@
 'use client';
 
-import { useState, useTransition, useRef, useEffect, type MouseEvent } from 'react';
+import { useState, useTransition, useRef, useEffect, useCallback, type MouseEvent } from 'react';
 import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
+  Star,
   MoreVertical,
   Pencil,
   PenLine,
+  Copy,
+  Smile,
   Sunrise,
   Dumbbell,
   Sandwich,
@@ -16,10 +19,10 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { GlassCard } from './GlassCard';
-import { ProductIcon } from './ProductIcon';
-import { renameFavorite } from '@/app/(app)/today/actions';
+import { renameFavorite, updateFavoriteIcon, addFavoriteToToday } from '@/app/(app)/today/actions';
 import { MEAL_TYPE_LABELS, type MealType, entryMacros, sumEntries } from '@/lib/meals';
 import { mealIconName } from '@/lib/productIcons';
+import { useToast } from './Toast';
 import { cn } from '@/lib/utils';
 
 const MEAL_TYPE_ICONS: Record<MealType, LucideIcon> = {
@@ -30,6 +33,73 @@ const MEAL_TYPE_ICONS: Record<MealType, LucideIcon> = {
   DINNER: Moon,
   OTHER: Utensils,
 };
+
+const ICON_TO_EMOJI: Record<string, string> = {
+  'tabler:coffee': '☕',
+  'lucide:drumstick': '🍗',
+  'lucide:ham': '🥩',
+  'tabler:sausage': '🌭',
+  'lucide:shrimp': '🦐',
+  'tabler:fish': '🐟',
+  'tabler:eggs': '🥚',
+  'tabler:egg': '🥚',
+  'lucide:bean': '🫘',
+  'tabler:nut': '🥜',
+  'lucide:vegan': '🌱',
+  'tabler:barbell': '💪',
+  'lucide:croissant': '🥐',
+  'tabler:baguette': '🥖',
+  'tabler:bread': '🍞',
+  'tabler:pizza': '🍕',
+  'tabler:burger': '🍔',
+  'lucide:sandwich': '🥪',
+  'tabler:dumpling': '🥟',
+  'lucide:popcorn': '🍿',
+  'tabler:soup': '🍲',
+  'tabler:salad': '🥗',
+  'tabler:bowl-spoon': '🍝',
+  'tabler:grain': '🌾',
+  'tabler:wheat': '🌾',
+  'tabler:avocado': '🥑',
+  'tabler:apple': '🍎',
+  'tabler:banana': '🍌',
+  'tabler:grape': '🍇',
+  'tabler:cherry': '🍒',
+  'tabler:lemon': '🍋',
+  'tabler:carrot': '🥕',
+  'tabler:pepper': '🌶️',
+  'tabler:mushroom': '🍄',
+  'tabler:chocolate': '🍫',
+  'tabler:cookie': '🍪',
+  'tabler:ice-cream': '🍦',
+  'lucide:donut': '🍩',
+  'tabler:cake': '🎂',
+  'lucide:dessert': '🍮',
+  'tabler:candy': '🍬',
+  'tabler:teapot': '🍵',
+  'lucide:glass-water': '💧',
+  'lucide:cup-soda': '🥤',
+  'tabler:beer': '🍺',
+  'tabler:glass-champagne': '🥂',
+  'lucide:wine': '🍷',
+  'lucide:martini': '🍸',
+  'tabler:glass-cocktail': '🍹',
+  'tabler:milk': '🥛',
+  'lucide:utensils-crossed': '🍽️',
+};
+
+function templateDefaultEmoji(template: {
+  name?: string | null;
+  entries: ReadonlyArray<{ name: string; grams: number; kcalPer100g: number }>;
+}): string {
+  const iconName = mealIconName(template);
+  return ICON_TO_EMOJI[iconName] ?? '🍽️';
+}
+
+function extractEmoji(text: string): string | null {
+  const match = text.match(/\p{Emoji_Presentation}/u);
+  return match?.[0] ?? null;
+}
 
 export type FavoriteTemplateEntry = {
   id: string;
@@ -48,6 +118,7 @@ export function FavoriteTemplateCard({
     id: string;
     type: MealType;
     name: string | null;
+    icon: string | null;
     entries: FavoriteTemplateEntry[];
   };
 }) {
@@ -57,9 +128,17 @@ export function FavoriteTemplateCard({
   const [renaming, setRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState(template.name ?? '');
   const [pendingRename, startRename] = useTransition();
+  const [iconPickerOpen, setIconPickerOpen] = useState(false);
+  const [currentIcon, setCurrentIcon] = useState(template.icon);
+  const [pendingAdd, startAdd] = useTransition();
+  const [pendingIcon, startIcon] = useTransition();
   const menuRef = useRef<HTMLDivElement>(null);
   const renameInputRef = useRef<HTMLInputElement>(null);
+  const emojiInputRef = useRef<HTMLInputElement>(null);
+  const { show } = useToast();
   const totals = sumEntries(template.entries);
+
+  const displayEmoji = currentIcon ?? templateDefaultEmoji(template);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -74,19 +153,28 @@ export function FavoriteTemplateCard({
     if (renaming) renameInputRef.current?.focus();
   }, [renaming]);
 
+  useEffect(() => {
+    if (iconPickerOpen) emojiInputRef.current?.focus();
+  }, [iconPickerOpen]);
+
   function onMenuToggle(e: MouseEvent) {
     e.stopPropagation();
     setMenuOpen((v) => !v);
   }
 
-  function onRename(e: MouseEvent) {
+  function onStartRename(e: MouseEvent) {
     e.stopPropagation();
     setMenuOpen(false);
     setRenameValue(template.name ?? '');
     setRenaming(true);
   }
 
-  function saveRename() {
+  function onRenameKeyDown(e: React.KeyboardEvent) {
+    if (e.key === 'Enter') commitRename();
+    if (e.key === 'Escape') setRenaming(false);
+  }
+
+  function commitRename() {
     setRenaming(false);
     const trimmed = renameValue.trim();
     if (trimmed === (template.name ?? '')) return;
@@ -95,21 +183,78 @@ export function FavoriteTemplateCard({
     });
   }
 
+  function onOpenIconPicker(e: MouseEvent) {
+    e.stopPropagation();
+    setMenuOpen(false);
+    setIconPickerOpen(true);
+  }
+
+  const onEmojiInput = useCallback(
+    (e: React.FormEvent<HTMLInputElement>) => {
+      const raw = e.currentTarget.value;
+      const emoji = extractEmoji(raw);
+      e.currentTarget.value = '';
+      if (emoji) {
+        setCurrentIcon(emoji);
+        startIcon(async () => {
+          await updateFavoriteIcon(template.id, emoji);
+        });
+      }
+    },
+    [template.id],
+  );
+
+  function onAddToToday(e: MouseEvent) {
+    e.stopPropagation();
+    setMenuOpen(false);
+    startAdd(async () => {
+      const result = await addFavoriteToToday(template.id);
+      if (result && !result.ok) {
+        window.alert(result.error);
+        return;
+      }
+      show('Added to today');
+    });
+  }
+
   return (
     <GlassCard
       className={cn(
-        'cursor-pointer p-5 transition active:scale-[0.995]',
+        'cursor-pointer p-4 transition active:scale-[0.995]',
         menuOpen && 'relative z-30',
         expanded
           ? 'border-white/15'
           : 'border-white/10 shadow-[0_1px_0_rgba(255,255,255,0.06)_inset,0_8px_32px_-12px_rgba(0,0,0,0.4)] hover:border-white/20',
       )}
-      onClick={() => setExpanded((v) => !v)}
+      onClick={() => {
+        if (!renaming && !iconPickerOpen) setExpanded((v) => !v);
+      }}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 flex-1 gap-3">
-          <span className="mt-4 flex h-12 w-12 shrink-0 items-center justify-center rounded-[15px] border border-white/10 bg-white/[0.06] text-[var(--accent)]">
-            <ProductIcon name={mealIconName(template)} size={26} />
+          <span
+            className={cn(
+              'relative mt-4 flex h-12 w-12 shrink-0 items-center justify-center rounded-[15px] border bg-white/[0.06] text-2xl leading-none transition select-none',
+              iconPickerOpen
+                ? 'border-[var(--accent)]/70 ring-2 ring-[var(--accent)]/25'
+                : 'border-white/10',
+              pendingIcon && 'opacity-50',
+            )}
+            onClick={(e) => {
+              if (iconPickerOpen) e.stopPropagation();
+            }}
+          >
+            {displayEmoji}
+            {iconPickerOpen ? (
+              <input
+                ref={emojiInputRef}
+                type="text"
+                onInput={onEmojiInput}
+                onBlur={() => setIconPickerOpen(false)}
+                onClick={(e) => e.stopPropagation()}
+                className="absolute inset-0 cursor-pointer rounded-[15px] opacity-0"
+              />
+            ) : null}
           </span>
           <div className="min-w-0 flex-1">
             <p className="flex items-center gap-1 text-[10px] font-medium tracking-wider text-[var(--accent)] uppercase">
@@ -121,24 +266,17 @@ export function FavoriteTemplateCard({
                 ref={renameInputRef}
                 value={renameValue}
                 onChange={(e) => setRenameValue(e.target.value)}
+                onKeyDown={onRenameKeyDown}
+                onBlur={commitRename}
                 onClick={(e) => e.stopPropagation()}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    saveRename();
-                  }
-                  if (e.key === 'Escape') {
-                    e.preventDefault();
-                    setRenaming(false);
-                  }
-                }}
-                onBlur={saveRename}
-                className="mt-0.5 w-full border-b border-[var(--accent)]/50 bg-transparent text-sm font-semibold text-white outline-none focus:border-[var(--accent)]"
+                placeholder={MEAL_TYPE_LABELS[template.type]}
+                disabled={pendingRename}
+                className="mt-0.5 w-full rounded-lg bg-white/10 px-2 py-0.5 text-sm font-semibold text-white outline-none placeholder:text-neutral-500 focus:ring-1 focus:ring-[var(--accent)]/60"
               />
             ) : template.name ? (
               <h3
                 className={cn(
-                  'mt-0.5 truncate text-sm font-semibold text-white',
+                  'mt-0.5 line-clamp-2 text-sm font-semibold text-white',
                   pendingRename && 'opacity-50',
                 )}
               >
@@ -158,35 +296,57 @@ export function FavoriteTemplateCard({
             </p>
           </div>
         </div>
-        <div ref={menuRef} className="relative shrink-0">
-          <button
-            type="button"
-            aria-label="More actions"
-            onClick={onMenuToggle}
-            className="flex h-8 w-8 items-center justify-center rounded-full text-neutral-400 transition hover:text-white"
-          >
-            <MoreVertical size={18} />
-          </button>
-          {menuOpen ? (
-            <div className="absolute top-full right-0 z-20 mt-1 w-40 overflow-hidden rounded-2xl border border-white/10 bg-[#1a1633]/95 p-1 shadow-2xl backdrop-blur-xl">
-              <Link
-                href={`/library/favorites/${template.id}/edit`}
-                onClick={(e) => e.stopPropagation()}
-                className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-white transition hover:bg-white/5"
-              >
-                <Pencil size={14} className="text-neutral-400" />
-                Edit
-              </Link>
-              <button
-                type="button"
-                onClick={onRename}
-                className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-white transition hover:bg-white/5"
-              >
-                <PenLine size={14} className="text-neutral-400" />
-                Rename
-              </button>
-            </div>
-          ) : null}
+        <div className="flex shrink-0 items-center gap-1">
+          <span className="flex h-8 w-8 items-center justify-center text-yellow-400">
+            <Star size={16} fill="currentColor" />
+          </span>
+          <div ref={menuRef} className="relative">
+            <button
+              type="button"
+              aria-label="More actions"
+              onClick={onMenuToggle}
+              disabled={pendingAdd}
+              className="flex h-8 w-8 items-center justify-center rounded-full text-neutral-400 transition hover:text-white disabled:opacity-30"
+            >
+              <MoreVertical size={18} />
+            </button>
+            {menuOpen ? (
+              <div className="absolute top-full right-0 z-20 mt-1 w-44 overflow-hidden rounded-2xl border border-white/10 bg-[#1a1633]/95 p-1 shadow-2xl backdrop-blur-xl">
+                <Link
+                  href={`/library/favorites/${template.id}/edit`}
+                  onClick={(e) => e.stopPropagation()}
+                  className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-white transition hover:bg-white/5"
+                >
+                  <Pencil size={14} className="text-neutral-400" />
+                  Edit
+                </Link>
+                <button
+                  type="button"
+                  onClick={onAddToToday}
+                  className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-white transition hover:bg-white/5"
+                >
+                  <Copy size={14} className="text-neutral-400" />
+                  Add to today
+                </button>
+                <button
+                  type="button"
+                  onClick={onOpenIconPicker}
+                  className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-white transition hover:bg-white/5"
+                >
+                  <Smile size={14} className="text-neutral-400" />
+                  Change icon
+                </button>
+                <button
+                  type="button"
+                  onClick={onStartRename}
+                  className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-white transition hover:bg-white/5"
+                >
+                  <PenLine size={14} className="text-neutral-400" />
+                  Rename
+                </button>
+              </div>
+            ) : null}
+          </div>
         </div>
       </div>
 

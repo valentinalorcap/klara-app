@@ -447,6 +447,8 @@ export async function copyMealToToday(mealId: unknown): Promise<ActionResult> {
       date: todayDate,
       type: source.type,
       name: source.name,
+      icon: source.icon,
+      templateId: source.templateId,
       entries: {
         create: source.entries.map((e) => ({
           name: e.name,
@@ -650,6 +652,88 @@ export async function deleteMeal(mealId: string): Promise<ActionResult> {
   });
   if (!meal) return { ok: false, error: 'Meal not found.' };
   await prisma.meal.delete({ where: { id: mealId } });
+  revalidatePath('/today');
+  return { ok: true };
+}
+
+export async function updateMealIcon(mealId: string, emoji: string): Promise<ActionResult> {
+  const userId = await requireUserId();
+  const meal = await prisma.meal.findFirst({
+    where: { id: mealId, userId },
+    select: { id: true },
+  });
+  if (!meal) return { ok: false, error: 'Meal not found.' };
+  await prisma.meal.update({
+    where: { id: mealId },
+    data: { icon: emoji.trim() || null },
+  });
+  revalidatePath('/today');
+  revalidatePath('/history');
+  return { ok: true };
+}
+
+export async function updateFavoriteIcon(templateId: string, emoji: string): Promise<ActionResult> {
+  const userId = await requireUserId();
+  const template = await prisma.mealTemplate.findFirst({
+    where: { id: templateId, userId },
+    select: { id: true },
+  });
+  if (!template) return { ok: false, error: 'Favorite not found.' };
+  await prisma.mealTemplate.update({
+    where: { id: templateId },
+    data: { icon: emoji.trim() || null },
+  });
+  revalidatePath('/library');
+  return { ok: true };
+}
+
+export async function addFavoriteToToday(templateId: string): Promise<ActionResult> {
+  const userId = await requireUserId();
+  const template = await prisma.mealTemplate.findFirst({
+    where: { id: templateId, userId },
+    include: { entries: true },
+  });
+  if (!template) return { ok: false, error: 'Favorite not found.' };
+  if (template.entries.length === 0) return { ok: false, error: 'That favorite has no items.' };
+
+  const todayDate = new Date(isoDate(new Date()) + 'T00:00:00Z');
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { defaultEvalTone: true },
+  });
+
+  await prisma.dayEvaluation.deleteMany({ where: { userId, date: todayDate } });
+  const meal = await prisma.meal.create({
+    data: {
+      userId,
+      date: todayDate,
+      type: template.type,
+      name: template.name,
+      icon: template.icon,
+      templateId: template.id,
+      entries: {
+        create: template.entries.map((e) => ({
+          name: e.name,
+          grams: e.grams,
+          kcalPer100g: e.kcalPer100g,
+          proteinPer100g: e.proteinPer100g,
+          carbsPer100g: e.carbsPer100g,
+          fatPer100g: e.fatPer100g,
+          productId: e.productId,
+          recipeId: e.recipeId,
+        })),
+      },
+    },
+  });
+
+  if (user) {
+    await markEvaluationPending(meal.id, user.defaultEvalTone, userId);
+    after(async () => {
+      await generateMealName(meal.id);
+      await evaluateMealById(meal.id);
+      revalidatePath('/today');
+    });
+  }
   revalidatePath('/today');
   return { ok: true };
 }
