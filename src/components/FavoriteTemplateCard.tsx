@@ -19,11 +19,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { GlassCard } from './GlassCard';
-import {
-  renameFavorite,
-  updateFavoriteIcon,
-  addFavoriteToToday,
-} from '@/app/(app)/today/actions';
+import { renameFavorite, updateFavoriteIcon, addFavoriteToToday } from '@/app/(app)/today/actions';
 import { MEAL_TYPE_LABELS, type MealType, entryMacros, sumEntries } from '@/lib/meals';
 import { mealIconName } from '@/lib/productIcons';
 import { useToast } from './Toast';
