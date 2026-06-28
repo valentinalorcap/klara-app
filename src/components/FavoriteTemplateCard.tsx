@@ -21,7 +21,7 @@ import {
 import { GlassCard } from './GlassCard';
 import { renameFavorite, updateFavoriteIcon, addFavoriteToToday } from '@/app/(app)/today/actions';
 import { MEAL_TYPE_LABELS, type MealType, entryMacros, sumEntries } from '@/lib/meals';
-import { mealIconName } from '@/lib/productIcons';
+import { mealDefaultEmoji, extractEmoji } from '@/lib/mealEmoji';
 import { useToast } from './Toast';
 import { cn } from '@/lib/utils';
 
@@ -33,73 +33,6 @@ const MEAL_TYPE_ICONS: Record<MealType, LucideIcon> = {
   DINNER: Moon,
   OTHER: Utensils,
 };
-
-const ICON_TO_EMOJI: Record<string, string> = {
-  'tabler:coffee': '☕',
-  'lucide:drumstick': '🍗',
-  'lucide:ham': '🥩',
-  'tabler:sausage': '🌭',
-  'lucide:shrimp': '🦐',
-  'tabler:fish': '🐟',
-  'tabler:eggs': '🥚',
-  'tabler:egg': '🥚',
-  'lucide:bean': '🫘',
-  'tabler:nut': '🥜',
-  'lucide:vegan': '🌱',
-  'tabler:barbell': '💪',
-  'lucide:croissant': '🥐',
-  'tabler:baguette': '🥖',
-  'tabler:bread': '🍞',
-  'tabler:pizza': '🍕',
-  'tabler:burger': '🍔',
-  'lucide:sandwich': '🥪',
-  'tabler:dumpling': '🥟',
-  'lucide:popcorn': '🍿',
-  'tabler:soup': '🍲',
-  'tabler:salad': '🥗',
-  'tabler:bowl-spoon': '🍝',
-  'tabler:grain': '🌾',
-  'tabler:wheat': '🌾',
-  'tabler:avocado': '🥑',
-  'tabler:apple': '🍎',
-  'tabler:banana': '🍌',
-  'tabler:grape': '🍇',
-  'tabler:cherry': '🍒',
-  'tabler:lemon': '🍋',
-  'tabler:carrot': '🥕',
-  'tabler:pepper': '🌶️',
-  'tabler:mushroom': '🍄',
-  'tabler:chocolate': '🍫',
-  'tabler:cookie': '🍪',
-  'tabler:ice-cream': '🍦',
-  'lucide:donut': '🍩',
-  'tabler:cake': '🎂',
-  'lucide:dessert': '🍮',
-  'tabler:candy': '🍬',
-  'tabler:teapot': '🍵',
-  'lucide:glass-water': '💧',
-  'lucide:cup-soda': '🥤',
-  'tabler:beer': '🍺',
-  'tabler:glass-champagne': '🥂',
-  'lucide:wine': '🍷',
-  'lucide:martini': '🍸',
-  'tabler:glass-cocktail': '🍹',
-  'tabler:milk': '🥛',
-  'lucide:utensils-crossed': '🍽️',
-};
-
-function templateDefaultEmoji(template: {
-  name?: string | null;
-  entries: ReadonlyArray<{ name: string; grams: number; kcalPer100g: number }>;
-}): string {
-  const iconName = mealIconName(template);
-  return ICON_TO_EMOJI[iconName] ?? '🍽️';
-}
-
-function extractEmoji(text: string): string | null {
-  const match = text.match(/\p{Emoji_Presentation}/u);
-  return match?.[0] ?? null;
-}
 
 export type FavoriteTemplateEntry = {
   id: string;
@@ -138,7 +71,7 @@ export function FavoriteTemplateCard({
   const { show } = useToast();
   const totals = sumEntries(template.entries);
 
-  const displayEmoji = currentIcon ?? templateDefaultEmoji(template);
+  const displayEmoji = currentIcon ?? mealDefaultEmoji(template);
 
   useEffect(() => {
     if (!menuOpen) return;
