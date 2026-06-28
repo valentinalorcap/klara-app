@@ -73,14 +73,14 @@ function ChatFab({ active }: { active: boolean }) {
       aria-current={active ? 'page' : undefined}
       aria-label={chatTab.label}
       className={cn(
-        'absolute -top-4 left-1/2 -translate-x-1/2',
-        'flex h-16 w-16 items-center justify-center rounded-full',
-        'bg-[var(--accent)] text-white shadow-[0_8px_24px_-4px_var(--accent-glow)]',
+        'absolute -top-3 left-1/2 -translate-x-1/2',
+        'flex h-14 w-14 items-center justify-center rounded-full',
+        'bg-[var(--accent)] text-white',
         'ring-4 ring-[#0a0814] transition-transform active:scale-95',
         'hover:bg-[var(--accent-hover)]',
       )}
     >
-      <Icon size={26} strokeWidth={2.2} />
+      <Icon size={24} strokeWidth={2.2} />
     </Link>
   );
 }
