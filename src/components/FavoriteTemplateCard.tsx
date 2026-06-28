@@ -20,7 +20,12 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { GlassCard } from './GlassCard';
-import { renameFavorite, updateFavoriteIcon, addFavoriteToToday } from '@/app/(app)/today/actions';
+import {
+  renameFavorite,
+  updateFavoriteIcon,
+  addFavoriteToToday,
+  removeFavorite,
+} from '@/app/(app)/today/actions';
 import { MEAL_TYPE_LABELS, type MealType, entryMacros, sumEntries } from '@/lib/meals';
 import { mealDefaultEmoji, extractEmoji } from '@/lib/mealEmoji';
 import { useToast } from './Toast';
@@ -66,6 +71,7 @@ export function FavoriteTemplateCard({
   const [currentIcon, setCurrentIcon] = useState(template.icon);
   const [pendingAdd, startAdd] = useTransition();
   const [pendingIcon, startIcon] = useTransition();
+  const [pendingRemove, startRemove] = useTransition();
   const menuRef = useRef<HTMLDivElement>(null);
   const renameInputRef = useRef<HTMLInputElement>(null);
   const emojiInputRef = useRef<HTMLInputElement>(null);
@@ -137,6 +143,18 @@ export function FavoriteTemplateCard({
     },
     [template.id],
   );
+
+  // Library-only: tapping the star removes the favorite. Always confirm first,
+  // since here the star is the favorite itself (in Today it just toggles a link).
+  function onUnfavorite(e: MouseEvent) {
+    e.stopPropagation();
+    const label = template.name ?? MEAL_TYPE_LABELS[template.type];
+    if (!confirm(`Remove "${label}" from favorites?`)) return;
+    startRemove(async () => {
+      const result = await removeFavorite(template.id);
+      if (result && !result.ok) window.alert(result.error);
+    });
+  }
 
   function onAddToToday(e: MouseEvent) {
     e.stopPropagation();
@@ -231,9 +249,15 @@ export function FavoriteTemplateCard({
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-1">
-          <span className="flex h-8 w-8 items-center justify-center text-yellow-400">
+          <button
+            type="button"
+            aria-label="Remove from favorites"
+            onClick={onUnfavorite}
+            disabled={pendingRemove}
+            className="flex h-8 w-8 items-center justify-center text-yellow-400 transition hover:text-yellow-300 disabled:opacity-30"
+          >
             <Star size={16} fill="currentColor" />
-          </span>
+          </button>
           <div ref={menuRef} className="relative">
             <button
               type="button"
