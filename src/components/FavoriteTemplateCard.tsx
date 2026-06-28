@@ -301,11 +301,11 @@ export function FavoriteTemplateCard({
                 </Link>
                 <button
                   type="button"
-                  onClick={onStartRename}
+                  onClick={onAddToToday}
                   className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-white transition hover:bg-white/5"
                 >
-                  <PenLine size={14} className="text-neutral-400" />
-                  Rename
+                  <Copy size={14} className="text-neutral-400" />
+                  Add to today
                 </button>
                 <button
                   type="button"
@@ -317,11 +317,11 @@ export function FavoriteTemplateCard({
                 </button>
                 <button
                   type="button"
-                  onClick={onAddToToday}
+                  onClick={onStartRename}
                   className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-white transition hover:bg-white/5"
                 >
-                  <Copy size={14} className="text-neutral-400" />
-                  Add to today
+                  <PenLine size={14} className="text-neutral-400" />
+                  Rename
                 </button>
               </div>
             ) : null}

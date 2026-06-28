@@ -330,11 +330,11 @@ export function MealCard({
                   </Link>
                   <button
                     type="button"
-                    onClick={onStartRename}
+                    onClick={onCopy}
                     className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-white transition hover:bg-white/5"
                   >
-                    <PenLine size={14} className="text-neutral-400" />
-                    Rename
+                    <Copy size={14} className="text-neutral-400" />
+                    Add to today
                   </button>
                   <button
                     type="button"
@@ -346,11 +346,11 @@ export function MealCard({
                   </button>
                   <button
                     type="button"
-                    onClick={onCopy}
+                    onClick={onStartRename}
                     className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-white transition hover:bg-white/5"
                   >
-                    <Copy size={14} className="text-neutral-400" />
-                    Copy to today
+                    <PenLine size={14} className="text-neutral-400" />
+                    Rename
                   </button>
                   <button
                     type="button"
