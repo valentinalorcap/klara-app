@@ -22,7 +22,7 @@ export function FinishDayButton({ dateKey, closed }: { dateKey: string; closed?:
       onClick={run}
       disabled={pending || closed}
       className={cn(
-        'flex flex-1 items-center justify-center gap-2 rounded-2xl border px-4 py-3.5 text-sm font-semibold transition',
+        'flex flex-1 items-center justify-center gap-2 rounded-2xl border px-4 py-2.5 text-sm font-semibold transition',
         closed
           ? 'cursor-default border-white/10 bg-white/[0.04] text-neutral-500'
           : 'border-[var(--accent)]/30 bg-[var(--accent)]/10 text-[var(--accent)] hover:bg-[var(--accent)]/15 disabled:opacity-50',
