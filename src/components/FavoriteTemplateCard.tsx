@@ -4,6 +4,7 @@ import { useState, useTransition, useRef, useEffect, type MouseEvent } from 'rea
 import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
+  Star,
   MoreVertical,
   Pencil,
   PenLine,
@@ -158,7 +159,11 @@ export function FavoriteTemplateCard({
             </p>
           </div>
         </div>
-        <div ref={menuRef} className="relative shrink-0">
+        <div className="flex shrink-0 items-center gap-1">
+          <span className="flex h-8 w-8 items-center justify-center text-yellow-400">
+            <Star size={16} fill="currentColor" />
+          </span>
+          <div ref={menuRef} className="relative">
           <button
             type="button"
             aria-label="More actions"
@@ -187,6 +192,7 @@ export function FavoriteTemplateCard({
               </button>
             </div>
           ) : null}
+          </div>
         </div>
       </div>
 
