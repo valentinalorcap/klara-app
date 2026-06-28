@@ -123,6 +123,7 @@ export default async function LibraryPage() {
                   id: t.id,
                   type: t.type,
                   name: t.name,
+                  icon: t.icon,
                   entries: t.entries.map((e) => ({
                     id: e.id,
                     name: e.name,

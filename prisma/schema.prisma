@@ -277,6 +277,7 @@ model MealTemplate {
 
   type MealType
   name String?
+  icon String?
 
   entries MealTemplateEntry[]
   meals   Meal[]

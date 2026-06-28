@@ -669,3 +669,69 @@ export async function updateMealIcon(mealId: string, emoji: string): Promise<Act
   revalidatePath('/history');
   return { ok: true };
 }
+
+export async function updateFavoriteIcon(templateId: string, emoji: string): Promise<ActionResult> {
+  const userId = await requireUserId();
+  const template = await prisma.mealTemplate.findFirst({
+    where: { id: templateId, userId },
+    select: { id: true },
+  });
+  if (!template) return { ok: false, error: 'Favorite not found.' };
+  await prisma.mealTemplate.update({
+    where: { id: templateId },
+    data: { icon: emoji.trim() || null },
+  });
+  revalidatePath('/library');
+  return { ok: true };
+}
+
+export async function addFavoriteToToday(templateId: string): Promise<ActionResult> {
+  const userId = await requireUserId();
+  const template = await prisma.mealTemplate.findFirst({
+    where: { id: templateId, userId },
+    include: { entries: true },
+  });
+  if (!template) return { ok: false, error: 'Favorite not found.' };
+  if (template.entries.length === 0) return { ok: false, error: 'That favorite has no items.' };
+
+  const todayDate = new Date(isoDate(new Date()) + 'T00:00:00Z');
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { defaultEvalTone: true },
+  });
+
+  await prisma.dayEvaluation.deleteMany({ where: { userId, date: todayDate } });
+  const meal = await prisma.meal.create({
+    data: {
+      userId,
+      date: todayDate,
+      type: template.type,
+      name: template.name,
+      icon: template.icon,
+      templateId: template.id,
+      entries: {
+        create: template.entries.map((e) => ({
+          name: e.name,
+          grams: e.grams,
+          kcalPer100g: e.kcalPer100g,
+          proteinPer100g: e.proteinPer100g,
+          carbsPer100g: e.carbsPer100g,
+          fatPer100g: e.fatPer100g,
+          productId: e.productId,
+          recipeId: e.recipeId,
+        })),
+      },
+    },
+  });
+
+  if (user) {
+    await markEvaluationPending(meal.id, user.defaultEvalTone, userId);
+    after(async () => {
+      await generateMealName(meal.id);
+      await evaluateMealById(meal.id);
+      revalidatePath('/today');
+    });
+  }
+  revalidatePath('/today');
+  return { ok: true };
+}
