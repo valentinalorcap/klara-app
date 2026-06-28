@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useState, useRef, useTransition } from 'react';
+import { useActionState, useState, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Camera, Sparkles, RotateCcw } from 'lucide-react';
@@ -48,10 +48,10 @@ export function ProductForm({
   // Label-scan state.
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [scanError, setScanError] = useState<string | null>(null);
-  const [analyzing, startAnalyze] = useTransition();
+  const [analyzing, setAnalyzing] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  function onPhoto(e: React.ChangeEvent<HTMLInputElement>) {
+  async function onPhoto(e: React.ChangeEvent<HTMLInputElement>) {
     const picked = e.target.files?.[0];
     if (fileRef.current) fileRef.current.value = ''; // allow re-picking the same file
     if (!picked) return;
@@ -67,7 +67,8 @@ export function ProductForm({
     // Analyze immediately — no separate "analyze" step.
     const formData = new FormData();
     formData.append('image', picked);
-    startAnalyze(async () => {
+    setAnalyzing(true);
+    try {
       const result = await extractFromLabel(formData);
       if (!result.ok) {
         setScanError(result.error);
@@ -82,7 +83,9 @@ export function ProductForm({
       setFat(numStr(d.fatPer100g));
       setPortion(numStr(d.suggestedPortionGrams));
       setIcon(d.icon ?? '');
-    });
+    } finally {
+      setAnalyzing(false);
+    }
   }
 
   return (
