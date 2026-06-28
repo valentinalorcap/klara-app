@@ -84,7 +84,7 @@ export function ProductCard({ product }: { product: ProductCardData }) {
         >
           <div className="flex items-start justify-between gap-3">
             <div className="flex min-w-0 items-center gap-3">
-              <ProductIconAvatar product={product} className="h-10 w-10" />
+              <ProductIconAvatar product={product} className="h-9 w-9" iconSize={16} />
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold text-white">{product.name}</p>
                 {product.brand ? (

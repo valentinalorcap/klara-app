@@ -32,15 +32,17 @@ export function ProductIcon({
 export function ProductIconAvatar({
   product,
   className = 'h-10 w-10',
+  iconSize = 20,
 }: {
   product: { icon?: string | null; name: string };
   className?: string;
+  iconSize?: number;
 }) {
   return (
     <span
       className={`flex shrink-0 items-center justify-center rounded-[13px] border border-white/10 bg-white/[0.06] text-[var(--accent)] ${className}`}
     >
-      <ProductIcon name={resolveProductIcon(product)} size={20} />
+      <ProductIcon name={resolveProductIcon(product)} size={iconSize} />
     </span>
   );
 }
