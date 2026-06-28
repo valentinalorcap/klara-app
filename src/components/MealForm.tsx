@@ -442,7 +442,7 @@ function FavoritesPicker({
       aria-label="Pick a favorite meal"
       className="fixed inset-0 z-50 flex flex-col bg-[var(--background-bottom)]/95 backdrop-blur-xl"
     >
-      <header className="flex items-center justify-between border-b border-white/10 px-6 pt-[max(env(safe-area-inset-top),1rem)] pb-4">
+      <header className="flex items-center justify-between border-b border-white/10 px-6 pt-[calc(env(safe-area-inset-top)+1.5rem)] pb-4">
         <h2 className="text-base font-semibold text-white">Favorites</h2>
         <button
           type="button"
@@ -498,7 +498,7 @@ function FavoritesPicker({
                         <button
                           type="button"
                           onClick={() => onPick(f)}
-                          className="flex w-full items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-left transition hover:border-white/20 hover:bg-white/[0.08] active:scale-[0.99]"
+                          className="flex w-full items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-left transition hover:border-white/20 hover:bg-white/[0.08] active:scale-[0.99]"
                         >
                           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/[0.06] text-xl">
                             {emoji}
