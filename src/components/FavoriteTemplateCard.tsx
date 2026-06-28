@@ -3,11 +3,10 @@
 import { useState, useTransition, useRef, useEffect, useCallback, type MouseEvent } from 'react';
 import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Star, MoreVertical, Pencil, PenLine, Trash2, Copy, Smile } from 'lucide-react';
+import { Star, MoreVertical, Pencil, PenLine, Copy, Smile } from 'lucide-react';
 import { GlassCard } from './GlassCard';
 import {
   renameFavorite,
-  removeFavorite,
   updateFavoriteIcon,
   addFavoriteToToday,
 } from '@/app/(app)/today/actions';
