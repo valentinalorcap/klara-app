@@ -442,7 +442,7 @@ function FavoritesPicker({
       aria-label="Pick a favorite meal"
       className="fixed inset-0 z-50 flex flex-col bg-[var(--background-bottom)]/95 backdrop-blur-xl"
     >
-      <header className="flex items-center justify-between border-b border-white/10 px-6 pt-[calc(env(safe-area-inset-top)+1.5rem)] pb-4">
+      <header className="flex items-center justify-between border-b border-white/10 px-6 pt-[max(3rem,env(safe-area-inset-top))] pb-4">
         <h2 className="text-base font-semibold text-white">Favorites</h2>
         <button
           type="button"

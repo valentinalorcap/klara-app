@@ -51,7 +51,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   return (
     <ToastContext.Provider value={{ show }}>
       {children}
-      <div className="pointer-events-none fixed inset-x-0 bottom-36 z-50 flex justify-center px-6">
+      <div className="pointer-events-none fixed inset-x-0 bottom-28 z-50 flex justify-center px-6">
         <AnimatePresence>
           {toast ? (
             <motion.div
