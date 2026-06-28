@@ -3,7 +3,21 @@
 import { useState, useTransition, useRef, useEffect, useCallback, type MouseEvent } from 'react';
 import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Star, MoreVertical, Pencil, PenLine, Copy, Smile } from 'lucide-react';
+import {
+  Star,
+  MoreVertical,
+  Pencil,
+  PenLine,
+  Copy,
+  Smile,
+  Sunrise,
+  Dumbbell,
+  Sandwich,
+  Cookie,
+  Moon,
+  Utensils,
+  type LucideIcon,
+} from 'lucide-react';
 import { GlassCard } from './GlassCard';
 import {
   renameFavorite,
@@ -14,6 +28,15 @@ import { MEAL_TYPE_LABELS, type MealType, entryMacros, sumEntries } from '@/lib/
 import { mealIconName } from '@/lib/productIcons';
 import { useToast } from './Toast';
 import { cn } from '@/lib/utils';
+
+const MEAL_TYPE_ICONS: Record<MealType, LucideIcon> = {
+  BREAKFAST: Sunrise,
+  PREWORKOUT: Dumbbell,
+  LUNCH: Sandwich,
+  SNACK: Cookie,
+  DINNER: Moon,
+  OTHER: Utensils,
+};
 
 const ICON_TO_EMOJI: Record<string, string> = {
   'tabler:coffee': '☕',
@@ -103,6 +126,7 @@ export function FavoriteTemplateCard({
     entries: FavoriteTemplateEntry[];
   };
 }) {
+  const TypeIcon = MEAL_TYPE_ICONS[template.type];
   const [expanded, setExpanded] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [renaming, setRenaming] = useState(false);
@@ -237,7 +261,8 @@ export function FavoriteTemplateCard({
             ) : null}
           </span>
           <div className="min-w-0 flex-1">
-            <p className="text-[10px] font-medium tracking-wider text-[var(--accent)] uppercase">
+            <p className="flex items-center gap-1 text-[10px] font-medium tracking-wider text-[var(--accent)] uppercase">
+              <TypeIcon size={11} />
               {MEAL_TYPE_LABELS[template.type]}
             </p>
             {renaming ? (
