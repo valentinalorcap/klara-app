@@ -82,6 +82,7 @@ export type MealFormPayload = {
   date: string;
   type: MealType;
   name?: string;
+  templateId?: string;
   entries: {
     name: string;
     grams: number;
@@ -148,6 +149,7 @@ export function MealForm({
   const batchMode = Boolean(onAddToBatch);
   const [type, setType] = useState<MealType>(initial?.type ?? 'SNACK');
   const [name, setName] = useState(initial?.name ?? '');
+  const [templateId, setTemplateId] = useState<string | undefined>(undefined);
   // Monotonic row-id source for rows added at runtime. Seeded past the initial
   // rows (which get deterministic index ids) so ids never collide, and so the
   // ref is never read during render — initial ids stay hydration-stable.
@@ -217,9 +219,10 @@ export function MealForm({
       date: initial?.date ?? defaultDate ?? isoDate(new Date()),
       type,
       name: name.trim() || undefined,
+      templateId,
       entries,
     };
-  }, [rows, type, name, initial?.date, defaultDate]);
+  }, [rows, type, name, templateId, initial?.date, defaultDate]);
 
   useEffect(() => {
     onValidChange?.(currentPayload);
@@ -255,12 +258,14 @@ export function MealForm({
     );
     setType(fav.type);
     setName(fav.name ?? '');
+    setTemplateId(fav.id);
   }
 
   function resetForm() {
     setType('SNACK');
     setName('');
     setRows([]);
+    setTemplateId(undefined);
     setError(null);
   }
 
