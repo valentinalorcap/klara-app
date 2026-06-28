@@ -73,7 +73,7 @@ function ChatFab({ active }: { active: boolean }) {
       aria-current={active ? 'page' : undefined}
       aria-label={chatTab.label}
       className={cn(
-        'absolute -top-3 left-1/2 -translate-x-1/2',
+        'absolute -top-1 left-1/2 -translate-x-1/2',
         'flex h-14 w-14 items-center justify-center rounded-full',
         'bg-[var(--accent)] text-white',
         'ring-4 ring-[#0a0814] transition-transform active:scale-95',
