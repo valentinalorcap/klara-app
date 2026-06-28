@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useTransition, useRef, useEffect, useCallback, type MouseEvent } from 'react';
+import { flushSync } from 'react-dom';
 import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
@@ -86,10 +87,6 @@ export function FavoriteTemplateCard({
     if (renaming) renameInputRef.current?.focus();
   }, [renaming]);
 
-  useEffect(() => {
-    if (iconPickerOpen) emojiInputRef.current?.focus();
-  }, [iconPickerOpen]);
-
   function onMenuToggle(e: MouseEvent) {
     e.stopPropagation();
     setMenuOpen((v) => !v);
@@ -119,7 +116,11 @@ export function FavoriteTemplateCard({
   function onOpenIconPicker(e: MouseEvent) {
     e.stopPropagation();
     setMenuOpen(false);
-    setIconPickerOpen(true);
+    // iOS Safari only opens the keyboard when focus() runs synchronously
+    // inside the tap handler. Flush the input into the DOM first, then focus
+    // it right away — a focus() from a later effect is ignored on iOS.
+    flushSync(() => setIconPickerOpen(true));
+    emojiInputRef.current?.focus();
   }
 
   const onEmojiInput = useCallback(
