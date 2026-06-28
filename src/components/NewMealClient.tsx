@@ -110,7 +110,7 @@ export function NewMealClient({
       ) : null}
 
       {queue.length > 0 ? (
-        <GlassCard className="space-y-3 p-5">
+        <GlassCard className="space-y-3 p-4">
           <p className="text-xs font-medium tracking-wider text-neutral-400 uppercase">
             Added · {queue.length} {queue.length === 1 ? 'meal' : 'meals'}
           </p>

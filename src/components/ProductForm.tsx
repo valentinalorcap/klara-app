@@ -176,7 +176,7 @@ export function ProductForm({
         error={state.fieldErrors?.brand}
       />
 
-      <GlassCard className="space-y-3 p-5">
+      <GlassCard className="space-y-3 p-4">
         <p className="text-xs font-medium tracking-wider text-neutral-400 uppercase">Per 100g</p>
         <Field
           label="Calories (kcal)"

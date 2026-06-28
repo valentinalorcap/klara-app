@@ -70,7 +70,7 @@ export function WeekChart({
     .join(' ');
 
   return (
-    <GlassCard noAnimate className="space-y-3 p-5">
+    <GlassCard noAnimate className="space-y-3 p-4">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-[10px] font-medium tracking-wider text-neutral-400 uppercase">

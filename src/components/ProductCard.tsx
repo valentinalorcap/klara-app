@@ -78,7 +78,7 @@ export function ProductCard({ product }: { product: ProductCardData }) {
           noAnimate
           onClick={() => router.push(`/products/${product.id}/edit`)}
           className={cn(
-            'cursor-pointer p-5 transition hover:border-white/20 active:scale-[0.99]',
+            'cursor-pointer p-4 transition hover:border-white/20 active:scale-[0.99]',
             product.inUse && 'border-[var(--accent)]/30',
           )}
         >

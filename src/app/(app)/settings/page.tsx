@@ -44,7 +44,7 @@ export default async function SettingsPage() {
         }}
       />
 
-      <GlassCard className="space-y-3 p-5">
+      <GlassCard className="space-y-3 p-4">
         <p className="text-xs font-medium tracking-wider text-neutral-400 uppercase">Account</p>
         <p className="text-sm text-white">{user?.name ?? 'You'}</p>
         <p className="text-xs text-neutral-500">{user?.email}</p>

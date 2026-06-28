@@ -24,7 +24,7 @@ export function ToneSelector({ initial }: { initial: EvalTone }) {
   }
 
   return (
-    <GlassCard className="space-y-3 p-5">
+    <GlassCard className="space-y-3 p-4">
       <div>
         <p className="text-xs font-medium tracking-wider text-neutral-400 uppercase">
           Klara’s tone
