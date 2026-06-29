@@ -226,14 +226,14 @@ export function FavoriteTemplateCard({
                 className="mt-0.5 w-full rounded-lg bg-white/10 px-2 py-0.5 text-sm font-semibold text-white outline-none placeholder:text-neutral-500 focus:ring-1 focus:ring-[var(--accent)]/60"
               />
             ) : template.name ? (
-              <h3
+              <h2
                 className={cn(
                   'mt-0.5 line-clamp-2 text-sm font-semibold text-white',
                   pendingRename && 'opacity-50',
                 )}
               >
                 {template.name}
-              </h3>
+              </h2>
             ) : null}
             <p className="mt-2 text-sm font-medium whitespace-nowrap text-white tabular-nums">
               {Math.round(totals.kcal)}

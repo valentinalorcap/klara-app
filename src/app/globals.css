@@ -9,8 +9,9 @@
   --surface-glass-strong: rgba(255, 255, 255, 0.1);
   --border-glass: rgba(255, 255, 255, 0.1);
 
-  /* Accent (violet) */
-  --accent: #9963f6;
+  /* Accent (violet). Base darkened from #9963f6 so white text on accent
+     buttons clears WCAG AA contrast (4.5:1) — #8a52f0 gives ~4.6:1. */
+  --accent: #8a52f0;
   --accent-hover: #7c3aed;
   --accent-glow: rgba(153, 99, 246, 0.4);
 
