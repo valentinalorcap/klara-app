@@ -223,7 +223,7 @@ export function MealCard({
             ) : null}
           </span>
           <div className="min-w-0 flex-1">
-            <p className="flex items-center gap-1 text-[10px] font-medium tracking-wider text-[var(--accent)] uppercase">
+            <p className="flex items-center gap-1 text-[10px] font-medium tracking-wider text-[var(--accent-text)] uppercase">
               <TypeIcon size={11} />
               {MEAL_TYPE_LABELS[meal.type]}
             </p>
@@ -240,7 +240,7 @@ export function MealCard({
                 className="mt-0.5 w-full rounded-lg bg-white/10 px-2 py-0.5 text-sm font-semibold text-white outline-none placeholder:text-neutral-500 focus:ring-1 focus:ring-[var(--accent)]/60"
               />
             ) : meal.name ? (
-              <h3 className="mt-0.5 line-clamp-2 text-sm font-semibold text-white">{meal.name}</h3>
+              <h2 className="mt-0.5 line-clamp-2 text-sm font-semibold text-white">{meal.name}</h2>
             ) : null}
             <p className="mt-2 text-sm font-medium whitespace-nowrap text-white tabular-nums">
               {Math.round(totals.kcal)}

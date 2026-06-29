@@ -10,6 +10,19 @@ const nextConfig: NextConfig = {
       bodySizeLimit: '6mb',
     },
   },
+  async headers() {
+    return [
+      {
+        // Never cache the service worker itself, so a new deploy's sw.js is
+        // always fetched and can take over (the SW then caches everything else).
+        source: '/sw.js',
+        headers: [
+          { key: 'Content-Type', value: 'application/javascript; charset=utf-8' },
+          { key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

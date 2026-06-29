@@ -9,8 +9,13 @@
   --surface-glass-strong: rgba(255, 255, 255, 0.1);
   --border-glass: rgba(255, 255, 255, 0.1);
 
-  /* Accent (violet) */
-  --accent: #9963f6;
+  /* Accent (violet). Two tokens for two jobs:
+     --accent is a FILL behind white text (buttons), so it's dark enough for
+     the white to clear WCAG AA (4.5:1) — #8a52f0 gives ~4.6:1.
+     --accent-text is the accent used as FOREGROUND (purple text/icons on dark
+     backgrounds), so it's lighter than the fill to keep enough contrast. */
+  --accent: #8a52f0;
+  --accent-text: #9d6ff7;
   --accent-hover: #7c3aed;
 
   /* Text */

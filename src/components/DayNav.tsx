@@ -76,7 +76,7 @@ export function DayNav({ dateKey, todayKey }: { dateKey: string; todayKey: strin
           <button
             type="button"
             onClick={() => go(todayKey)}
-            className="inline-flex items-center gap-1.5 rounded-full border border-[var(--accent)]/25 bg-[var(--accent)]/10 px-3 py-1 text-xs font-medium text-[var(--accent)] transition hover:bg-[var(--accent)]/20"
+            className="inline-flex items-center gap-1.5 rounded-full border border-[var(--accent)]/25 bg-[var(--accent)]/10 px-3 py-1 text-xs font-medium text-[var(--accent-text)] transition hover:bg-[var(--accent)]/20"
           >
             <CalendarCheck size={12} />
             Today

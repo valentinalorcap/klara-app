@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
+import { ServiceWorkerRegistrar } from '@/components/ServiceWorkerRegistrar';
 
 const inter = Inter({
   variable: '--font-inter',
@@ -50,7 +51,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${inter.variable} h-full antialiased`}>
-      <body className="flex min-h-full flex-col">{children}</body>
+      <body className="flex min-h-full flex-col">
+        {children}
+        <ServiceWorkerRegistrar />
+      </body>
     </html>
   );
 }

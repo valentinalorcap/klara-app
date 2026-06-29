@@ -152,7 +152,7 @@ export default async function TodayPage({
         {!goalsSet ? (
           <Link
             href="/settings"
-            className="mt-4 block rounded-2xl border border-dashed border-white/15 px-4 py-3 text-center text-xs text-[var(--accent)] transition hover:border-[var(--accent)]/60 hover:bg-[var(--accent)]/5"
+            className="mt-4 block rounded-2xl border border-dashed border-white/15 px-4 py-3 text-center text-xs text-[var(--accent-text)] transition hover:border-[var(--accent)]/60 hover:bg-[var(--accent)]/5"
           >
             Set your daily goals to see progress →
           </Link>

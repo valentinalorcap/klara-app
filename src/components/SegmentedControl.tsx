@@ -47,7 +47,7 @@ export function SegmentedControl<T extends string>({
             aria-pressed={active}
             className={cn(
               'relative z-10 flex-1 rounded-xl px-3 py-2 text-xs font-semibold transition-colors',
-              active ? 'text-[var(--accent)]' : 'text-neutral-400',
+              active ? 'text-[var(--accent-text)]' : 'text-neutral-400',
             )}
           >
             {opt.label}
