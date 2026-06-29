@@ -184,7 +184,7 @@ export function NewMealClient({
           onClick={saveAll}
           disabled={pending || count === 0}
           className={cn(
-            'w-full rounded-2xl px-4 py-3.5 text-sm font-semibold text-white shadow-[0_8px_24px_-8px_var(--accent-glow)] transition active:scale-[0.98]',
+            'w-full rounded-2xl px-4 py-3.5 text-sm font-semibold text-white transition active:scale-[0.98]',
             count > 0
               ? 'bg-[var(--accent)] hover:bg-[var(--accent-hover)] disabled:opacity-50'
               : 'cursor-not-allowed bg-white/[0.05] text-neutral-500 shadow-none',
