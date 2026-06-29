@@ -209,7 +209,7 @@ export function FavoriteTemplateCard({
             ) : null}
           </span>
           <div className="min-w-0 flex-1">
-            <p className="flex items-center gap-1 text-[10px] font-medium tracking-wider text-[var(--accent)] uppercase">
+            <p className="flex items-center gap-1 text-[10px] font-medium tracking-wider text-[var(--accent-text)] uppercase">
               <TypeIcon size={11} />
               {MEAL_TYPE_LABELS[template.type]}
             </p>

@@ -46,7 +46,7 @@ export function FinishDayCard({
           type="button"
           onClick={run}
           disabled={pending}
-          className="flex w-full items-center justify-center gap-2 rounded-2xl border border-[var(--accent)]/30 bg-[var(--accent)]/10 px-4 py-3 text-sm font-semibold text-[var(--accent)] transition hover:bg-[var(--accent)]/15 disabled:opacity-50"
+          className="flex w-full items-center justify-center gap-2 rounded-2xl border border-[var(--accent)]/30 bg-[var(--accent)]/10 px-4 py-3 text-sm font-semibold text-[var(--accent-text)] transition hover:bg-[var(--accent)]/15 disabled:opacity-50"
         >
           <Moon size={15} />
           {pending ? 'Closing the day…' : 'Finish day'}
@@ -59,8 +59,10 @@ export function FinishDayCard({
     return (
       <GlassCard className="border-[var(--accent)]/20 bg-[var(--accent)]/[0.04] p-4">
         <div className="flex items-center gap-2">
-          <Sparkles size={13} className="animate-pulse text-[var(--accent)]" />
-          <p className="text-xs font-medium text-[var(--accent)]">Klara is reviewing your day…</p>
+          <Sparkles size={13} className="animate-pulse text-[var(--accent-text)]" />
+          <p className="text-xs font-medium text-[var(--accent-text)]">
+            Klara is reviewing your day…
+          </p>
         </div>
         <div className="mt-2 space-y-1.5" aria-hidden>
           <div className="h-2 w-full animate-pulse rounded-full bg-white/10" />
@@ -98,8 +100,8 @@ export function FinishDayCard({
         onClick={() => setExpanded((v) => !v)}
         className="flex w-full items-center gap-2 text-left"
       >
-        <Moon size={13} className="text-[var(--accent)]" />
-        <span className="text-[10px] font-medium tracking-wider text-[var(--accent)] uppercase">
+        <Moon size={13} className="text-[var(--accent-text)]" />
+        <span className="text-[10px] font-medium tracking-wider text-[var(--accent-text)] uppercase">
           Klara
         </span>
         <ChevronDown
@@ -126,7 +128,7 @@ export function FinishDayCard({
         type="button"
         onClick={run}
         disabled={pending}
-        className="mt-2 flex items-center gap-1.5 text-[11px] font-medium text-[var(--accent)] transition hover:text-[var(--accent-hover)] disabled:opacity-40"
+        className="mt-2 flex items-center gap-1.5 text-[11px] font-medium text-[var(--accent-text)] transition hover:text-[var(--accent-hover)] disabled:opacity-40"
       >
         <RefreshCw size={11} className={cn(pending && 'animate-spin')} />
         {pending ? 'Re-evaluating…' : 'Re-evaluate day'}

@@ -162,7 +162,7 @@ function KlaraAvatar() {
   return (
     <div
       aria-hidden
-      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[var(--accent)]/30 bg-[var(--accent)]/15 text-[var(--accent)]"
+      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[var(--accent)]/30 bg-[var(--accent)]/15 text-[var(--accent-text)]"
     >
       <Sparkles size={14} />
     </div>
@@ -186,7 +186,7 @@ function Bubble({ message }: { message: ChatMessageView }) {
       <div className="max-w-[85%] rounded-2xl rounded-tl-md border border-white/10 bg-white/[0.04] px-3.5 py-2.5 text-sm leading-relaxed whitespace-pre-wrap text-neutral-100">
         {message.content || (
           <span className="inline-flex items-center gap-1 text-neutral-400">
-            <Sparkles size={12} className="animate-pulse text-[var(--accent)]" />
+            <Sparkles size={12} className="animate-pulse text-[var(--accent-text)]" />
             Klara is thinking…
           </span>
         )}
