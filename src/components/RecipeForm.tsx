@@ -326,7 +326,7 @@ function TextField({
   const labelNode = (
     <>
       {label}
-      {required ? <span className="text-[var(--accent)]"> *</span> : null}
+      {required ? <span className="text-[var(--accent-text)]"> *</span> : null}
     </>
   );
 

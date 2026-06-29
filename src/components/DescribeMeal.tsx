@@ -62,7 +62,7 @@ export function DescribeMeal({
         type="button"
         onClick={askKlara}
         disabled={trimmed.length < 3 || estimating}
-        className="flex w-full items-center justify-center gap-2 rounded-2xl border border-[var(--accent)]/30 bg-[var(--accent)]/10 px-4 py-2.5 text-sm font-semibold text-[var(--accent)] transition hover:bg-[var(--accent)]/15 disabled:cursor-not-allowed disabled:opacity-50"
+        className="flex w-full items-center justify-center gap-2 rounded-2xl border border-[var(--accent)]/30 bg-[var(--accent)]/10 px-4 py-2.5 text-sm font-semibold text-[var(--accent-text)] transition hover:bg-[var(--accent)]/15 disabled:cursor-not-allowed disabled:opacity-50"
       >
         <Sparkles size={14} className={cn(estimating && 'animate-pulse')} />
         {estimating ? 'Klara is thinking…' : 'Ask Klara'}

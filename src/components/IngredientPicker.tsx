@@ -166,11 +166,11 @@ export function IngredientPicker({
               )}
             >
               {pending ? (
-                <Loader2 size={14} className="shrink-0 animate-spin text-[var(--accent)]" />
+                <Loader2 size={14} className="shrink-0 animate-spin text-[var(--accent-text)]" />
               ) : (
-                <Sparkles size={14} className="shrink-0 text-[var(--accent)]" />
+                <Sparkles size={14} className="shrink-0 text-[var(--accent-text)]" />
               )}
-              <p className="min-w-0 flex-1 truncate text-sm text-[var(--accent)]">
+              <p className="min-w-0 flex-1 truncate text-sm text-[var(--accent-text)]">
                 {pending ? 'Asking Klara…' : `Ask Klara about "${value.trim()}"`}
               </p>
             </button>

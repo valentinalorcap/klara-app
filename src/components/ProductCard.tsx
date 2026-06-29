@@ -105,7 +105,7 @@ export function ProductCard({ product }: { product: ProductCardData }) {
             <span
               className={cn(
                 'shrink-0 text-xs tabular-nums',
-                portion ? 'text-[var(--accent)]' : 'text-neutral-500',
+                portion ? 'text-[var(--accent-text)]' : 'text-neutral-500',
               )}
             >
               {perLabel}

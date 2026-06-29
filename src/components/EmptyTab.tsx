@@ -13,7 +13,7 @@ export function EmptyTab({
   return (
     <main className="flex min-h-screen flex-col items-center justify-center px-6 text-center">
       <GlassCard className="w-full max-w-sm p-8">
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-white/10 text-[var(--accent)]">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-white/10 text-[var(--accent-text)]">
           <Icon size={26} />
         </div>
         <h1 className="mt-5 text-xl font-semibold text-white">{title}</h1>

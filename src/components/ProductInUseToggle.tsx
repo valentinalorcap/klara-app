@@ -35,7 +35,7 @@ export function ProductInUseToggle({
       className={cn(
         'inline-flex shrink-0 items-center gap-1 rounded-full border text-[11px] font-medium transition active:scale-95 disabled:opacity-50',
         inUse
-          ? 'border-[var(--accent)]/40 bg-[var(--accent)]/15 px-2.5 py-1 text-[var(--accent)]'
+          ? 'border-[var(--accent)]/40 bg-[var(--accent)]/15 px-2.5 py-1 text-[var(--accent-text)]'
           : 'border-white/10 bg-white/[0.04] p-1.5 text-neutral-400 hover:bg-white/[0.08]',
         className,
       )}
