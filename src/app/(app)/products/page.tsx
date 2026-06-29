@@ -19,7 +19,7 @@ export default async function ProductsPage() {
         <Link
           href="/products/new"
           aria-label="Add product"
-          className="flex h-11 w-11 items-center justify-center rounded-full bg-[var(--accent)] text-white shadow-[0_8px_24px_-8px_var(--accent-glow)] transition hover:bg-[var(--accent-hover)] active:scale-95"
+          className="flex h-11 w-11 items-center justify-center rounded-full bg-[var(--accent)] text-white transition hover:bg-[var(--accent-hover)] active:scale-95"
         >
           <Plus size={20} />
         </Link>
