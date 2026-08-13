@@ -1,5 +1,9 @@
 # Klara
 
+[![CI](https://github.com/valentinalorcap/klara-app/actions/workflows/ci.yml/badge.svg)](https://github.com/valentinalorcap/klara-app/actions/workflows/ci.yml)
+[![MIT License](https://img.shields.io/badge/license-MIT-green.svg)](./LICENSE)
+[![Live Demo](https://img.shields.io/badge/live-klaradehuevo.app-violet)](https://klaradehuevo.app)
+
 > My personal nutrition assistant — built with Next.js, Postgres, and Claude. I log my meals (before or after I eat them) so I know what my day looks like, and the AI handles the boring macro math.
 
 Klara is a nutrition tracker I built for myself. I tend to eat the same
@@ -16,7 +20,7 @@ vegetarian because that's how I eat, but nothing's locked to that.
 
 It's a personal project — built for an audience of one (me), in public.
 
-**Live demo:** https://klara-de-huevo.vercel.app
+**Live demo:** https://klaradehuevo.app
 
 <p align="center">
   <img src="screenshots/01-today.jpg" width="200" alt="Today — kcal and macro rings with Klara's take" />
@@ -44,6 +48,8 @@ It's a personal project — built for an audience of one (me), in public.
   that rebuilds full context every turn: my profile, my daily goals,
   today's totals + meals, and a rolling seven-day summary. I ask "how am I
   doing on protein?" and the answer uses my actual numbers.
+- **It installs as a native app.** Full PWA support — "Add to Home Screen"
+  on iOS or Android gives you a standalone app with no browser chrome.
 - **The AI does the boring work for me.**
   - I scan a label with my camera → Sonnet reads the macros.
   - I describe a meal in prose (even "1 avocado, half a cup of oats") → Sonnet turns it into structured entries.
@@ -122,7 +128,7 @@ Vitest covers the pure helpers (macro math, goal + history aggregations) and the
 
 Built in 11 phases — foundation, product library, label scanning, recipes, meal logging, daily goals, AI evaluations, batch logging, free-text estimation, chat, and a history calendar — each a `feat(phase-N): ...` milestone in the git log.
 
-A small backlog of follow-ups (edit favourites from Library, an auto-maintained user memory, a few UX tweaks) is kept privately.
+Active follow-ups are tracked in [BACKLOG.md](./BACKLOG.md).
 
 ## Credits
 
