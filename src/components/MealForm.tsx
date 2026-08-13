@@ -312,11 +312,14 @@ export function MealForm({
                 className={cn(
                   'flex flex-col items-center justify-center gap-1 rounded-2xl border px-2 py-2.5 text-[11px] font-medium transition',
                   active
-                    ? 'border-[var(--accent)] bg-[var(--accent)]/15 text-[var(--accent)]'
+                    ? 'border-[var(--accent)] bg-[var(--accent)]/15 text-[var(--accent-text)]'
                     : 'border-white/10 bg-white/[0.04] text-neutral-300 hover:bg-white/[0.08]',
                 )}
               >
-                <Icon size={16} className={active ? 'text-[var(--accent)]' : 'text-neutral-400'} />
+                <Icon
+                  size={16}
+                  className={active ? 'text-[var(--accent-text)]' : 'text-neutral-400'}
+                />
                 {opt.label}
               </button>
             );
@@ -396,7 +399,7 @@ export function MealForm({
             type="button"
             onClick={handleSubmit}
             disabled={pending}
-            className="w-full rounded-2xl bg-[var(--accent)] px-4 py-3.5 text-sm font-semibold text-white shadow-[0_8px_24px_-8px_var(--accent-glow)] transition hover:bg-[var(--accent-hover)] active:scale-[0.98] disabled:opacity-50"
+            className="w-full rounded-2xl bg-[var(--accent)] px-4 py-3.5 text-sm font-semibold text-white transition hover:bg-[var(--accent-hover)] active:scale-[0.98] disabled:opacity-50"
           >
             {pending
               ? 'Saving…'

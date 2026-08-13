@@ -25,7 +25,7 @@ export default function AppError({
   return (
     <div className="flex min-h-[70vh] flex-col items-center justify-center px-6 text-center">
       <GlassCard className="w-full max-w-sm p-8">
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-white/10 text-[var(--accent)]">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-white/10 text-[var(--accent-text)]">
           <TriangleAlert size={26} />
         </div>
         <h1 className="mt-5 text-xl font-semibold text-white">Something went wrong</h1>
@@ -36,7 +36,7 @@ export default function AppError({
           <button
             type="button"
             onClick={() => unstable_retry()}
-            className="w-full rounded-2xl bg-[var(--accent)] px-4 py-3.5 text-sm font-semibold text-white shadow-[0_8px_24px_-8px_var(--accent-glow)] transition hover:bg-[var(--accent-hover)] active:scale-[0.98]"
+            className="w-full rounded-2xl bg-[var(--accent)] px-4 py-3.5 text-sm font-semibold text-white transition hover:bg-[var(--accent-hover)] active:scale-[0.98]"
           >
             Try again
           </button>

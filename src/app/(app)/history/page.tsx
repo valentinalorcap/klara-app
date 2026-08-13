@@ -374,7 +374,7 @@ export default async function HistoryPage({
         </Link>
       ) : (
         <GlassCard noAnimate className="flex items-center gap-3 p-4">
-          <Sparkles size={16} className="text-[var(--accent)]" />
+          <Sparkles size={16} className="text-[var(--accent-text)]" />
           <p className="text-xs text-neutral-400">
             Log a few days this week and Klara will surface your best one here.
           </p>

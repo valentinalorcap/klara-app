@@ -108,7 +108,7 @@ export function ProductForm({
           {analyzing ? (
             <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
               <span className="flex items-center gap-1.5 rounded-full bg-black/40 px-3 py-1 text-xs font-medium text-white backdrop-blur-sm">
-                <Sparkles size={12} className="animate-pulse text-[var(--accent)]" />
+                <Sparkles size={12} className="animate-pulse text-[var(--accent-text)]" />
                 Reading…
               </span>
             </div>
@@ -128,7 +128,7 @@ export function ProductForm({
         <span
           aria-disabled={analyzing}
           className={cn(
-            'flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl border border-[var(--accent)]/30 bg-[var(--accent)]/10 px-4 py-3 text-sm font-semibold text-[var(--accent)] transition hover:bg-[var(--accent)]/15',
+            'flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl border border-[var(--accent)]/30 bg-[var(--accent)]/10 px-4 py-3 text-sm font-semibold text-[var(--accent-text)] transition hover:bg-[var(--accent)]/15',
             analyzing && 'pointer-events-none cursor-not-allowed opacity-60',
           )}
         >
@@ -250,7 +250,7 @@ export function ProductForm({
         <button
           type="submit"
           disabled={pending || analyzing}
-          className="w-full rounded-2xl bg-[var(--accent)] px-4 py-3.5 text-sm font-semibold text-white shadow-[0_8px_24px_-8px_var(--accent-glow)] transition hover:bg-[var(--accent-hover)] active:scale-[0.98] disabled:opacity-50"
+          className="w-full rounded-2xl bg-[var(--accent)] px-4 py-3.5 text-sm font-semibold text-white transition hover:bg-[var(--accent-hover)] active:scale-[0.98] disabled:opacity-50"
         >
           {pending ? 'Saving…' : submitLabel}
         </button>

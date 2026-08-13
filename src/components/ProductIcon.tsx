@@ -40,7 +40,7 @@ export function ProductIconAvatar({
 }) {
   return (
     <span
-      className={`flex shrink-0 items-center justify-center rounded-[13px] border border-white/10 bg-white/[0.06] text-[var(--accent)] ${className}`}
+      className={`flex shrink-0 items-center justify-center rounded-[13px] border border-white/10 bg-white/[0.06] text-[var(--accent-text)] ${className}`}
     >
       <ProductIcon name={resolveProductIcon(product)} size={iconSize} />
     </span>

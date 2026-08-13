@@ -37,8 +37,8 @@ export function KlaraTakeCard({ take }: { take: KlaraTake }) {
     return (
       <GlassCard className="border-[var(--accent)]/20 bg-[var(--accent)]/[0.04] p-4">
         <div className="flex items-center gap-2">
-          <Sparkles size={13} className="animate-pulse text-[var(--accent)]" />
-          <p className="text-xs font-medium text-[var(--accent)]">Klara is thinking…</p>
+          <Sparkles size={13} className="animate-pulse text-[var(--accent-text)]" />
+          <p className="text-xs font-medium text-[var(--accent-text)]">Klara is thinking…</p>
         </div>
         <div className="mt-2 space-y-1.5" aria-hidden>
           <div className="h-2 w-full animate-pulse rounded-full bg-white/10" />
@@ -74,8 +74,8 @@ export function KlaraTakeCard({ take }: { take: KlaraTake }) {
       onClick={() => setExpanded((v) => !v)}
     >
       <div className="mb-1.5 flex cursor-pointer items-center gap-2">
-        <Sparkles size={13} className="text-[var(--accent)]" />
-        <span className="text-[10px] font-medium tracking-wider text-[var(--accent)] uppercase">
+        <Sparkles size={13} className="text-[var(--accent-text)]" />
+        <span className="text-[10px] font-medium tracking-wider text-[var(--accent-text)] uppercase">
           Klara
         </span>
         <ChevronDown
