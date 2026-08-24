@@ -9,9 +9,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'Klara — your nutrition assistant',
-  description:
-    'Log meals in one tap, see your macros at a glance, get smart suggestions powered by Claude.',
+  title: 'Klara — nutrition assistant',
+  description: 'Log meals, see the macros, get smart suggestions.',
   // PWA / iOS home-screen behaviour. With these set, "Add to Home Screen"
   // installs Klara as a standalone app — no Safari chrome around it.
   applicationName: 'Klara',
