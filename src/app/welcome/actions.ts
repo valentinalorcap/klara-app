@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { goalsInputSchema } from '@/lib/goals';
+import { seedNewUser } from '@/lib/seedNewUser.server';
 import type { GoalsFormState } from '@/app/(app)/settings/actions';
 
 async function requireUserId(): Promise<string> {
@@ -51,6 +52,7 @@ export async function completeOnboarding(
       onboardedAt: new Date(),
     },
   });
+  await seedNewUser(userId);
   revalidatePath('/today');
   redirect('/today');
 }
@@ -62,5 +64,6 @@ export async function skipOnboarding(): Promise<void> {
     where: { id: userId },
     data: { onboardedAt: new Date() },
   });
+  await seedNewUser(userId);
   redirect('/today');
 }
